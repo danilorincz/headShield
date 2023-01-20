@@ -8,17 +8,16 @@
 #include <analogWrite.h>
 #include <pitches.h>
 #include <Tone32.h>
-#include "C:\Users\user\Desktop\headShield\3_programming\headShield_V6_ESP\webpage.h"
-#include "C:\Users\user\Desktop\headShield\3_programming\headShield_V6_ESP\RGB.h"
-#include "C:\Users\user\Desktop\headShield\3_programming\headShield_V6_ESP\timer.h"
-#include "C:\Users\user\Desktop\headShield\3_programming\headShield_V6_ESP\fan.h"
-#include "C:\Users\user\Desktop\headShield\3_programming\headShield_V6_ESP\beeper.h"
-#include "C:\Users\user\Desktop\headShield\3_programming\headShield_V6_ESP\battery.h"
-//#include "C:\Users\user\Desktop\headShield\3_programming\headShield_V6_ESP\tachometer.h"
-#include "C:\Users\user\Desktop\headShield\3_programming\headShield_V6_ESP\reed.h"
-#include "C:\Users\user\Desktop\headShield\3_programming\headShield_V6_ESP\powerLed.h"
-#include "C:\Users\user\Desktop\headShield\3_programming\headShield_V6_ESP\touchInput.h"
-#include "C:\Users\user\Desktop\headShield\3_programming\headShield_V6_ESP\infraredSensor.h"
+#include "C:\Users\user\Desktop\headShield\3_programming\headShield_V7_ESP\webpage.h"
+#include "C:\Users\user\Desktop\headShield\3_programming\headShield_V7_ESP\RGB.h"
+#include "C:\Users\user\Desktop\headShield\3_programming\headShield_V7_ESP\timer.h"
+#include "C:\Users\user\Desktop\headShield\3_programming\headShield_V7_ESP\fan.h"
+#include "C:\Users\user\Desktop\headShield\3_programming\headShield_V7_ESP\beeper.h"
+#include "C:\Users\user\Desktop\headShield\3_programming\headShield_V7_ESP\battery.h"
+#include "C:\Users\user\Desktop\headShield\3_programming\headShield_V7_ESP\reed.h"
+#include "C:\Users\user\Desktop\headShield\3_programming\headShield_V7_ESP\powerLed.h"
+#include "C:\Users\user\Desktop\headShield\3_programming\headShield_V7_ESP\touchInput.h"
+#include "C:\Users\user\Desktop\headShield\3_programming\headShield_V7_ESP\infraredSensor.h"
 
 //? WIFI
 const char *ssid = "headShield";
@@ -30,40 +29,40 @@ WebServer server(80);
 
 //? RGB
 const int RGB_redPin = 21;
-const int RGB_greenPin = 18;
-const int RGB_bluePin = 19;
+const int RGB_greenPin = 16;
+const int RGB_bluePin = 5;
 RGB led(RGB_redPin, RGB_greenPin, RGB_bluePin);
 
 //? FAN
-const int fanPin = 16;
+const int fanPin = 17;
 const int tachoPin = 33;
 Fan fan(fanPin);
 
 //? IR
-const int infraredpin = 39;
+const int infraredpin = 35;
 infraredSensor IR(infraredpin);
 
 //? POWER LED
-const int powerLedPin = 23;
+const int powerLedPin = 18;
 powerLED lamp(powerLedPin);
 
 //? TOUCH INPUT
-const int touchPin1 = 15;
-const int touchPin2 = 32;
-touchInput touch1(touchPin1, 30);
-touchInput touch2(touchPin2, 30);
+const int touchFrontPin = 15;
+const int touchBackPin = 32;
+touchInput touchFront(touchFrontPin, 30);
+touchInput touchBack(touchBackPin, 30);
 
 //? REED SWITCH
-const int reedSwitchPin = 22;
+const int reedSwitchPin = 23;
 ReedSwitch reed(reedSwitchPin);
 
 //? PIEZO
-const int piezoPin = 5;
+const int piezoPin = 22;
 const int piezoChannel = 8;
-Beeper sound(piezoPin, piezoChannel);
+Beeper beeper(piezoPin, piezoChannel);
 
 //? BATTERY
-const int batteryPin = 33;
+const int batteryPin = 34;
 Battery battery(batteryPin);
 
 //? TIMERS
@@ -78,12 +77,11 @@ void setup()
   Serial.begin(115200);
 
   fan.begin();
-
   battery.begin();
   led.begin();
-  sound.begin();
+  beeper.begin();
   reed.begin();
-
+  pinMode(infraredpin, INPUT);
   WiFi.softAP(ssid, password);
   WiFi.softAPConfig(local_ip, gateway, subnet);
   delay(100);
@@ -99,7 +97,6 @@ void setup()
   server.begin();
 
   //! BOOT
-
   led.white();
   led.off();
   millisecondsWhenStart = millis();
@@ -172,37 +169,49 @@ void handle_led()
   }
   server.send(200, "text/plane", state);
 }
-bool activeUse = false;
-
+bool activated = false;
 //! LOOP
 void loop()
 {
-  if (touch1.read())
-  {
-    lamp.setLevel(3);
-  }
-  if (touch2.read())
-  {
-    lamp.setLevel(0);
-  }
+  //* Server stuff
 
-  if (reed.read() && IR.active())
+  //* Lamp
+  if (touchFront.readAtTheMoment())
   {
-    if (!activeUse)
+    lamp.increaseLevel();
+    lamp.setLevel(lamp.level);
+    if (lamp.level == 0)
     {
-      activeUse = true;
+      beeper.lampOff();
+    }
+    else
+    {
+      beeper.lampIncriase();
+    }
+    delay(50);
+  }
+  //* Fan
+  if (IR.active() && reed.read())
+  {
+    if (!activated)
+    {
       fan.on();
-      sound.fanOn();
+      beeper.fanOn();
+      activated = true;
     }
   }
   else
   {
-    if (activeUse)
+    if (activated)
     {
-      activeUse = false;
       fan.off();
-      sound.fanOff();
+      beeper.fanOff();
+      activated = false;
     }
   }
-  Serial.println(IR.read());
+  //* Battery
+
+  //* Reed
+
+  //* IR
 }

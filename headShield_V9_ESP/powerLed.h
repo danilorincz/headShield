@@ -23,9 +23,10 @@ public:
         else
             level = 0;
     }
-    void setLevel(int level)
+    void setLevel(int value)
     {
-        switch (level)
+        level = value;
+        switch (value)
         {
         case 0:
             setPercent(0);
@@ -39,7 +40,8 @@ public:
         case 3:
             setPercent(100);
             break;
-
+        default:
+            Serial.println("SWITCH ERROR_1");
         }
     }
 };

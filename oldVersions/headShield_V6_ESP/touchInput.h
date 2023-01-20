@@ -14,7 +14,7 @@ public:
         this->pin = pin;
         this->threshold = threshold;
     }
-    bool readActual()
+    bool readAtTheMoment()
     {
         if (touchRead(pin) < threshold)
             return true;
@@ -24,7 +24,7 @@ public:
 
     bool read()
     {
-        if (readActual())
+        if (readAtTheMoment())
         {
             if (!timeStartedFlag)
             {
@@ -44,7 +44,7 @@ public:
         else
         {
             timeStartedFlag = false;
+            return false;
         }
-        return false;
     }
 };
