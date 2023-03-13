@@ -13,11 +13,23 @@ struct Timer
     {
         this->duration = newDuration;
     }
-    bool timeElapsed()
+    bool timeElapsedMicros()
     {
         if (micros() - this->preTime > this->duration)
         {
             this->preTime = micros();
+            return true;
+        }
+        else
+        {
+            return false;
+        }
+    }
+    bool timeElapsedMillis()
+    {
+        if (millis() - this->preTime > this->duration)
+        {
+            this->preTime = millis();
             return true;
         }
         else

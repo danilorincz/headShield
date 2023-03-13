@@ -10,7 +10,10 @@ public:
     {
         this->ledPin = ledPin;
     }
-
+    void begin()
+    {
+        pinMode(ledPin, OUTPUT);
+    }
     void setPercent(int percent)
     {
         int valuePWM = map(percent, 0, 100, 0, 255);

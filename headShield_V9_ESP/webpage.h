@@ -32,131 +32,110 @@ String webpageCode = R"***(
 
 <body>
 
-<! INSIDE DATA------------------------->
+<!  DATA------------------------->
   <div class="card">  
-    <h1> <span style="background-color:white">Inside</span> </h1>
+    <h1> <span style="background-color:white">SENSOR</span> </h1>
   
-    <h2> Pressure: <span style="color:yellow" id="insidePressure">0</span> Pa</h2>
-    <h2> Temperature: <span style="color:yellow" id="insideTemperature">0</span> C</h2>
-    <h2> Humidity: <span style="color:yellow" id="insideHumidity">0</span> %</h2>
-    <h2> CO2: <span style="color:yellow" id="insidePPM">0</span> ppm</h2>
-    <h2> TVOC: <span style="color:yellow" id="insideTVOC">0</span> tovc</h2>
+    <h2> Pressure: <span style="color:yellow" id="pressure">0</span> Pa</h2>
+    <h2> Temperature: <span style="color:yellow" id="temperature">0</span> C</h2>
+    <h2> Humidity: <span style="color:yellow" id="humidity">0</span> %</h2>
+    <h2> CO2: <span style="color:yellow" id="PPM">0</span> ppm</h2>
+    <h2> TVOC: <span style="color:yellow" id="TVOC">0</span> tovc</h2>
   </div>
 
 
 <!-------------------------JavaScrip------------------------->
   <script>
- 
-
- 
-  
-
-    // AJAX->INSIDE PRESSURE--------------------------------
     setInterval(function()
     {
-      getInsidePressure();
+      getPressure();
     }, 800);
-    function getInsidePressure()
+    setInterval(function()
     {
-      var insidePressureRequest = new XMLHttpRequest();
-      insidePressureRequest.onreadystatechange = function()
+      getTemperature();
+    }, 800);
+   setInterval(function()
+    {
+      getHumidity();
+    }, 800);
+    setInterval(function()
+    {
+      getPPM();
+    }, 800);
+    setInterval(function()
+    {
+      getTVOC();
+    }, 800);
+
+    function getPressure()
+    {
+      var request = new XMLHttpRequest();
+      request.onreadystatechange = function()
       {
         if(this.readyState == 4 && this.status == 200)
         {
-          document.getElementById("insidePressure").innerHTML =
-          this.responseText;
+          document.getElementById("pressure").innerHTML = this.responseText;
         }
       };
-      insidePressureRequest.open("GET", "readInsidePressure", true);
-      insidePressureRequest.send();
+      request.open("GET", "readPressure", true);
+      request.send();
     }
 
-
-
-    // AJAX->INSIDE TEMPERATURE--------------------------------
-    setInterval(function()
+    function getTemperature()
     {
-      getInsideTemperature();
-    }, 800);
-    function getInsideTemperature()
-    {
-      var insideTemperatureRequest = new XMLHttpRequest();
-      insideTemperatureRequest.onreadystatechange = function()
+      var request = new XMLHttpRequest();
+      request.onreadystatechange = function()
       {
         if(this.readyState == 4 && this.status == 200)
         {
-          document.getElementById("insideTemperature").innerHTML =
-          this.responseText;
+          document.getElementById("temperature").innerHTML = this.responseText;
         }
       };
-      insideTemperatureRequest.open("GET", "readInsideTemp", true);
-      insideTemperatureRequest.send();
+      request.open("GET", "readTemperature", true);
+      request.send();
     }
 
-
-    // AJAX->INSIDE HUMIDITY--------------------------------
-    setInterval(function()
+    function getHumidity()
     {
-      getInsideHumidity();
-    }, 800);
-    function getInsideHumidity()
-    {
-      var insideHumidityRequest = new XMLHttpRequest();
-      insideHumidityRequest.onreadystatechange = function()
+      var request = new XMLHttpRequest();
+      request.onreadystatechange = function()
       {
         if(this.readyState == 4 && this.status == 200)
         {
-          document.getElementById("insideHumidity").innerHTML =
-          this.responseText;
+          document.getElementById("humidity").innerHTML = this.responseText;
         }
       };
-      insideHumidityRequest.open("GET", "readInsideHum", true);
-      insideHumidityRequest.send();
+      request.open("GET", "readHumidity", true);
+      request.send();
     }
 
-
-    // AJAX->INSIDE PPM--------------------------------
-    setInterval(function()
+    function getPPM()
     {
-      getInsidePPM();
-    }, 800);
-    function getInsidePPM()
-    {
-      var insidePPMRequest = new XMLHttpRequest();
-      insidePPMRequest.onreadystatechange = function()
+      var request = new XMLHttpRequest();
+      request.onreadystatechange = function()
       {
         if(this.readyState == 4 && this.status == 200)
         {
-          document.getElementById("insidePPM").innerHTML =
-          this.responseText;
+          document.getElementById("PPM").innerHTML = this.responseText;
         }
       };
-      insidePPMRequest.open("GET", "readInsidePPM", true);
-      insidePPMRequest.send();
+      request.open("GET", "readPPM", true);
+      request.send();
     }
 
-
-    // AJAX->INSIDE TVOC--------------------------------
-    setInterval(function()
+    function getTVOC()
     {
-      getInsideTVOC();
-    }, 800);
-    function getInsideTVOC()
-    {
-      var insideTVOCRequest = new XMLHttpRequest();
-      insideTVOCRequest.onreadystatechange = function()
+      var request = new XMLHttpRequest();
+      request.onreadystatechange = function()
       {
         if(this.readyState == 4 && this.status == 200)
         {
-          document.getElementById("insideTVOC").innerHTML =
-          this.responseText;
+          document.getElementById("TVOC").innerHTML = this.responseText;
         }
       };
-      insideTVOCRequest.open("GET", "readInsideTVOC", true);
-      insideTVOCRequest.send();
+      request.open("GET", "readTVOC", true);
+      request.send();
     }
-
-
 
   </script>
 </body>
