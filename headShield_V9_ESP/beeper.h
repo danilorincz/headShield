@@ -1,68 +1,182 @@
 #pragma once
+#include "Arduino.h"
 
+#ifdef ESP32
+#include "analogWrite.h"
+#endif
 class Beeper
 {
-public:
+private:
   int piezoPin;
+  bool state;
+  bool logState;
+  float speed;
+  
+#ifdef ESP32
   int channel;
-  bool key;
-  Beeper(int piezoPin, int channel, bool key)
+#endif
+public:
+  Beeper(int piezoPin, int channel = 0)
   {
     this->piezoPin = piezoPin;
+#ifdef ESP32
     this->channel = channel;
-    this->key = key;
+#endif
+    this->speed = 1.0;
+  }
+  void setSoundState(bool state)
+  {
+    this->state = state;
   }
   void begin()
   {
     pinMode(piezoPin, OUTPUT);
+#ifdef ESP32
+    ledcSetup(channel, 2000, 8); // 2000 Hz, 8-bit resolution
+    ledcAttachPin(piezoPin, channel);
+#endif
   }
-  void boot()
+  void setSpeed(float percentage)
   {
-    if (key)
-    {
+    this->speed = percentage / 100.0;
+  }
 
-      tone(piezoPin, NOTE_A4, 100, channel);
-      tone(piezoPin, NOTE_B4, 100, channel);
-      tone(piezoPin, NOTE_C4, 100, channel);
-      tone(piezoPin, NOTE_D4, 100, channel);
-      tone(piezoPin, NOTE_E4, 100, channel);
-      tone(piezoPin, NOTE_F4, 100, channel);
-    }
-  }
-  void visorDown()
+
+  void playTone(unsigned int frequency, unsigned long duration)
   {
-    if (key)
-      tone(piezoPin, NOTE_F4, 100, channel);
-  }
-  void visorUp()
-  {
-    if (key)
-      tone(piezoPin, NOTE_A4, 100, channel);
-  }
-  void fanOn()
-  {
-    if (key)
-      tone(piezoPin, NOTE_C4, 100, channel);
-  }
-  void fanOff()
-  {
-    if (key)
-      tone(piezoPin, NOTE_E4, 100, channel);
-  }
-  void lampIncriase()
-  {
-    if (key)
+    if (state)
     {
-      tone(piezoPin, NOTE_A4, 100, channel);
-      tone(piezoPin, NOTE_C4, 100, channel);
+      unsigned long adjustedDuration = duration / speed;
+#ifdef ESP32
+      ledcWriteTone(channel, frequency);
+      delay(adjustedDuration);
+      ledcWriteTone(channel, 0);
+#else
+      tone(piezoPin, frequency, adjustedDuration);
+#endif
     }
   }
-  void lampOff()
+
+  void playTouchTone()
   {
-    if (key)
+    playTone(1000, 50);
+  }
+
+  void playVisorUpTone()
+  {
+    for (int i = 0; i < 3; i++)
     {
-      tone(piezoPin, NOTE_C4, 100, channel);
-      tone(piezoPin, NOTE_A4, 100, channel);
+      playTone(1500 + i * 200, 50);
+      delay(50/speed);
     }
+  }
+
+  void playVisorDownTone()
+  {
+    for (int i = 0; i < 3; i++)
+    {
+      playTone(2100 - i * 200, 50);
+      delay(50/speed);
+    }
+  }
+
+  void playLampOnTone()
+  {
+    playTone(800, 50);
+    delay(50/speed);
+    playTone(1200, 50);
+  }
+
+  void playLampOffTone()
+  {
+    playTone(1200, 50);
+    delay(50/speed);
+    playTone(800, 50);
+  }
+
+  void playBatteryLowTone()
+  {
+    for (int i = 0; i < 3; i++)
+    {
+      playTone(1000 - i * 200, 100);
+      delay(50/speed);
+    }
+  }
+
+  void playBatteryFullTone()
+  {
+    for (int i = 0; i < 3; i++)
+    {
+      playTone(1000 + i * 200, 100);
+      delay(50/speed);
+    }
+  }
+
+  void playFanOnTone()
+  {
+    playTone(500, 50);
+    delay(50/speed);
+    playTone(800, 50);
+  }
+
+  void playFanOffTone()
+  {
+    playTone(800, 50);
+    delay(50/speed);
+    playTone(500, 50);
+  }
+
+  void playFanSpeedUpTone()
+  {
+    for (int i = 0; i < 3; i++)
+    {
+      playTone(1000 + i * 100, 50);
+      delay(50/speed);
+    }
+  }
+
+  void playFanSpeedDownTone()
+  {
+    for (int i = 0; i < 3; i++)
+    {
+      playTone(1300 - i * 100, 50);
+      delay(50/speed);
+    }
+  }
+
+  void playErrorTone()
+  {
+    for (int i = 0; i < 3; i++)
+    {
+      playTone(600 - i * 100, 100);
+      delay(50/speed);
+    }
+  }
+
+  void playSuccessTone()
+  {
+    for (int i = 0; i < 3; i++)
+    {
+      playTone(800 + i * 100, 100);
+      delay(50/speed);
+    }
+  }
+
+  void playStartupTone()
+  {
+    playTone(800, 100);
+    delay(50/speed);
+    playTone(1000, 100);
+    delay(50/speed);
+    playTone(1200, 100);
+  }
+
+  void playShutdownTone()
+  {
+    playTone(1200, 100);
+    delay(50/speed);
+    playTone(1000, 100);
+    delay(50/speed);
+    playTone(800, 100);
   }
 };

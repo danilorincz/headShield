@@ -15,8 +15,12 @@ public:
     }
     int getCharge()
     {
-        int batChargeRaw = analogRead(pin);
+        int batChargeRaw = getRaw();
         chargePercent = map(batChargeRaw, 2925, 4096, 0, 100);
         return chargePercent;
+    }
+    int getRaw()
+    {
+        return analogRead(pin);
     }
 };

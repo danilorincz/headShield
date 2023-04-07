@@ -27,6 +27,7 @@
 //?  SENSOR
 DFRobot_BME280_IIC pressureSensor(&Wire, 0x77);
 DFRobot_CCS811 carbonSensor(&Wire, 0x5A);
+SensorData sensorValue;
 float temperature;
 uint32_t pressure;
 float humidity;
@@ -147,9 +148,22 @@ Timer readSensorDataTimer(800);
 Timer handleClientTimer(300);
 
 bool IRactive = false;
+
 void loop()
 {
+/*
+lamp.setLevel(0);
+delay(2000);
+lamp.setLevel(1);
+delay(2000);
+lamp.setLevel(2);
+delay(2000);
+lamp.setLevel(3);
+delay(2000);
+*/
+  testLog();
 
+  return;
   if (IR.active())
   {
     if (!IRactive)
@@ -206,4 +220,40 @@ void loop()
     CO2 = carbonSensor.getCO2PPM();
     TVOC = carbonSensor.getTVOCPPB();
   }
+}
+
+void testLog()
+{
+  fan.setLevel(0);
+  lamp.setLevel(0);
+  //? IR
+  Serial.print("IR sensor: ");
+  Serial.println(IR.read());
+  //? REED
+  Serial.print("Reed: ");
+  Serial.println(reed.read());
+  //? I2C
+  sensorValue.pressure = pressureSensor.getPressure();
+  sensorValue.temp = pressureSensor.getTemperature();
+  sensorValue.humi = pressureSensor.getHumidity();
+  sensorValue.ppm = carbonSensor.getCO2PPM();
+  sensorValue.tovc = carbonSensor.getTVOCPPB();
+  sensorValue.log();
+  //? LED
+  Serial.println("lamp set to level 2");
+  lamp.setLevel(2);
+  //? FAN
+  Serial.println("Set fan to level 2");
+  fan.setLevel(2);
+  delay(1000);
+  //? TOUCH
+  Serial.print("Touch left: ");
+  Serial.println(touchLeft.readRaw());
+  Serial.print("Touch right: ");
+  Serial.println(touchRight.readRaw());
+  //? BATTERY
+  Serial.print("Battery: ");
+  Serial.println(battery.getRaw());
+
+  delay(1000);
 }
