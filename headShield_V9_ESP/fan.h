@@ -33,23 +33,20 @@ public:
     {
         digitalWrite(PWMPin, LOW);
     }
-    void increaseLevel()
+    void toggle()
     {
         level++;
         if (level == 3)
-            level = 0;
+            level = 1;
     }
     void setLevel(int level_)
     {
         switch (level_)
         {
-        case 0:
-            setSpeed(0);
-            break;
-        case 1:
+        case 2:
             setSpeed(60);
             break;
-        case 2:
+        case 3:
             setSpeed(100);
             break; 
         }

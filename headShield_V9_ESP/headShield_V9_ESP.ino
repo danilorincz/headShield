@@ -1,7 +1,6 @@
 // HEADSHIELD_V3.7 PCB_V10
 //? SETTINGS
-#define piezoActive true
-
+#define SOUND_ACTIVE true
 //? LIBRARIES
 #include <Arduino.h>
 #include <WiFi.h>
@@ -11,7 +10,7 @@
 #include <Tone32.h>
 #include "Wire.h"
 #include "DFRobot_BME280.h"
-#include "DFRobot_CCS811.h"
+#include <DFRobot_ENS160.h>
 #include "C:\Users\user\Desktop\headShield\3_programming\headShield_V9_ESP\webpage.h"
 #include "C:\Users\user\Desktop\headShield\3_programming\headShield_V9_ESP\timer.h"
 #include "C:\Users\user\Desktop\headShield\3_programming\headShield_V9_ESP\fan.h"
@@ -25,14 +24,10 @@
 #include "C:\Users\user\Desktop\headShield\3_programming\headShield_V9_ESP\sensor_data.h"
 
 //?  SENSOR
-DFRobot_BME280_IIC pressureSensor(&Wire, 0x76);
-DFRobot_CCS811 carbonSensor(&Wire, 0x53);
-SensorData sensorValue;
-float temperature;
-uint32_t pressure;
-float humidity;
-float CO2;
-float TVOC;
+DFRobot_BME280_IIC BME280(&Wire, 0x76);
+DFRobot_ENS160_I2C ENS160(&Wire, 0x53);
+
+SensorData perkData;
 
 //? FAN
 const int fanPin = 5;
@@ -77,32 +72,43 @@ IPAddress local_ip(192, 168, 1, 1);
 IPAddress gateway(192, 168, 1, 1);
 IPAddress subnet(255, 255, 255, 0);
 WebServer server(80);
-int initialValue = 0;
+
+//? TIMERS
+Timer serviceModeTimer(3000);
+//? GLOBAL
+serviceMode = false;
 
 void setup()
 {
+  //* BEGIN
   Serial.begin(115200);
   fan.begin();
   battery.begin();
-  beeper.begin();
+  beeper.begin(SOUND_ACTIVE);
   reed.begin();
   audio.begin();
   lamp.begin();
-  beeper.setSoundState(true);
 
+  //* WIFI
   WiFi.softAP(ssid, password);
   WiFi.softAPConfig(local_ip, gateway, subnet);
   delay(100);
 
-  pressureSensor.reset();
-  if (pressureSensor.begin() != DFRobot_BME280_IIC::eStatusOK)
+  //* BME280
+  BME280.reset();
+  if (BME280.begin() != DFRobot_BME280_IIC::eStatusOK)
     Serial.println("inside pressure sensor faild");
 
-  if (carbonSensor.begin() != 0)
+  //* ENS160
+  if (ENS160.begin() != NO_ERR)
   {
-    Serial.println("carbon sensor faild");
+    Serial.println("Communication with device failed, please check connection");
+    delay(50);
   }
+  ENS160.setPWRMode(ENS160_STANDARD_MODE);
+  ENS160.setTempAndHum(/*temperature=*/25.0, /*humidity=*/50.0);
 
+  //* HANDLERS
   server.on("/", handle_root);
   server.on("/readPressure", handle_readPressure);
   server.on("/readTemperature", handle_readTemperature);
@@ -110,10 +116,44 @@ void setup()
   server.on("/readPPM", handle_readPPM);
   server.on("/readTVOC", handle_readTVOC);
   server.begin();
+
+  //* BOOT
   beeper.playStartupTone();
   delay(100);
   audio.on();
-  initialValue = touchLeft.readRaw();
+  
+  while (touchLeft.readAtTheMoment() && touchRight.readAtTheMoment())
+  {
+    if (serviceModeTimer.timeElapsed())
+    {
+      serviceMode = true;
+      break;
+    }
+  }
+}
+
+void getSensorData()
+{
+  perkData.press = BME280.getPressure();
+  perkData.temp = BME280.getTemperature();
+  perkData.humi = BME280.getHumidity();
+
+  perkData.status = ENS160.getENS160Status();
+  perkData.AQI = ENS160.getAQI();
+  perkData.TVOC = ENS160.getTVOC();
+  perkData.ECO2 = ENS160.getECO2();
+
+  Serial.print("Sensor operating status : ");
+  Serial.println(Status);
+  Serial.print("Air quality index : ");
+  Serial.println(AQI);
+  Serial.print("Concentration of total volatile organic compounds : ");
+  Serial.print(TVOC);
+  Serial.println(" ppb");
+  Serial.print("Carbon dioxide equivalent concentration : ");
+  Serial.print(ECO2);
+  Serial.println(" ppm");
+  Serial.println();
 }
 
 //? HANDLERs
@@ -123,44 +163,98 @@ void handle_root()
 }
 void handle_readPressure()
 {
-  String pressureString = (String)pressure;
+  String pressureString = (String)perkData.press;
   server.send(200, "text/plane", pressureString);
 }
 void handle_readTemperature()
 {
-  String tempString = (String)temperature;
+  String tempString = (String)perkData.temp;
   server.send(200, "text/plane", tempString);
 }
 void handle_readHumidity()
 {
-  String humidityString = (String)humidity;
+  String humidityString = (String)perkData.humi;
   server.send(200, "text/plane", humidityString);
 }
 void handle_readPPM()
 {
-  String PPMString = (String)CO2;
+  String PPMString = (String)perkData.ECO2;
   server.send(200, "text/plane", PPMString);
 }
 void handle_readTVOC()
 {
-  String TVOCString = (String)TVOC;
+  String TVOCString = (String)perkData.TVOC;
   server.send(200, "text/plane", TVOCString);
 }
 
-Timer readSensorDataTimer(800);
-Timer handleClientTimer(300);
-
-bool IRactive = false;
-
+// 1-> bekapcsol a ventillátor, beveszi a touch inputokat
+// 2-> kikapcsol a ventillátor, nem veszi be a touch inputokat, kikapcsol az audio
+// 3-> kikapcsol a ventillátor, beveszi a touch inputokat, kikapcsol az audio, kikapcsolnak a lámpák
+// 4-> kikapcsol a ventillátor, nem veszi be a touch inputokat, kikapcsol az audio, a lámpák maradnak
+int mode = 0;
 void loop()
 {
-  sensorValue.pressure = pressureSensor.getPressure();
-  sensorValue.temp = pressureSensor.getTemperature();
-  sensorValue.humi = pressureSensor.getHumidity();
-  sensorValue.ppm = carbonSensor.getCO2PPM();
-  sensorValue.tovc = carbonSensor.getTVOCPPB();
-  sensorValue.log();
-  return;
+  if (presence && visorState) // wearing and active visor
+  {
+    mode = 1;
+  }
+  else if (presence && !visorState) // wearing but deactivated visor
+  {
+    mode = 2;
+  }
+  else if (!presence && visorState) // not wearing but active visor
+  {
+    mode = 3;
+  }
+  else if (!presence && !visorState) // not wearing and deactivated visor
+  {
+    mode = 4;
+  }
+
+  switch (mode)
+  {
+  case 1:
+    break;
+  case 2:
+    break;
+  case 3:
+    break;
+  case 4:
+    break;
+  default:
+  }
+}
+
+void presenceDetection()
+{
+}
+
+void touchDetection()
+{
+
+  touchRight.singleTap();
+  touchRight.doubleTap();
+
+  if (touchRight.longTap())
+  {
+    fan.toggleLevel();
+    fan.setLevel(fan.level);
+  }
+
+  touchLeft.singleTap();
+  touchLeft.doubleTap();
+  touchLeft.longTap();
+}
+
+void visorDetection()
+{
+}
+
+void handleReedSwitch
+
+    // old loop
+    /*
+
   if (IR.active())
   {
     if (!IRactive)
@@ -209,51 +303,10 @@ void loop()
 
   if (readSensorDataTimer.timeElapsedMillis())
   {
-    pressure = pressureSensor.getPressure();
-    temperature = pressureSensor.getTemperature();
-    humidity = pressureSensor.getHumidity();
+    pressure = BME280.getPressure();
+    temperature = BME280.getTemperature();
+    humidity = BME280.getHumidity();
     CO2 = carbonSensor.getCO2PPM();
     TVOC = carbonSensor.getTVOCPPB();
   }
-}
-
-void testLog()
-{
-  fan.setLevel(0);
-  lamp.setLevel(0);
-  delay(1000);
-  //? IR
-  Serial.print("IR sensor: ");
-  Serial.println(IR.read());
-  //? REED
-  Serial.print("Reed: ");
-  Serial.println(reed.read());
-  //? I2C
-  sensorValue.pressure = pressureSensor.getPressure();
-  sensorValue.temp = pressureSensor.getTemperature();
-  sensorValue.humi = pressureSensor.getHumidity();
-  sensorValue.ppm = carbonSensor.getCO2PPM();
-  sensorValue.tovc = carbonSensor.getTVOCPPB();
-  sensorValue.log();
-  //? LED
-  Serial.println("lamp set to level 2");
-  lamp.setLevel(2);
-  //? FAN
-  Serial.println("Set fan to level 2");
-  //fan.setLevel(2);
-  delay(1000);
-  //? TOUCH
-  Serial.print("Touch left: ");
-  Serial.println(touchLeft.readRaw());
-  Serial.print("Touch right: ");
-  Serial.println(touchRight.readRaw());
-  //? BATTERY
-  Serial.print("Battery: ");
-  Serial.println(battery.getRaw());
-  Serial.println(" ");
-  Serial.println(" ");
-  Serial.println(" ");
-  Serial.println(" ");
-  Serial.println(" ");
-  delay(1000);
-}
+*/

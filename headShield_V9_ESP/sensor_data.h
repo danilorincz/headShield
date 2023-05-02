@@ -2,26 +2,34 @@
 class SensorData
 {
 public:
+  // standard sensor
   float temp;
-  float pressure;
+  float press;
   float humi;
-  int ppm;  //? Parts Per Million
-  int tovc; //? Total Volatile Organic Compounds
-  SensorData()
+  // ENS160
+  uint8_t status;
+  uint8_t AQI;
+  uint16_t TVOC; //? Total Volatile Organic Compounds
+  uint16_t ECO2;
+  int SensorData()
   {
-    
   }
   void log()
   {
     Serial.print("Temperature: ");
     Serial.println(temp);
     Serial.print("Pressure: ");
-    Serial.println(pressure);
+    Serial.println(press);
     Serial.print("Humidity: ");
     Serial.println(humi);
-    Serial.print("PPM: ");
-    Serial.println(ppm);
+
+    Serial.print("Status: ");
+    Serial.println(status);
+    Serial.print("AQI: ");
+    Serial.println(AQI);
     Serial.print("TOVC: ");
-    Serial.println(tovc);
+    Serial.println(TVOC);
+    Serial.print("ECO2: ");
+    Serial.println(ECO2);
   }
 };
