@@ -25,8 +25,8 @@
 #include "C:\Users\user\Desktop\headShield\3_programming\headShield_V9_ESP\sensor_data.h"
 
 //?  SENSOR
-DFRobot_BME280_IIC pressureSensor(&Wire, 0x77);
-DFRobot_CCS811 carbonSensor(&Wire, 0x5A);
+DFRobot_BME280_IIC pressureSensor(&Wire, 0x76);
+DFRobot_CCS811 carbonSensor(&Wire, 0x53);
 SensorData sensorValue;
 float temperature;
 uint32_t pressure;
@@ -60,7 +60,7 @@ ReedSwitch reed(reedSwitchPin);
 //? PIEZO
 const int piezoPin = 23;
 const int piezoChannel = 8;
-Beeper beeper(piezoPin, piezoChannel, piezoActive);
+Beeper beeper(piezoPin, piezoChannel);
 
 //? BATTERY
 const int batteryPin = 32;
@@ -77,6 +77,7 @@ IPAddress local_ip(192, 168, 1, 1);
 IPAddress gateway(192, 168, 1, 1);
 IPAddress subnet(255, 255, 255, 0);
 WebServer server(80);
+int initialValue = 0;
 
 void setup()
 {
@@ -87,6 +88,7 @@ void setup()
   reed.begin();
   audio.begin();
   lamp.begin();
+  beeper.setSoundState(true);
 
   WiFi.softAP(ssid, password);
   WiFi.softAPConfig(local_ip, gateway, subnet);
@@ -108,9 +110,10 @@ void setup()
   server.on("/readPPM", handle_readPPM);
   server.on("/readTVOC", handle_readTVOC);
   server.begin();
-  beeper.boot();
+  beeper.playStartupTone();
   delay(100);
-  audio.off();
+  audio.on();
+  initialValue = touchLeft.readRaw();
 }
 
 //? HANDLERs
@@ -151,42 +154,35 @@ bool IRactive = false;
 
 void loop()
 {
-/*
-lamp.setLevel(0);
-delay(2000);
-lamp.setLevel(1);
-delay(2000);
-lamp.setLevel(2);
-delay(2000);
-lamp.setLevel(3);
-delay(2000);
-*/
-  testLog();
-
+  sensorValue.pressure = pressureSensor.getPressure();
+  sensorValue.temp = pressureSensor.getTemperature();
+  sensorValue.humi = pressureSensor.getHumidity();
+  sensorValue.ppm = carbonSensor.getCO2PPM();
+  sensorValue.tovc = carbonSensor.getTVOCPPB();
+  sensorValue.log();
   return;
   if (IR.active())
   {
     if (!IRactive)
     {
       IRactive = true;
-      beeper.lampIncriase();
     }
     if (touchLeft.doubleTap())
     {
       audio.toggle();
       if (audio.state)
-        beeper.visorUp();
+        true;
       else
-        beeper.visorDown();
+        true;
     }
     if (touchLeft.singleTap())
     {
       lamp.increaseLevel();
       lamp.setLevel(lamp.level);
       if (lamp.level == 0)
-        beeper.lampOff();
+        true;
       else
-        beeper.lampIncriase();
+        true;
     }
 
     if (touchRight.singleTap())
@@ -194,9 +190,9 @@ delay(2000);
       fan.increaseLevel();
       fan.setLevel(fan.level);
       if (fan.level == 0)
-        beeper.lampOff();
+        true;
       else
-        beeper.lampIncriase();
+        true;
     }
   }
   else
@@ -204,7 +200,6 @@ delay(2000);
     if (IRactive)
     {
       IRactive = false;
-      beeper.lampOff();
     }
     fan.setSpeed(0);
     lamp.setLevel(0);
@@ -226,6 +221,7 @@ void testLog()
 {
   fan.setLevel(0);
   lamp.setLevel(0);
+  delay(1000);
   //? IR
   Serial.print("IR sensor: ");
   Serial.println(IR.read());
@@ -244,7 +240,7 @@ void testLog()
   lamp.setLevel(2);
   //? FAN
   Serial.println("Set fan to level 2");
-  fan.setLevel(2);
+  //fan.setLevel(2);
   delay(1000);
   //? TOUCH
   Serial.print("Touch left: ");
@@ -254,6 +250,10 @@ void testLog()
   //? BATTERY
   Serial.print("Battery: ");
   Serial.println(battery.getRaw());
-
+  Serial.println(" ");
+  Serial.println(" ");
+  Serial.println(" ");
+  Serial.println(" ");
+  Serial.println(" ");
   delay(1000);
 }

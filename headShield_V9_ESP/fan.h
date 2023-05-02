@@ -51,7 +51,7 @@ public:
             break;
         case 2:
             setSpeed(100);
-            break;
+            break; 
         }
     }
 };
