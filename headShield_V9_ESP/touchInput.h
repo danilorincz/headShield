@@ -166,9 +166,3 @@ public:
     }
 };
 
-
-namespace Action
-{
-    
-}
-

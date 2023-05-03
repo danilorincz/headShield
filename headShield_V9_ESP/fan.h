@@ -6,6 +6,7 @@ public:
     int PWMPin;
     int lastPercent;
     int level = 0;
+    int prevLevel = 0;
 
     Fan(int PWMPin)
     {
@@ -33,22 +34,36 @@ public:
     {
         digitalWrite(PWMPin, LOW);
     }
-    void toggle()
+
+    int increaseLevel()
     {
-        level++;
-        if (level == 3)
-            level = 1;
+        if (level < 3)
+            level++;
+        else
+            level = 0;
+        return level;
     }
-    void setLevel(int level_)
+    void setLevel(int _level)
     {
-        switch (level_)
+        switch (_level)
         {
+        case 0:
+            setSpeed(0);
+            break;
+        case 1:
+            setSpeed(80);
+            break;
         case 2:
-            setSpeed(60);
+            setSpeed(90);
             break;
         case 3:
             setSpeed(100);
-            break; 
+            break;
         }
+    }
+    void toggle()
+    {
+        increaseLevel();
+        setLevel(level);
     }
 };

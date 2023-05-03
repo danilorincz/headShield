@@ -5,6 +5,7 @@ class Audio
 public:
     int enablePin;
     bool state;
+    bool prevState;
     Audio(int enablePin)
     {
         this->enablePin = enablePin;
@@ -29,7 +30,7 @@ public:
             state = LOW;
         }
     }
-    void toggle()
+    bool toggle()
     {
         if (state)
         {
@@ -41,5 +42,6 @@ public:
             digitalWrite(enablePin, HIGH);
             state = HIGH;
         }
+        return state;
     }
 };

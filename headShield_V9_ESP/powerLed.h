@@ -6,6 +6,7 @@ public:
     int percent;
     int ledPin;
     int level;
+    int prevLevel;
     powerLED(int ledPin)
     {
         this->ledPin = ledPin;
@@ -19,12 +20,13 @@ public:
         int valuePWM = map(percent, 0, 100, 0, 255);
         analogWrite(ledPin, valuePWM);
     }
-    void increaseLevel()
+    int increaseLevel()
     {
         if (level < 3)
             level++;
         else
             level = 0;
+        return level;
     }
     void setLevel(int value)
     {
@@ -46,5 +48,10 @@ public:
         default:
             Serial.println("SWITCH ERROR_1");
         }
+    }
+    int toggle()
+    {
+        increaseLevel();
+        setLevel(level);
     }
 };

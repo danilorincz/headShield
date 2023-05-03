@@ -12,11 +12,11 @@ public:
     {
         pinMode(pin, INPUT_PULLUP);
     }
-    bool read()
+    bool scan()
     {
         if (digitalRead(pin))
-            return false;
-        else
             return true;
+        else
+            return false;
     }
 };

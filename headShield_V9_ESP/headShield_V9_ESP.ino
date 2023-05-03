@@ -2,6 +2,7 @@
 //? SETTINGS
 #define SOUND_ACTIVE true
 //? LIBRARIES
+
 #include <Arduino.h>
 #include <WiFi.h>
 #include <WebServer.h>
@@ -24,8 +25,8 @@
 #include "C:\Users\user\Desktop\headShield\3_programming\headShield_V9_ESP\sensor_data.h"
 
 //?  SENSOR
-DFRobot_BME280_IIC BME280(&Wire, 0x76);
 DFRobot_ENS160_I2C ENS160(&Wire, 0x53);
+DFRobot_BME280_IIC BME280(&Wire, 0x76);
 
 SensorData perkData;
 
@@ -50,7 +51,7 @@ touchInput touchLeft(touchLeftPin, 30);
 
 //? REED SWITCH
 const int reedSwitchPin = 18;
-ReedSwitch reed(reedSwitchPin);
+ReedSwitch visor(reedSwitchPin);
 
 //? PIEZO
 const int piezoPin = 23;
@@ -65,18 +66,11 @@ Battery battery(batteryPin);
 const int audioEnPin = 16;
 Audio audio(audioEnPin);
 
-//? WIFI
-const char *ssid = "headShield";
-const char *password = "123456789";
-IPAddress local_ip(192, 168, 1, 1);
-IPAddress gateway(192, 168, 1, 1);
-IPAddress subnet(255, 255, 255, 0);
-WebServer server(80);
-
 //? TIMERS
 Timer serviceModeTimer(3000);
+
 //? GLOBAL
-serviceMode = false;
+bool serviceMode = false;
 
 void setup()
 {
@@ -85,14 +79,9 @@ void setup()
   fan.begin();
   battery.begin();
   beeper.begin(SOUND_ACTIVE);
-  reed.begin();
+  visor.begin();
   audio.begin();
   lamp.begin();
-
-  //* WIFI
-  WiFi.softAP(ssid, password);
-  WiFi.softAPConfig(local_ip, gateway, subnet);
-  delay(100);
 
   //* BME280
   BME280.reset();
@@ -106,207 +95,126 @@ void setup()
     delay(50);
   }
   ENS160.setPWRMode(ENS160_STANDARD_MODE);
-  ENS160.setTempAndHum(/*temperature=*/25.0, /*humidity=*/50.0);
-
-  //* HANDLERS
-  server.on("/", handle_root);
-  server.on("/readPressure", handle_readPressure);
-  server.on("/readTemperature", handle_readTemperature);
-  server.on("/readHumidity", handle_readHumidity);
-  server.on("/readPPM", handle_readPPM);
-  server.on("/readTVOC", handle_readTVOC);
-  server.begin();
+  ENS160.setTempAndHum(25.0, 50.0);
 
   //* BOOT
   beeper.playStartupTone();
   delay(100);
-  audio.on();
-  
+
   while (touchLeft.readAtTheMoment() && touchRight.readAtTheMoment())
   {
-    if (serviceModeTimer.timeElapsed())
+    if (serviceModeTimer.timeElapsedMillis())
     {
       serviceMode = true;
       break;
     }
   }
+  audio.off();
+  if (visor.scan() && IR.scan())
+    fan.setLevel(2);
 }
 
-void getSensorData()
-{
-  perkData.press = BME280.getPressure();
-  perkData.temp = BME280.getTemperature();
-  perkData.humi = BME280.getHumidity();
-
-  perkData.status = ENS160.getENS160Status();
-  perkData.AQI = ENS160.getAQI();
-  perkData.TVOC = ENS160.getTVOC();
-  perkData.ECO2 = ENS160.getECO2();
-
-  Serial.print("Sensor operating status : ");
-  Serial.println(Status);
-  Serial.print("Air quality index : ");
-  Serial.println(AQI);
-  Serial.print("Concentration of total volatile organic compounds : ");
-  Serial.print(TVOC);
-  Serial.println(" ppb");
-  Serial.print("Carbon dioxide equivalent concentration : ");
-  Serial.print(ECO2);
-  Serial.println(" ppm");
-  Serial.println();
-}
-
-//? HANDLERs
-void handle_root()
-{
-  server.send(200, "text/html", webpageCode);
-}
-void handle_readPressure()
-{
-  String pressureString = (String)perkData.press;
-  server.send(200, "text/plane", pressureString);
-}
-void handle_readTemperature()
-{
-  String tempString = (String)perkData.temp;
-  server.send(200, "text/plane", tempString);
-}
-void handle_readHumidity()
-{
-  String humidityString = (String)perkData.humi;
-  server.send(200, "text/plane", humidityString);
-}
-void handle_readPPM()
-{
-  String PPMString = (String)perkData.ECO2;
-  server.send(200, "text/plane", PPMString);
-}
-void handle_readTVOC()
-{
-  String TVOCString = (String)perkData.TVOC;
-  server.send(200, "text/plane", TVOCString);
-}
-
-// 1-> bekapcsol a ventillátor, beveszi a touch inputokat
-// 2-> kikapcsol a ventillátor, nem veszi be a touch inputokat, kikapcsol az audio
-// 3-> kikapcsol a ventillátor, beveszi a touch inputokat, kikapcsol az audio, kikapcsolnak a lámpák
-// 4-> kikapcsol a ventillátor, nem veszi be a touch inputokat, kikapcsol az audio, a lámpák maradnak
 int mode = 0;
+int prevMode = 0;
+int prevModeChange = 0;
 void loop()
 {
-  if (presence && visorState) // wearing and active visor
-  {
+
+  if (IR.scan() && visor.scan())
     mode = 1;
-  }
-  else if (presence && !visorState) // wearing but deactivated visor
-  {
+  else if (IR.scan() && !visor.scan())
     mode = 2;
-  }
-  else if (!presence && visorState) // not wearing but active visor
-  {
+  else if (!IR.scan() && visor.scan())
     mode = 3;
-  }
-  else if (!presence && !visorState) // not wearing and deactivated visor
-  {
+  else if (!IR.scan() && !visor.scan())
     mode = 4;
-  }
 
-  switch (mode)
+  if (prevMode != mode)
   {
-  case 1:
-    break;
-  case 2:
-    break;
-  case 3:
-    break;
-  case 4:
-    break;
-  default:
+
+    switch (mode)
+    {
+    case 1: //? NORMAL
+      beeper.playVisorDownTone();
+      fan.setLevel(fan.prevLevel);
+      lamp.setLevel(lamp.prevLevel);
+      audio.off();
+      break;
+    case 2: //? VISOR OFF
+      beeper.playVisorUpTone();
+
+      fan.setLevel(0);
+      audio.off();
+      break;
+    case 3: //? IR OFF
+      beeper.playVisorUpTone();
+      fan.setLevel(0);
+      lamp.setLevel(0);
+      audio.off();
+      break;
+    case 4: //? ALL OFF
+      beeper.playVisorUpTone();
+      fan.setLevel(0);
+      lamp.setLevel(0);
+      audio.off();
+      break;
+    }
+
+    prevMode = mode;
   }
+
+  serveTouch();
 }
 
-void presenceDetection()
+void serveTouch()
 {
-}
+  if (touchLeft.singleTap())
+  {
+    lamp.toggle();
+    lamp.prevLevel = lamp.level;
+    if (lamp.level == 0)
+      beeper.playLampOffTone();
+    else
+      beeper.playLampOnTone();
+  }
 
-void touchDetection()
-{
+  if (touchRight.singleTap())
+  {
+    if (fan.level < 3)
+      fan.level++;
+    else
+      fan.level = 1;
 
-  touchRight.singleTap();
-  touchRight.doubleTap();
+    fan.setLevel(fan.level);
+    fan.prevLevel = fan.level;
 
+    switch (fan.level)
+    {
+    case 1:
+      beeper.playFanSpeedDownTone();
+      break;
+    case 2:
+    case 3:
+      beeper.playFanSpeedUpTone();
+      break;
+    }
+  }
   if (touchRight.longTap())
   {
-    fan.toggleLevel();
+
+    if (fan.level > 1)
+      fan.level--;
+    else
+      fan.level = 3;
+
     fan.setLevel(fan.level);
-  }
+    fan.prevLevel = fan.level;
 
-  touchLeft.singleTap();
-  touchLeft.doubleTap();
-  touchLeft.longTap();
+    audio.toggle();
+    audio.prevState = audio.state;
+    if (audio.state)
+      beeper.playVisorUpTone();
+    else
+      beeper.playVisorDownTone();
+  }
 }
-
-void visorDetection()
-{
-}
-
-void handleReedSwitch
-
-    // old loop
-    /*
-
-  if (IR.active())
-  {
-    if (!IRactive)
-    {
-      IRactive = true;
-    }
-    if (touchLeft.doubleTap())
-    {
-      audio.toggle();
-      if (audio.state)
-        true;
-      else
-        true;
-    }
-    if (touchLeft.singleTap())
-    {
-      lamp.increaseLevel();
-      lamp.setLevel(lamp.level);
-      if (lamp.level == 0)
-        true;
-      else
-        true;
-    }
-
-    if (touchRight.singleTap())
-    {
-      fan.increaseLevel();
-      fan.setLevel(fan.level);
-      if (fan.level == 0)
-        true;
-      else
-        true;
-    }
-  }
-  else
-  {
-    if (IRactive)
-    {
-      IRactive = false;
-    }
-    fan.setSpeed(0);
-    lamp.setLevel(0);
-  }
-  if (handleClientTimer.timeElapsedMillis())
-    server.handleClient();
-
-  if (readSensorDataTimer.timeElapsedMillis())
-  {
-    pressure = BME280.getPressure();
-    temperature = BME280.getTemperature();
-    humidity = BME280.getHumidity();
-    CO2 = carbonSensor.getCO2PPM();
-    TVOC = carbonSensor.getTVOCPPB();
-  }
-*/

@@ -11,7 +11,7 @@ public:
   uint8_t AQI;
   uint16_t TVOC; //? Total Volatile Organic Compounds
   uint16_t ECO2;
-  int SensorData()
+  SensorData()
   {
   }
   void log()
