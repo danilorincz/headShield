@@ -109,14 +109,12 @@ void setup()
       break;
     }
   }
-  audio.off();
-  if (visor.scan() && IR.scan())
-    fan.setLevel(2);
+  fan.prevLevel = 2;
 }
 
 int mode = 0;
 int prevMode = 0;
-int prevModeChange = 0;
+
 void loop()
 {
 
