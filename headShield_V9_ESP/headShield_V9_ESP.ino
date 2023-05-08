@@ -2,7 +2,7 @@
 //? SETTINGS
 #define SOUND_ACTIVE true
 
-//? LIBRARIES
+//? DOWNLOADED LIBRARIEs
 #include <Arduino.h>
 #include <WiFi.h>
 #include <WebServer.h>
@@ -12,31 +12,47 @@
 #include "Wire.h"
 #include "DFRobot_BME280.h"
 #include <DFRobot_ENS160.h>
-#include "C:\Users\user\Desktop\headShield\3_programming\headShield_V9_ESP\webpage.h"
-#include "C:\Users\user\Desktop\headShield\3_programming\headShield_V9_ESP\timer.h"
-#include "C:\Users\user\Desktop\headShield\3_programming\headShield_V9_ESP\fan.h"
-#include "C:\Users\user\Desktop\headShield\3_programming\headShield_V9_ESP\beeper.h"
-#include "C:\Users\user\Desktop\headShield\3_programming\headShield_V9_ESP\battery.h"
-#include "C:\Users\user\Desktop\headShield\3_programming\headShield_V9_ESP\reed.h"
-#include "C:\Users\user\Desktop\headShield\3_programming\headShield_V9_ESP\LED.h"
-#include "C:\Users\user\Desktop\headShield\3_programming\headShield_V9_ESP\touchInput.h"
-#include "C:\Users\user\Desktop\headShield\3_programming\headShield_V9_ESP\infraredSensor.h"
-#include "C:\Users\user\Desktop\headShield\3_programming\headShield_V9_ESP\audioEN.h"
-#include "C:\Users\user\Desktop\headShield\3_programming\headShield_V9_ESP\sensor_data.h"
+
+//? CUSTOM LIBRARIEs
+#include "webpage.h"
+#include "timer.h"
+#include "fan.h"
+#include "beeper.h"
+#include "battery.h"
+#include "reed.h"
+#include "LED.h"
+#include "touchInput.h"
+#include "infraredSensor.h"
+#include "audioEN.h"
+#include "sensor_data.h"
+#include "tachometer.h"
+
+//? WIFI
+const char *ssid = "headShield";
+const char *password = "123456789";
+IPAddress local_ip(192, 168, 1, 1);
+IPAddress gateway(192, 168, 1, 1);
+IPAddress subnet(255, 255, 255, 0);
+WebServer server(80);
+
+//?  SENSOR
+SensorData perkData;
+#define SEA_LEVEL_PRESSURE 1015.0f
+DFRobot_ENS160_I2C ENS160(&Wire, 0x53);
+DFRobot_BME280_IIC BME280(&Wire, 0x76);
 
 //? FAN
 const int fanPin = 5;
 const int tachoPin = 17;
 Fan fan(fanPin);
 
+//? TACHOMETER
+const int tachometerPin = 17;
+Tachometer tachometer(tachometerPin);
+
 //? POWER LED
 const int LEDPin = 19;
 LED lamp(LEDPin);
-
-//?  SENSOR
-SensorData perkData;
-DFRobot_ENS160_I2C ENS160(&Wire, 0x53);
-DFRobot_BME280_IIC BME280(&Wire, 0x76);
 
 //? IR
 const int infraredPin = 35;
@@ -81,18 +97,41 @@ void setup()
   beeper.begin(SOUND_ACTIVE);
   visor.begin();
   battery.begin();
+  tachometer.begin();
+
+  //* WIFI
+  WiFi.softAP(ssid, password);
+  WiFi.softAPConfig(local_ip, gateway, subnet);
+  delay(100);
+
+  //* HANDLERS
+  server.on("/", handle_root);
 
   //* BME280
   BME280.reset();
   if (BME280.begin() != DFRobot_BME280_IIC::eStatusOK)
-    Serial.println("inside pressure sensor faild");
+  {
+    perkData.initializeBME280 = false;
+    Serial.println("BME280 faild");
+  }
+  else
+  {
+    perkData.initializeBME280 = true;
+    Serial.println("BME280 sucess");
+  }
 
   //* ENS160
   if (ENS160.begin() != NO_ERR)
   {
-    Serial.println("Communication with device failed, please check connection");
-    delay(50);
+    Serial.println("ENS160 failed");
+    perkData.initializeEN160 = false;
   }
+  else
+  {
+    Serial.println("ENS160 sucess");
+    perkData.initializeEN160 = false;
+  }
+
   ENS160.setPWRMode(ENS160_STANDARD_MODE);
   ENS160.setTempAndHum(25.0, 50.0);
 
@@ -106,7 +145,7 @@ void setup()
   audio.state = LOW;
 
   //* SERVICE MODE
-  while (touchLeft.readAtTheMoment() && touchRight.readAtTheMoment())
+  while (multiTouch())
   {
     if (serviceModeTimer.timeElapsedMillis())
     {
@@ -116,6 +155,13 @@ void setup()
   }
 }
 
+//* HANDLERs
+void handle_root()
+{
+  server.send(200, "text/html", webpageCode);
+}
+
+//* MODE
 int scanMode()
 {
   int newMode;
@@ -174,6 +220,7 @@ void modeSelector()
   }
 }
 
+//* TOUCH
 void serveTouch()
 {
   if (touchLeft.singleTap()) //! LAMP INPUT
@@ -200,8 +247,7 @@ void serveTouch()
       break;
     }
   }
-
-  if (touchRight.longTap()) //! AUDIO INPUT
+  else if (touchRight.longTap()) //! AUDIO INPUT
   {
     audio.toggle();
 
@@ -218,7 +264,9 @@ bool multiTouch()
   else
     return false;
 }
-void loop()
+
+//* SERVICE MODE
+bool triggerServiceMode()
 {
   if (multiTouch())
   {
@@ -226,21 +274,116 @@ void loop()
     {
       if (serviceModeTimer.timeElapsedMillis())
       {
-        mode = 0;
-        break;
+        return true;
       }
     }
   }
   else
+  {
     serviceModeTimer.preTime = millis();
-
-  if (mode == 0)
+    return false;
+  }
+  return false;
+}
+void reconsiderServiceMode()
+{
+  if (triggerServiceMode() || mode == 0)
   {
     while (true)
     {
-      //* the stuff to do when service mode is activeated
+      //* service mode stuff
     }
   }
+}
+Timer checkBatteryTimer(5000);
+//* BATTERY
+void checkBattery()
+{
+  if (checkBatteryTimer.timeElapsedMillis())
+    battery.getLevel();
+
+  switch (battery.level)
+  {
+  case 1:
+    break;
+  case 2:
+    break;
+  case 3:
+    break;
+  default:
+    Serial.println("SWITCH_ERROR");
+  }
+}
+
+//* TACHOMETER
+Timer chechTachometerTimer(1000);
+void checkTachometer()
+{
+  if (chechTachometerTimer.timeElapsedMillis())
+    tachometer.getRPM();
+}
+
+//* SENSOR DATA
+Timer refreshSensorDataTimer(2000);
+
+void refreshSensorData()
+{
+  if (refreshSensorDataTimer.timeElapsedMillis())
+  {
+    if (perkData.initializeBME280)
+    {
+      perkData.press = BME280.getTemperature();
+      perkData.press = BME280.getPressure();
+      perkData.humi = BME280.getHumidity();
+    }
+    if (perkData.initializeEN160)
+    {
+      perkData.status = ENS160.getENS160Status();
+      perkData.AQI = ENS160.getAQI();
+      perkData.TVOC = ENS160.getTVOC();
+      perkData.ECO2 = ENS160.getECO2();
+    }
+  }
+}
+
+//* LOOP
+void loop()
+{
+  checkBattery();
+  checkTachometer();
+  refreshSensorData();
   modeSelector();
   serveTouch();
+
+  reconsiderServiceMode();
 }
+
+// data shown on website
+
+//1 helmet data
+// visor state (up/down) {visor.state}
+// weather the user wearing the helmet or not (active/deactive) {IR.state}
+// fan speed (low/medium/high/OFF) {fan.level}
+// lamp sensitivity (low/medium/high/OFF) {lamp.level}
+// battery level (low/medium/high) {battrey.level}
+// audio state (on/off) {audio.state}
+// fan RPM (the number with RPM dimension) {tachometer.speed_rpm}
+
+//2 sensor data
+//2.1 BMS280
+// temperature {perkData.temp}
+// pressure {perkData.press}
+// humidity {perkData.humi}
+//2.2 ENS160
+// status (0-> normal, 1-> warm up up, 2-> start up) {perkdata.status}
+// AQI (air quality index) {perkdata.AQI}
+// TVOC (concentration of total volatile organic compounds) {perkdata.TVOC}
+// ECO2 (carbon dioxide equivalent concentration) {perkdata.EOC2}
+
+//3 control
+//3.1 fan control
+// four button in a row called low, medium, high, and OFF, where the currently acive states button is green and the other ones are grey
+//3.2 lamp control
+// four button in a row called low, medium, high, and OFF, where the currently acive states button is green and the other ones are grey
+//3.3 audio toggle
+// a single button which is called as the current state of the audio (on or off) and if the user press it, it will toggle between the two state

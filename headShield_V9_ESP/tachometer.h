@@ -4,8 +4,10 @@ class Tachometer
 {
 public:
     int pin;
-    bool interrupted = false;
-    
+    static bool interrupted;
+    int speed_rpm = 0;
+    int level;
+
     Tachometer(int pin)
     {
         this->pin = pin;
@@ -16,15 +18,16 @@ public:
         attachInterrupt(digitalPinToInterrupt(pin), ISR, FALLING);
     }
 
-    void ISR()
+    static void ISR()
     {
         interrupted = true;
     }
 
     int getRPM()
     {
-        //calaculate
-        RPM = RPM;
-        return RPM;
+        speed_rpm = speed_rpm;
+        return speed_rpm;
     }
 };
+
+bool Tachometer::interrupted; // Removed initialization from here

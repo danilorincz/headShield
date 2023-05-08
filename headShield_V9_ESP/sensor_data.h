@@ -2,11 +2,13 @@
 class SensorData
 {
 public:
-  // standard sensor
+  // BMS280
+  bool initializeBME280 = false;
   float temp;
   float press;
   float humi;
   // ENS160
+  bool initializeEN160 = false;
   uint8_t status;
   uint8_t AQI;
   uint16_t TVOC; //? Total Volatile Organic Compounds

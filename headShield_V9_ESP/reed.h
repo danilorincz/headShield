@@ -4,6 +4,7 @@ class ReedSwitch
 {
 public:
     int pin;
+    bool state;
     ReedSwitch(int pin)
     {
         this->pin = pin;
@@ -15,8 +16,9 @@ public:
     bool scan()
     {
         if (digitalRead(pin))
-            return true;
+            state = true;
         else
-            return false;
+            state = false;
+        return state;
     }
 };

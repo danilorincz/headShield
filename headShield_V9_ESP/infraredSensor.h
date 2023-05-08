@@ -17,16 +17,10 @@ public:
     bool scan()
     {
         if (analogRead(pin) < 3000)
-        {
             state = true;
-        }
         else
-        {
             state = false;
-        }
-            return state;
+            
+        return state;
     }
 };
-
-
-

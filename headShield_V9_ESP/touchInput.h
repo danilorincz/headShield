@@ -7,7 +7,8 @@ public:
     int threshold;
 
     //? SINGLE TAP
-    int singleTapTime = 100;
+    int singleTapTimeMax = 100;
+    int singleTapTimeMin = 30;
     long int timeWhenSingleTap = 0;
     bool timeStartedFlag = false;
     bool releasedFlag = false;
@@ -50,7 +51,7 @@ public:
                 timeWhenSingleTap = millis();
                 timeStartedFlag = true;
             }
-            if (millis() - timeWhenSingleTap > singleTapTime && releasedFlag)
+            if (millis() - timeWhenSingleTap > singleTapTimeMax && releasedFlag)
             {
                 releasedFlag = false;
                 timeStartedFlag = false;
@@ -79,18 +80,24 @@ public:
                 timeWhenSingleTap = millis();
                 timeStartedFlag = true;
             }
+            releasedFlag = false;
         }
         else
         {
-            if (timeStartedFlag && millis() - timeWhenSingleTap <= singleTapTime)
+            if (timeStartedFlag && !releasedFlag)
             {
+                releasedFlag = true;
                 timeStartedFlag = false;
-                return true;
+                unsigned long timeElapsed = millis() - timeWhenSingleTap;
+                if (timeElapsed >= singleTapTimeMin && timeElapsed <= singleTapTimeMax)
+                {
+                    return true;
+                }
             }
-            timeStartedFlag = false;
         }
         return false;
     }
+
     //! CHATGPT
 
     bool longTapTimeFlag = false;
