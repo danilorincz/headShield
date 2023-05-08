@@ -18,30 +18,29 @@
 #include "C:\Users\user\Desktop\headShield\3_programming\headShield_V9_ESP\beeper.h"
 #include "C:\Users\user\Desktop\headShield\3_programming\headShield_V9_ESP\battery.h"
 #include "C:\Users\user\Desktop\headShield\3_programming\headShield_V9_ESP\reed.h"
-#include "C:\Users\user\Desktop\headShield\3_programming\headShield_V9_ESP\powerLed.h"
+#include "C:\Users\user\Desktop\headShield\3_programming\headShield_V9_ESP\LED.h"
 #include "C:\Users\user\Desktop\headShield\3_programming\headShield_V9_ESP\touchInput.h"
 #include "C:\Users\user\Desktop\headShield\3_programming\headShield_V9_ESP\infraredSensor.h"
 #include "C:\Users\user\Desktop\headShield\3_programming\headShield_V9_ESP\audioEN.h"
 #include "C:\Users\user\Desktop\headShield\3_programming\headShield_V9_ESP\sensor_data.h"
-
-//?  SENSOR
-DFRobot_ENS160_I2C ENS160(&Wire, 0x53);
-DFRobot_BME280_IIC BME280(&Wire, 0x76);
-
-SensorData perkData;
 
 //? FAN
 const int fanPin = 5;
 const int tachoPin = 17;
 Fan fan(fanPin);
 
+//? POWER LED
+const int LEDPin = 19;
+LED lamp(LEDPin);
+
+//?  SENSOR
+SensorData perkData;
+DFRobot_ENS160_I2C ENS160(&Wire, 0x53);
+DFRobot_BME280_IIC BME280(&Wire, 0x76);
+
 //? IR
 const int infraredPin = 35;
 infraredSensor IR(infraredPin);
-
-//? POWER LED
-const int powerLedPin = 19;
-powerLED lamp(powerLedPin);
 
 //? TOUCH INPUT
 const int touchRightPin = 33;
@@ -77,11 +76,11 @@ void setup()
   //* BEGIN
   Serial.begin(115200);
   fan.begin();
-  battery.begin();
+  lamp.begin();
+  audio.begin();
   beeper.begin(SOUND_ACTIVE);
   visor.begin();
-  audio.begin();
-  lamp.begin();
+  battery.begin();
 
   //* BME280
   BME280.reset();
@@ -150,25 +149,26 @@ void modeSelector()
 
     case 2: //? VISOR OFF
       beeper.playVisorUp();
+
       lamp.setLevel(lamp.level);
-      fan.temporaryOff();
-      audio.temporaryOff();
+      fan.suspend();
+      audio.suspend();
       break;
 
     case 3: //? IR OFF
       beeper.playVisorUp();
 
-      fan.temporaryOff();
-      lamp.temporaryOff();
-      audio.temporaryOff();
+      fan.suspend();
+      lamp.suspend();
+      audio.suspend();
       break;
 
     case 4: //? ALL OFF
       beeper.playVisorUp();
 
-      fan.temporaryOff();
-      lamp.temporaryOff();
-      audio.temporaryOff();
+      fan.suspend();
+      lamp.suspend();
+      audio.suspend();
       break;
     }
   }
@@ -178,7 +178,7 @@ void serveTouch()
 {
   if (touchLeft.singleTap()) //! LAMP INPUT
   {
-    lamp.toggle();
+    lamp.toggle(0, 3);
     if (lamp.level == 0)
       beeper.playLampOff();
     else

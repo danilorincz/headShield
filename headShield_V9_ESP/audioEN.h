@@ -30,17 +30,13 @@ public:
             state = LOW;
         }
     }
-    void temporaryOff()
+    void suspend()
     {
         digitalWrite(enablePin, LOW);
     }
     void turn(bool _state)
     {
-        if (_state)
-            state = HIGH;
-        else
-            state = LOW;
-            
+        state = _state;
         digitalWrite(enablePin, state);
     }
     bool toggle()

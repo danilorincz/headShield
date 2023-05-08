@@ -1,10 +1,10 @@
 #pragma once
 #include "device.h"
 
-class Fan : public Device
+class LED : public Device
 {
 public:
-    Fan(int pin) : Device(pin) {}
+    LED(int pin) : Device(pin) {}
 
     virtual void setLevel(int _level) override
     {
@@ -16,10 +16,10 @@ public:
             setIntensity(0);
             break;
         case 1:
-            setIntensity(80);
+            setIntensity(33);
             break;
         case 2:
-            setIntensity(90);
+            setIntensity(66);
             break;
         case 3:
             setIntensity(100);
