@@ -5,7 +5,7 @@ class Audio
 public:
     int enablePin;
     bool state;
-    bool prevState;
+    bool stateMemory;
     Audio(int enablePin)
     {
         this->enablePin = enablePin;
@@ -29,6 +29,19 @@ public:
             digitalWrite(enablePin, LOW);
             state = LOW;
         }
+    }
+    void temporaryOff()
+    {
+        digitalWrite(enablePin, LOW);
+    }
+    void turn(bool _state)
+    {
+        if (_state)
+            state = HIGH;
+        else
+            state = LOW;
+            
+        digitalWrite(enablePin, state);
     }
     bool toggle()
     {

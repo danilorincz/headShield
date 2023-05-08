@@ -54,12 +54,12 @@ public:
     }
   }
 
-  void playTouchTone()
+  void playTouch()
   {
     playTone(1000, 50);
   }
 
-  void playVisorUpTone()
+  void playVisorUp()
   {
     for (int i = 0; i < 3; i++)
     {
@@ -68,7 +68,7 @@ public:
     }
   }
 
-  void playVisorDownTone()
+  void playVisorDown()
   {
     for (int i = 0; i < 3; i++)
     {
@@ -77,21 +77,21 @@ public:
     }
   }
 
-  void playLampOnTone()
+  void playLampOn()
   {
     playTone(800, 50);
     delay(50 / speed);
     playTone(1200, 50);
   }
 
-  void playLampOffTone()
+  void playLampOff()
   {
     playTone(1200, 50);
     delay(50 / speed);
     playTone(800, 50);
   }
 
-  void playBatteryLowTone()
+  void playBatteryLow()
   {
     for (int i = 0; i < 3; i++)
     {
@@ -100,7 +100,7 @@ public:
     }
   }
 
-  void playBatteryFullTone()
+  void playBatteryFull()
   {
     for (int i = 0; i < 3; i++)
     {
@@ -109,21 +109,21 @@ public:
     }
   }
 
-  void playFanOnTone()
+  void playFanOn()
   {
     playTone(500, 50);
     delay(50 / speed);
     playTone(800, 50);
   }
 
-  void playFanOffTone()
+  void playFanOff()
   {
     playTone(800, 50);
     delay(50 / speed);
     playTone(500, 50);
   }
 
-  void playFanSpeedUpTone()
+  void playFanSpeedUp()
   {
     for (int i = 0; i < 3; i++)
     {
@@ -132,7 +132,7 @@ public:
     }
   }
 
-  void playFanSpeedDownTone()
+  void playFanSpeedDown()
   {
     for (int i = 0; i < 3; i++)
     {
@@ -141,7 +141,7 @@ public:
     }
   }
 
-  void playErrorTone()
+  void playError()
   {
     for (int i = 0; i < 3; i++)
     {
@@ -150,7 +150,7 @@ public:
     }
   }
 
-  void playSuccessTone()
+  void playSuccess()
   {
     for (int i = 0; i < 3; i++)
     {
@@ -159,7 +159,7 @@ public:
     }
   }
 
-  void playStartupTone()
+  void playStartup()
   {
     playTone(800, 100);
     delay(50 / speed);
@@ -168,12 +168,63 @@ public:
     playTone(1200, 100);
   }
 
-  void playShutdownTone()
+  void playShutdown()
   {
     playTone(1200, 100);
     delay(50 / speed);
     playTone(1000, 100);
     delay(50 / speed);
     playTone(800, 100);
+  }
+
+  void playAudioSystemOn()
+  {
+    playTone(800, 100);
+    delay(50);
+    playTone(1200, 100);
+    delay(50);
+    playTone(1600, 100);
+  }
+
+  void playAudioSystemOff()
+  {
+    playTone(1600, 100);
+    delay(50);
+    playTone(1200, 100);
+    delay(50);
+    playTone(800, 100);
+  }
+
+  void playVisorFoldedUp()
+  {
+    for (int i = 0; i < 3; i++)
+    {
+      playTone(1600 - i * 200, 50);
+      delay(50);
+    }
+  }
+  void playHelmetPutOn()
+  {
+    for (int i = 0; i < 2; i++)
+    {
+      playTone(800 + i * 200, 100);
+      delay(50);
+    }
+  }
+  void playVisorFoldedDown()
+  {
+    for (int i = 0; i < 3; i++)
+    {
+      playTone(1400 + i * 200, 50);
+      delay(50);
+    }
+  }
+  void playHelmetTakenOff()
+  {
+    for (int i = 0; i < 2; i++)
+    {
+      playTone(1000 - i * 200, 100);
+      delay(50);
+    }
   }
 };

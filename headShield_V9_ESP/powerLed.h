@@ -6,7 +6,7 @@ public:
     int percent;
     int ledPin;
     int level;
-    int prevLevel;
+
     powerLED(int ledPin)
     {
         this->ledPin = ledPin;
@@ -20,18 +20,18 @@ public:
         int valuePWM = map(percent, 0, 100, 0, 255);
         analogWrite(ledPin, valuePWM);
     }
-    int increaseLevel()
+    int increaseLevel(int min, int max)
     {
-        if (level < 3)
+        if (level < max)
             level++;
         else
-            level = 0;
+            level = min;
         return level;
     }
-    void setLevel(int value)
+    void setLevel(int _level)
     {
-        level = value;
-        switch (value)
+        level = _level;
+        switch (_level)
         {
         case 0:
             setPercent(0);
@@ -51,7 +51,11 @@ public:
     }
     int toggle()
     {
-        increaseLevel();
+        increaseLevel(0, 3);
         setLevel(level);
+    }
+    void temporaryOff()
+    {
+        analogWrite(ledPin, 0);
     }
 };

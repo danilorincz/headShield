@@ -2,11 +2,12 @@
 
 class Fan
 {
+private:
+    int percent;
+
 public:
     int PWMPin;
-    int lastPercent;
     int level = 0;
-    int prevLevel = 0;
 
     Fan(int PWMPin)
     {
@@ -17,34 +18,38 @@ public:
         pinMode(PWMPin, OUTPUT);
     }
 
-    void setSpeed(int percent)
+    void setSpeed(int _percent)
     {
-        if (percent != lastPercent)
+        if (_percent != this->percent)
         {
-            int PWMvalue = map(percent, 0, 100, 0, 255);
+            int PWMvalue = map(_percent, 0, 100, 0, 255);
             analogWrite(PWMPin, PWMvalue);
-            lastPercent = percent;
+            percent = _percent;
         }
     }
     void on()
     {
         digitalWrite(PWMPin, HIGH);
+        level = 3;
     }
     void off()
     {
         digitalWrite(PWMPin, LOW);
+        level = 0;
     }
 
-    int increaseLevel()
+    int increaseLevel(int min, int max)
     {
-        if (level < 3)
+        if (level < max)
             level++;
         else
-            level = 0;
+            level = min;
         return level;
     }
     void setLevel(int _level)
     {
+        level = _level;
+
         switch (_level)
         {
         case 0:
@@ -61,9 +66,14 @@ public:
             break;
         }
     }
-    void toggle()
+    void temporaryOff()
     {
-        increaseLevel();
+        analogWrite(PWMPin, 0);
+        percent = 0;
+    }
+    void toggle(int min, int max)
+    {
+        increaseLevel(min, max);
         setLevel(level);
     }
 };

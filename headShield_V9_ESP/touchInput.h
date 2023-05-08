@@ -69,6 +69,30 @@ public:
         }
     }
 
+    //! CHATGPT
+    bool singleTap_chatGPT()
+    {
+        if (readAtTheMoment())
+        {
+            if (!timeStartedFlag)
+            {
+                timeWhenSingleTap = millis();
+                timeStartedFlag = true;
+            }
+        }
+        else
+        {
+            if (timeStartedFlag && millis() - timeWhenSingleTap <= singleTapTime)
+            {
+                timeStartedFlag = false;
+                return true;
+            }
+            timeStartedFlag = false;
+        }
+        return false;
+    }
+    //! CHATGPT
+
     bool longTapTimeFlag = false;
     long int timeWhenLongTap = 0;
     int longTapTime = 1000;
@@ -165,4 +189,3 @@ public:
         return false;
     }
 };
-

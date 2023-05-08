@@ -1,4 +1,4 @@
     - bekapcsoláskor nem kapcsol be a ventillátor
-HIBÁK
     - amikor long tap-et akarok nyomni akkor elötte aktiválódik a single tap
+HIBÁK
     - az audio nem tartja meg az állapotát amikor mode váltás van

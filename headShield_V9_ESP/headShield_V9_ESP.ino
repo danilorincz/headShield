@@ -1,8 +1,8 @@
 // HEADSHIELD_V3.7 PCB_V10
 //? SETTINGS
 #define SOUND_ACTIVE true
-//? LIBRARIES
 
+//? LIBRARIES
 #include <Arduino.h>
 #include <WiFi.h>
 #include <WebServer.h>
@@ -70,7 +70,7 @@ Audio audio(audioEnPin);
 Timer serviceModeTimer(3000);
 
 //? GLOBAL
-bool serviceMode = false;
+int mode = 1;
 
 void setup()
 {
@@ -98,121 +98,149 @@ void setup()
   ENS160.setTempAndHum(25.0, 50.0);
 
   //* BOOT
-  beeper.playStartupTone();
+  beeper.playStartup();
   delay(100);
 
+  //* INITIALIZE STARTING VALUES
+  lamp.level = 0;
+  fan.level = 2;
+  audio.state = LOW;
+
+  //* SERVICE MODE
   while (touchLeft.readAtTheMoment() && touchRight.readAtTheMoment())
   {
     if (serviceModeTimer.timeElapsedMillis())
     {
-      serviceMode = true;
+      mode = 0;
       break;
     }
   }
-  fan.prevLevel = 2;
 }
 
-int mode = 0;
-int prevMode = 0;
-
-void loop()
+int scanMode()
 {
-
+  int newMode;
   if (IR.scan() && visor.scan())
-    mode = 1;
+    newMode = 1;
   else if (IR.scan() && !visor.scan())
-    mode = 2;
+    newMode = 2;
   else if (!IR.scan() && visor.scan())
-    mode = 3;
+    newMode = 3;
   else if (!IR.scan() && !visor.scan())
-    mode = 4;
+    newMode = 4;
+  return newMode;
+}
 
-  if (prevMode != mode)
+void modeSelector()
+{
+  int newMode = scanMode();
+
+  if (newMode != mode)
   {
-
+    mode = newMode;
     switch (mode)
     {
     case 1: //? NORMAL
-      beeper.playVisorDownTone();
-      fan.setLevel(fan.prevLevel);
-      lamp.setLevel(lamp.prevLevel);
-      audio.off();
-      break;
-    case 2: //? VISOR OFF
-      beeper.playVisorUpTone();
+      beeper.playVisorDown();
 
-      fan.setLevel(0);
-      audio.off();
+      fan.setLevel(fan.level);
+      lamp.setLevel(lamp.level);
+      audio.turn(audio.state);
       break;
+
+    case 2: //? VISOR OFF
+      beeper.playVisorUp();
+      lamp.setLevel(lamp.level);
+      fan.temporaryOff();
+      audio.temporaryOff();
+      break;
+
     case 3: //? IR OFF
-      beeper.playVisorUpTone();
-      fan.setLevel(0);
-      lamp.setLevel(0);
-      audio.off();
+      beeper.playVisorUp();
+
+      fan.temporaryOff();
+      lamp.temporaryOff();
+      audio.temporaryOff();
       break;
+
     case 4: //? ALL OFF
-      beeper.playVisorUpTone();
-      fan.setLevel(0);
-      lamp.setLevel(0);
-      audio.off();
+      beeper.playVisorUp();
+
+      fan.temporaryOff();
+      lamp.temporaryOff();
+      audio.temporaryOff();
       break;
     }
-
-    prevMode = mode;
   }
-
-  serveTouch();
 }
 
 void serveTouch()
 {
-  if (touchLeft.singleTap())
+  if (touchLeft.singleTap()) //! LAMP INPUT
   {
     lamp.toggle();
-    lamp.prevLevel = lamp.level;
     if (lamp.level == 0)
-      beeper.playLampOffTone();
+      beeper.playLampOff();
     else
-      beeper.playLampOnTone();
+      beeper.playLampOn();
   }
 
-  if (touchRight.singleTap())
+  if (touchRight.singleTap()) //! FAN INPUT
   {
-    if (fan.level < 3)
-      fan.level++;
-    else
-      fan.level = 1;
-
-    fan.setLevel(fan.level);
-    fan.prevLevel = fan.level;
+    fan.toggle(1, 3);
 
     switch (fan.level)
     {
     case 1:
-      beeper.playFanSpeedDownTone();
+      beeper.playFanSpeedDown();
       break;
     case 2:
     case 3:
-      beeper.playFanSpeedUpTone();
+      beeper.playFanSpeedUp();
       break;
     }
   }
-  if (touchRight.longTap())
+
+  if (touchRight.longTap()) //! AUDIO INPUT
   {
-
-    if (fan.level > 1)
-      fan.level--;
-    else
-      fan.level = 3;
-
-    fan.setLevel(fan.level);
-    fan.prevLevel = fan.level;
-
     audio.toggle();
-    audio.prevState = audio.state;
+
     if (audio.state)
-      beeper.playVisorUpTone();
+      beeper.playVisorUp();
     else
-      beeper.playVisorDownTone();
+      beeper.playVisorDown();
   }
+}
+bool multiTouch()
+{
+  if (touchLeft.readAtTheMoment() && touchRight.readAtTheMoment())
+    return true;
+  else
+    return false;
+}
+void loop()
+{
+  if (multiTouch())
+  {
+    while (multiTouch())
+    {
+      if (serviceModeTimer.timeElapsedMillis())
+      {
+        mode = 0;
+        break;
+      }
+    }
+  }
+  else
+    serviceModeTimer.preTime = millis();
+
+  if (mode == 0)
+  {
+    while (true)
+    {
+      //* the stuff to do when service mode is activeated
+    }
+  }
+  modeSelector();
+  serveTouch();
 }
