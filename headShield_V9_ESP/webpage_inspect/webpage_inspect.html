@@ -23,43 +23,167 @@
         .item {
             margin-bottom: 10px;
         }
-        .visor-up {
-            background-color: red;
+        .state-box {
+            display: inline-block;
             padding: 5px;
+            text-align: center;
+            width: 150px;
         }
-        .visor-active {
+        .red {
+            background-color: red;
+        }
+        .green {
             background-color: green;
-            padding: 5px;
         }
     </style>
     <script>
-        function refreshData() {
-            var xhr = new XMLHttpRequest();
-            xhr.onreadystatechange = function() {
-                if (xhr.readyState == 4 && xhr.status == 200) {
-                    var data = JSON.parse(xhr.responseText);
-                    var visorState = data.visorState;
-                    var visorStateElement = document.getElementById('visorState');
-                    if (visorState == 0) {
-                        visorStateElement.innerHTML = "Visor up";
-                        visorStateElement.className = "visor-up";
-                    } else {
-                        visorStateElement.innerHTML = "Visor active";
-                        visorStateElement.className = "visor-active";
-                    }
-                    // Other elements...
-                }
-            };
-            xhr.open("GET", "/getHelmetData", true);
-            xhr.send();
+function setIRStateText(state) {
+  var IRStateElement = document.getElementById('IRState');
+  if (state == 0) {
+    IRStateElement.innerHTML = "Helmet not in head";
+    IRStateElement.className = "state-box red";
+  } else {
+    IRStateElement.innerHTML = "Helmet in use";
+    IRStateElement.className = "state-box green";
+  }
+}
+function setVisorStateText(state) {
+  var visorStateElement = document.getElementById('visorState');
+  if (state == 0) {
+    visorStateElement.innerHTML = "Visor up";
+    visorStateElement.className = "state-box red";
+  } else {
+    visorStateElement.innerHTML = "Visor active";
+    visorStateElement.className = "state-box green";
+  }
+}
+
+    function setFanSpeedText(speed) {
+  var fanSpeedElement = document.getElementById('fanSpeed');
+  switch (speed) {
+    case 0:
+      fanSpeedElement.innerHTML = "OFF";
+      fanSpeedElement.style.backgroundColor = "red";
+      break;
+    case 1:
+      fanSpeedElement.innerHTML = "low";
+      fanSpeedElement.style.backgroundColor = "yellow";
+      break;
+    case 2:
+      fanSpeedElement.innerHTML = "medium";
+      fanSpeedElement.style.backgroundColor = "#FFD700"; // brighter yellow
+      break;
+    case 3:
+      fanSpeedElement.innerHTML = "high";
+      fanSpeedElement.style.backgroundColor = "green";
+      break;
+  }
+}
+
+function setLampLevelText(level) {
+  var lampLevelElement = document.getElementById('lampLevel');
+  switch (level) {
+    case 0:
+      lampLevelElement.innerHTML = "OFF";
+      lampLevelElement.style.backgroundColor = "red";
+      break;
+    case 1:
+      lampLevelElement.innerHTML = "low";
+      lampLevelElement.style.backgroundColor = "yellow";
+      break;
+    case 2:
+      lampLevelElement.innerHTML = "medium";
+      lampLevelElement.style.backgroundColor = "#FFD700"; // brighter yellow
+      break;
+    case 3:
+      lampLevelElement.innerHTML = "high";
+      lampLevelElement.style.backgroundColor = "green";
+      break;
+  }
+}
+ function setAudioStateText(state) {
+            var audioStateElement = document.getElementById('audioState');
+            if (state == 0) {
+                audioStateElement.innerHTML = "OFF";
+                audioStateElement.className = "state-box red";
+            } else {
+                audioStateElement.innerHTML = "ON";
+                audioStateElement.className = "state-box green";
+            }
         }
-        setInterval(refreshData, 1000); // Refresh data every 1000 milliseconds (1 second)
+
+
+function setBatteryLevelText(level) {
+            var batteryLevelElement = document.getElementById('batteryLevel');
+            switch (level) {
+                case 0:
+                    batteryLevelElement.innerHTML = "OFF";
+                    batteryLevelElement.style.backgroundColor = "red";
+                    break;
+                case 1:
+                    batteryLevelElement.innerHTML = "LOW";
+                    batteryLevelElement.style.backgroundColor = "yellow";
+                    break;
+                case 2:
+                    batteryLevelElement.innerHTML = "MEDIUM";
+                    batteryLevelElement.style.backgroundColor = "#FFD700"; // brighter yellow
+                    break;
+                case 3:
+                    batteryLevelElement.innerHTML = "HIGH";
+                    batteryLevelElement.style.backgroundColor = "green";
+                    break;
+            }
+        }
+
+        function setFanRPMText(speed_rpm) {
+            var fanRPMElement = document.getElementById('fanRPM');
+            fanRPMElement.innerHTML = speed_rpm + " RPM";
+        }
+
+function refreshData() {
+    var xhr = new XMLHttpRequest();
+    xhr.onreadystatechange = function() {
+        if (xhr.readyState == 4 && xhr.status == 200) {
+            var data = JSON.parse(xhr.responseText);
+
+            setVisorStateText(data.visorState);
+            setIRStateText(data.IRState);
+            setFanSpeedText(data.fanLevel);
+            setLampLevelText(data.lampLevel);
+        <div class="item">Audio: <span id="audioState" class="state-box"></span></div>
+        <script>
+            setAudioStateText(0); // Set initial audio state to "OFF"
+        </script>
+        <div class="item">Charge: <span id="batteryLevel" class="state-box"></span></div>
+        <script>
+            setBatteryLevelText(0); // Set initial battery level to "OFF"
+        </script>
+        <div class="item">Fan revolution: <span id="fanRPM"></span></div>
+        <script>
+            setFanRPMText(0); // Set initial fan RPM to 0
+        </script>
+        }
+    };
+    xhr.open("GET", "/getHelmetData", true);
+    xhr.send();
+}
+
+    setInterval(refreshData, 1000); // Refresh data every 1000 milliseconds (1 second)
     </script>
 </head>
 <body>
     <h1>Helmet Data</h1>
     <div id="data">
-        <div class="item">Visor state: <span id="visorState"></span></div>
+        <div class="item"><span id="visorState" class="state-box"></span></div>
+        <div class="item"><span id="IRState" class="state-box"></span></div>
+        <div class="item">Fan speed: <span id="fanSpeed" class="state-box"></span></div>
+        <script>
+        setFanSpeedText(0); // Set initial fan speed state to "OFF"
+        </script>
+        <div class="item">Lamp: <span id="lampLevel" class="state-box"></span></div>
+        <script>
+        setLampLevelText(0); // Set initial fan speed state to "OFF"
+        </script>
         <!-- Other elements... -->
     </div>
     <a href="/">Back to Main</a>

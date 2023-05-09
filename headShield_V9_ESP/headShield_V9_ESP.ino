@@ -83,7 +83,9 @@ Audio audio(audioEnPin);
 
 //? TIMERS
 Timer serviceModeTimer(3000);
-
+Timer refreshSensorDataTimer(5000);
+Timer chechTachometerTimer(1000);
+Timer checkBatteryTimer(5000);
 //? GLOBAL
 int mode = 1;
 
@@ -181,18 +183,17 @@ void handler_helmetData()
 void handler_getHelmetData()
 {
   String jsonData = "{";
-  jsonData += "\"visorState\":\"" + String(visor.state) + "\",";
-  jsonData += "\"IRState\":\"" + String(IR.state) + "\",";
-  jsonData += "\"fanLevel\":" + String(fan.level) + ","; // Remove quotation marks around fan.level value
-  jsonData += "\"lampLevel\":\"" + String(lamp.level) + ",";
-  jsonData += "\"batteryLevel\":\"" + String(battery.level) + "\",";
-  jsonData += "\"audioState\":\"" + String(audio.state) + "\",";
-  jsonData += "\"fanRPM\":\"" + String(tachometer.speed_rpm) + "\"";
+  jsonData += "\"visorState\":" + String(visor.state) + ",";
+  jsonData += "\"IRState\":" + String(IR.state) + ",";
+  jsonData += "\"fanLevel\":" + String(fan.level) + ",";
+  jsonData += "\"lampLevel\":" + String(lamp.level) + ",";
+  jsonData += "\"batteryLevel\":" + String(battery.level) + ",";
+  jsonData += "\"audioState\":" + String(audio.state) + ",";
+  jsonData += "\"fanRPM\":" + String(tachometer.speed_rpm);
   jsonData += "}";
 
   server.send(200, "application/json", jsonData);
 }
-
 //* MODE
 int scanMode()
 {
@@ -327,7 +328,7 @@ void reconsiderServiceMode()
     }
   }
 }
-Timer checkBatteryTimer(5000);
+
 //* BATTERY
 void checkBattery()
 {
@@ -348,7 +349,7 @@ void checkBattery()
 }
 
 //* TACHOMETER
-Timer chechTachometerTimer(1000);
+
 void checkTachometer()
 {
   if (chechTachometerTimer.timeElapsedMillis())
@@ -356,7 +357,7 @@ void checkTachometer()
 }
 
 //* SENSOR DATA
-Timer refreshSensorDataTimer(2000);
+
 
 void refreshSensorData()
 {
@@ -388,12 +389,13 @@ void refreshSensorData()
     perkData.log();
   }
 }
-Timer getSensorTimer(1000);
+
 //* LOOP
 void loop()
 {
-  refreshSensorData();
   server.handleClient();
+
+  //refreshSensorData();
   checkBattery();
   checkTachometer();
   refreshSensorData();
@@ -432,3 +434,21 @@ void loop()
 // four button in a row called low, medium, high, and OFF, where the currently acive states button is green and the other ones are grey
 //3.3 audio toggle
 // a single button which is called as the current state of the audio (on or off) and if the user press it, it will toggle between the two state
+
+
+
+
+
+Sensor Data
+"BMS280" all these must be in a box
+"Temperature: " {perkData.temp} " Celsius"
+"Pressure: " {perkData.press} " Pa"
+"Humidity: " {perkData.humi} " %"
+
+"ENS160" all these must be in a box
+"AQI: " 1->"Excellent" (green), 2->"Good" (slightly darker green), 3->"Moderate" (yellow), 4->"Poor" (slightly darker yellow) , 5->"Unhealthy" (red) {perkdata.AQI}
+"TVOC: " (concentration of total volatile organic compounds) {perkdata.TVOC} " ppb"
+under this data there should be an explanatory text: "concentration of total volatile organic compounds"
+"ECO2: " {perkdata.EOC2} " ppm"
+under this data there should be an explanatory text: "detected data of VOCs and hydrogen"
+"Status: " (if its 0-> "normal mode" with a green background , 1-> "warm up" with a yellow background, 2-> "start up" with a red background) {perkdata.status}

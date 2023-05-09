@@ -65,20 +65,9 @@ const char helmetDataPage[] PROGMEM = R"rawliteral(
         }
     </style>
     <script>
-function setVisorStateText(visorState) {
-  var visorStateElement = document.getElementById('visorState');
-  if (visorState == 0) {
-    visorStateElement.innerHTML = "Visor up";
-    visorStateElement.className = "state-box red";
-  } else {
-    visorStateElement.innerHTML = "Visor active";
-    visorStateElement.className = "state-box green";
-  }
-}
-
-function setIRStateText(IRState) {
+function setIRStateText(state) {
   var IRStateElement = document.getElementById('IRState');
-  if (IRState == 0) {
+  if (state == 0) {
     IRStateElement.innerHTML = "Helmet not in head";
     IRStateElement.className = "state-box red";
   } else {
@@ -86,7 +75,16 @@ function setIRStateText(IRState) {
     IRStateElement.className = "state-box green";
   }
 }
-
+function setVisorStateText(state) {
+  var visorStateElement = document.getElementById('visorState');
+  if (state == 0) {
+    visorStateElement.innerHTML = "Visor up";
+    visorStateElement.className = "state-box red";
+  } else {
+    visorStateElement.innerHTML = "Visor active";
+    visorStateElement.className = "state-box green";
+  }
+}
 
     function setFanSpeedText(speed) {
   var fanSpeedElement = document.getElementById('fanSpeed');
@@ -131,6 +129,45 @@ function setLampLevelText(level) {
       break;
   }
 }
+ function setAudioStateText(state) {
+            var audioStateElement = document.getElementById('audioState');
+            if (state == 0) {
+                audioStateElement.innerHTML = "OFF";
+                audioStateElement.className = "state-box red";
+            } else {
+                audioStateElement.innerHTML = "ON";
+                audioStateElement.className = "state-box green";
+            }
+        }
+
+
+function setBatteryLevelText(level) {
+            var batteryLevelElement = document.getElementById('batteryLevel');
+            switch (level) {
+                case 0:
+                    batteryLevelElement.innerHTML = "OFF";
+                    batteryLevelElement.style.backgroundColor = "red";
+                    break;
+                case 1:
+                    batteryLevelElement.innerHTML = "LOW";
+                    batteryLevelElement.style.backgroundColor = "yellow";
+                    break;
+                case 2:
+                    batteryLevelElement.innerHTML = "MEDIUM";
+                    batteryLevelElement.style.backgroundColor = "#FFD700"; // brighter yellow
+                    break;
+                case 3:
+                    batteryLevelElement.innerHTML = "HIGH";
+                    batteryLevelElement.style.backgroundColor = "green";
+                    break;
+            }
+        }
+
+        function setFanRPMText(speed_rpm) {
+            var fanRPMElement = document.getElementById('fanRPM');
+            fanRPMElement.innerHTML = speed_rpm + " RPM";
+        }
+
 function refreshData() {
     var xhr = new XMLHttpRequest();
     xhr.onreadystatechange = function() {
@@ -141,8 +178,9 @@ function refreshData() {
             setIRStateText(data.IRState);
             setFanSpeedText(data.fanLevel);
             setLampLevelText(data.lampLevel);
-
-            // Other elements...
+            setAudioStateText(data.audioState);
+            setBatteryLevelText(data.batteryLevel);
+            setFanRPMText(data.fanRPM);
         }
     };
     xhr.open("GET", "/getHelmetData", true);
@@ -163,7 +201,19 @@ function refreshData() {
         </script>
         <div class="item">Lamp: <span id="lampLevel" class="state-box"></span></div>
         <script>
-        setLampLevelText(0); // Set initial fan speed state to "OFF"
+        setLampLevelText(0); // Set initial lamp level state to "OFF"
+        </script>
+        <div class="item">Audio: <span id="audioState" class="state-box"></span></div>
+        <script>
+        setAudioStateText(0); // Set initial audio state to "OFF"
+        </script>
+        <div class="item">Charge: <span id="batteryLevel" class="state-box"></span></div>
+        <script>
+        setBatteryLevelText(0); // Set initial battery level state to "OFF"
+        </script>
+        <div class="item">Fan revolution: <span id="fanRPM"></span></div>
+        <script>
+        setFanRPMText(0); // Set initial fan RPM to 0
         </script>
         <!-- Other elements... -->
     </div>
@@ -171,3 +221,4 @@ function refreshData() {
 </body>
 </html>
 )rawliteral";
+
