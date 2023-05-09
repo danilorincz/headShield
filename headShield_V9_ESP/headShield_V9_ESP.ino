@@ -106,8 +106,8 @@ void setup()
 
   //* HANDLERS
   server.on("/", handle_root);
-  server.on("/helmetData", helmetData_handler);
-  server.on("/getHelmetData", getHelmetData_handler);
+  server.on("/helmetData", handler_helmetData);
+  server.on("/getHelmetData", handler_getHelmetData);
 
   server.begin();
 
@@ -164,12 +164,12 @@ void handle_root()
 {
   server.send(200, "text/html", webpageCode);
 }
-void helmetData_handler()
+void handler_helmetData()
 {
   server.send(200, "text/html", helmetDataPage);
 }
 
-void getHelmetData_handler()
+void handler_getHelmetData()
 {
   String jsonData = "{";
   jsonData += "\"visorState\":\"" + String(visor.state) + "\",";
