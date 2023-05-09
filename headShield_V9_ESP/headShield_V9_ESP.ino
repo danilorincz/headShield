@@ -12,6 +12,7 @@
 #include "Wire.h"
 #include "DFRobot_BME280.h"
 #include <DFRobot_ENS160.h>
+#include <ArduinoJson.h>
 
 //? CUSTOM LIBRARIEs
 #include "webpage.h"
@@ -184,15 +185,18 @@ void handler_helmetData()
 
 void handler_getHelmetData()
 {
-  String jsonData = "{";
-  jsonData += "\"visorState\":" + String(visor.state) + ",";
-  jsonData += "\"IRState\":" + String(IR.state) + ",";
-  jsonData += "\"fanLevel\":" + String(fan.level) + ",";
-  jsonData += "\"lampLevel\":" + String(lamp.level) + ",";
-  jsonData += "\"batteryLevel\":" + String(battery.level) + ",";
-  jsonData += "\"audioState\":" + String(audio.state) + ",";
-  jsonData += "\"fanRPM\":" + String(tachometer.speed_rpm);
-  jsonData += "}";
+  StaticJsonDocument<200> doc;
+
+  doc["visorState"] = visor.state;
+  doc["IRState"] = IR.state;
+  doc["fanLevel"] = fan.level;
+  doc["lampLevel"] = lamp.level;
+  doc["batteryLevel"] = battery.level;
+  doc["audioState"] = audio.state;
+  doc["fanRPM"] = tachometer.speed_rpm;
+
+  String jsonData;
+  serializeJson(doc, jsonData);
 
   server.send(200, "application/json", jsonData);
 }
@@ -202,15 +206,18 @@ void handler_sensorData()
 }
 void handler_getSensorData()
 {
-  String jsonData = "{";
-  jsonData += "\"temp\":" + String(perkData.temp) + ",";
-  jsonData += "\"press\":" + String(perkData.press) + ",";
-  jsonData += "\"humi\":" + String(perkData.humi) + ",";
-  jsonData += "\"AQI\":" + String(perkData.AQI) + ",";
-  jsonData += "\"TVOC\":" + String(perkData.TVOC) + ",";
-  jsonData += "\"ECO2\":" + String(perkData.ECO2) + ",";
-  jsonData += "\"status\":" + String(perkData.status);
-  jsonData += "}";
+  StaticJsonDocument<200> doc;
+
+  doc["temp"] = perkData.temp;
+  doc["press"] = perkData.press;
+  doc["humi"] = perkData.humi;
+  doc["AQI"] = perkData.AQI;
+  doc["TVOC"] = perkData.TVOC;
+  doc["ECO2"] = perkData.ECO2;
+  doc["status"] = perkData.status;
+
+  String jsonData;
+  serializeJson(doc, jsonData);
 
   server.send(200, "application/json", jsonData);
 }
