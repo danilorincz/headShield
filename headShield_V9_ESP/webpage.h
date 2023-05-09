@@ -1,6 +1,6 @@
 #pragma once
 
-const char* webpageCode = R"rawliteral(
+const char *webpageCode = R"rawliteral(
 <!DOCTYPE html>
 <html>
 <head>
@@ -24,8 +24,6 @@ const char* webpageCode = R"rawliteral(
 </body>
 </html>
 )rawliteral";
-
-
 
 const char helmetDataPage[] PROGMEM = R"rawliteral(
 <!DOCTYPE html>
@@ -53,47 +51,120 @@ const char helmetDataPage[] PROGMEM = R"rawliteral(
         .item {
             margin-bottom: 10px;
         }
-        .visor-state {
+        .state-box {
             display: inline-block;
             padding: 5px;
             text-align: center;
-            width: 100px;
+            width: 150px;
         }
-        .visor-up {
+        .red {
             background-color: red;
         }
-        .visor-active {
+        .green {
             background-color: green;
         }
     </style>
     <script>
-        function refreshData() {
-            var xhr = new XMLHttpRequest();
-            xhr.onreadystatechange = function() {
-                if (xhr.readyState == 4 && xhr.status == 200) {
-                    var data = JSON.parse(xhr.responseText);
-                    var visorState = data.visorState;
-                    var visorStateElement = document.getElementById('visorState');
-                    if (visorState == 0) {
-                        visorStateElement.innerHTML = "Visor up";
-                        visorStateElement.className = "visor-state visor-up";
-                    } else {
-                        visorStateElement.innerHTML = "Visor active";
-                        visorStateElement.className = "visor-state visor-active";
-                    }
-                    // Other elements...
-                }
-            };
-            xhr.open("GET", "/getHelmetData", true);
-            xhr.send();
+function setVisorStateText(visorState) {
+  var visorStateElement = document.getElementById('visorState');
+  if (visorState == 0) {
+    visorStateElement.innerHTML = "Visor up";
+    visorStateElement.className = "state-box red";
+  } else {
+    visorStateElement.innerHTML = "Visor active";
+    visorStateElement.className = "state-box green";
+  }
+}
+
+function setIRStateText(IRState) {
+  var IRStateElement = document.getElementById('IRState');
+  if (IRState == 0) {
+    IRStateElement.innerHTML = "Helmet not in head";
+    IRStateElement.className = "state-box red";
+  } else {
+    IRStateElement.innerHTML = "Helmet in use";
+    IRStateElement.className = "state-box green";
+  }
+}
+
+
+    function setFanSpeedText(speed) {
+  var fanSpeedElement = document.getElementById('fanSpeed');
+  switch (speed) {
+    case 0:
+      fanSpeedElement.innerHTML = "OFF";
+      fanSpeedElement.style.backgroundColor = "red";
+      break;
+    case 1:
+      fanSpeedElement.innerHTML = "low";
+      fanSpeedElement.style.backgroundColor = "yellow";
+      break;
+    case 2:
+      fanSpeedElement.innerHTML = "medium";
+      fanSpeedElement.style.backgroundColor = "#FFD700"; // brighter yellow
+      break;
+    case 3:
+      fanSpeedElement.innerHTML = "high";
+      fanSpeedElement.style.backgroundColor = "green";
+      break;
+  }
+}
+
+function setLampLevelText(level) {
+  var lampLevelElement = document.getElementById('lampLevel');
+  switch (level) {
+    case 0:
+      lampLevelElement.innerHTML = "OFF";
+      lampLevelElement.style.backgroundColor = "red";
+      break;
+    case 1:
+      lampLevelElement.innerHTML = "low";
+      lampLevelElement.style.backgroundColor = "yellow";
+      break;
+    case 2:
+      lampLevelElement.innerHTML = "medium";
+      lampLevelElement.style.backgroundColor = "#FFD700"; // brighter yellow
+      break;
+    case 3:
+      lampLevelElement.innerHTML = "high";
+      lampLevelElement.style.backgroundColor = "green";
+      break;
+  }
+}
+function refreshData() {
+    var xhr = new XMLHttpRequest();
+    xhr.onreadystatechange = function() {
+        if (xhr.readyState == 4 && xhr.status == 200) {
+            var data = JSON.parse(xhr.responseText);
+
+            setVisorStateText(data.visorState);
+            setIRStateText(data.IRState);
+            setFanSpeedText(data.fanLevel);
+            setLampLevelText(data.lampLevel);
+
+            // Other elements...
         }
-        setInterval(refreshData, 1000); // Refresh data every 1000 milliseconds (1 second)
+    };
+    xhr.open("GET", "/getHelmetData", true);
+    xhr.send();
+}
+
+    setInterval(refreshData, 1000); // Refresh data every 1000 milliseconds (1 second)
     </script>
 </head>
 <body>
     <h1>Helmet Data</h1>
     <div id="data">
-        <div class="item"><span id="visorState" class="visor-state"></span></div>
+        <div class="item"><span id="visorState" class="state-box"></span></div>
+        <div class="item"><span id="IRState" class="state-box"></span></div>
+        <div class="item">Fan speed: <span id="fanSpeed" class="state-box"></span></div>
+        <script>
+        setFanSpeedText(0); // Set initial fan speed state to "OFF"
+        </script>
+        <div class="item">Lamp: <span id="lampLevel" class="state-box"></span></div>
+        <script>
+        setLampLevelText(0); // Set initial fan speed state to "OFF"
+        </script>
         <!-- Other elements... -->
     </div>
     <a href="/">Back to Main</a>

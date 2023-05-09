@@ -123,10 +123,11 @@ void setup()
     perkData.initializeBME280 = true;
     Serial.println("BME280 sucess");
   }
-
+  /*
   //* ENS160
   if (ENS160.begin() != NO_ERR)
   {
+    while (ENS160.begin() != NO_ERR)
     Serial.println("ENS160 failed");
     perkData.initializeEN160 = false;
   }
@@ -135,7 +136,15 @@ void setup()
     Serial.println("ENS160 sucess");
     perkData.initializeEN160 = false;
   }
+*/
 
+  while (NO_ERR != ENS160.begin())
+  {
+    perkData.initializeEN160 = true;
+    Serial.println("Communication with device failed, please check connection");
+    delay(3000);
+  }
+  Serial.println("Begin ok!");
   ENS160.setPWRMode(ENS160_STANDARD_MODE);
   ENS160.setTempAndHum(25.0, 50.0);
 
@@ -174,8 +183,8 @@ void handler_getHelmetData()
   String jsonData = "{";
   jsonData += "\"visorState\":\"" + String(visor.state) + "\",";
   jsonData += "\"IRState\":\"" + String(IR.state) + "\",";
-  jsonData += "\"fanLevel\":\"" + String(fan.level) + "\",";
-  jsonData += "\"lampLevel\":\"" + String(lamp.level) + "\",";
+  jsonData += "\"fanLevel\":" + String(fan.level) + ","; // Remove quotation marks around fan.level value
+  jsonData += "\"lampLevel\":\"" + String(lamp.level) + ",";
   jsonData += "\"batteryLevel\":\"" + String(battery.level) + "\",";
   jsonData += "\"audioState\":\"" + String(audio.state) + "\",";
   jsonData += "\"fanRPM\":\"" + String(tachometer.speed_rpm) + "\"";
@@ -355,23 +364,35 @@ void refreshSensorData()
   {
     if (perkData.initializeBME280)
     {
-      perkData.press = BME280.getTemperature();
+      Serial.println("Read BME280");
+      perkData.temp = BME280.getTemperature();
       perkData.press = BME280.getPressure();
       perkData.humi = BME280.getHumidity();
     }
-    if (perkData.initializeEN160)
+    else
     {
+      Serial.println("Read BME280 failed");
+    }
+    if (true)
+    {
+      Serial.println("Read ENS160");
       perkData.status = ENS160.getENS160Status();
       perkData.AQI = ENS160.getAQI();
       perkData.TVOC = ENS160.getTVOC();
       perkData.ECO2 = ENS160.getECO2();
     }
+    else
+    {
+      Serial.println("Read ENS160 failed");
+    }
+    perkData.log();
   }
 }
-
+Timer getSensorTimer(1000);
 //* LOOP
 void loop()
 {
+  refreshSensorData();
   server.handleClient();
   checkBattery();
   checkTachometer();
