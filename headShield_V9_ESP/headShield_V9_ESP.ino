@@ -110,6 +110,8 @@ void setup()
   server.on("/", handle_root);
   server.on("/helmetData", handler_helmetData);
   server.on("/getHelmetData", handler_getHelmetData);
+  server.on("/sensorData", handler_sensorData);
+  server.on("/getSensorData", handler_getSensorData);
 
   server.begin();
 
@@ -194,6 +196,25 @@ void handler_getHelmetData()
 
   server.send(200, "application/json", jsonData);
 }
+void handler_sensorData()
+{
+  server.send(200, "text/html", sensorDataPage);
+}
+void handler_getSensorData()
+{
+  String jsonData = "{";
+  jsonData += "\"temp\":" + String(perkData.temp) + ",";
+  jsonData += "\"press\":" + String(perkData.press) + ",";
+  jsonData += "\"humi\":" + String(perkData.humi) + ",";
+  jsonData += "\"AQI\":" + String(perkData.AQI) + ",";
+  jsonData += "\"TVOC\":" + String(perkData.TVOC) + ",";
+  jsonData += "\"ECO2\":" + String(perkData.ECO2) + ",";
+  jsonData += "\"status\":" + String(perkData.status);
+  jsonData += "}";
+
+  server.send(200, "application/json", jsonData);
+}
+
 //* MODE
 int scanMode()
 {
@@ -349,7 +370,6 @@ void checkBattery()
 }
 
 //* TACHOMETER
-
 void checkTachometer()
 {
   if (chechTachometerTimer.timeElapsedMillis())
@@ -357,7 +377,6 @@ void checkTachometer()
 }
 
 //* SENSOR DATA
-
 
 void refreshSensorData()
 {
@@ -435,10 +454,7 @@ void loop()
 //3.3 audio toggle
 // a single button which is called as the current state of the audio (on or off) and if the user press it, it will toggle between the two state
 
-
-
-
-
+/*
 Sensor Data
 "BMS280" all these must be in a box
 "Temperature: " {perkData.temp} " Celsius"
@@ -452,3 +468,4 @@ under this data there should be an explanatory text: "concentration of total vol
 "ECO2: " {perkdata.EOC2} " ppm"
 under this data there should be an explanatory text: "detected data of VOCs and hydrogen"
 "Status: " (if its 0-> "normal mode" with a green background , 1-> "warm up" with a yellow background, 2-> "start up" with a red background) {perkdata.status}
+*/
