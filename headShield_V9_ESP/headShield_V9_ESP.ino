@@ -106,6 +106,10 @@ void setup()
 
   //* HANDLERS
   server.on("/", handle_root);
+  server.on("/helmetData", helmetData_handler);
+  server.on("/getHelmetData", getHelmetData_handler);
+
+  server.begin();
 
   //* BME280
   BME280.reset();
@@ -159,6 +163,25 @@ void setup()
 void handle_root()
 {
   server.send(200, "text/html", webpageCode);
+}
+void helmetData_handler()
+{
+  server.send(200, "text/html", helmetDataPage);
+}
+
+void getHelmetData_handler()
+{
+  String jsonData = "{";
+  jsonData += "\"visorState\":\"" + String(visor.state) + "\",";
+  jsonData += "\"IRState\":\"" + String(IR.state) + "\",";
+  jsonData += "\"fanLevel\":\"" + String(fan.level) + "\",";
+  jsonData += "\"lampLevel\":\"" + String(lamp.level) + "\",";
+  jsonData += "\"batteryLevel\":\"" + String(battery.level) + "\",";
+  jsonData += "\"audioState\":\"" + String(audio.state) + "\",";
+  jsonData += "\"fanRPM\":\"" + String(tachometer.speed_rpm) + "\"";
+  jsonData += "}";
+
+  server.send(200, "application/json", jsonData);
 }
 
 //* MODE
@@ -311,7 +334,7 @@ void checkBattery()
   case 3:
     break;
   default:
-    Serial.println("SWITCH_ERROR");
+    Serial.println("SWITCH_ERROR_BATTERY");
   }
 }
 
@@ -349,6 +372,7 @@ void refreshSensorData()
 //* LOOP
 void loop()
 {
+  server.handleClient();
   checkBattery();
   checkTachometer();
   refreshSensorData();

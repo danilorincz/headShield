@@ -1,143 +1,92 @@
-//============
-//Webpage Code
-//============
+#pragma once
 
-String webpageCode = R"***(
+const char* webpageCode = R"rawliteral(
 <!DOCTYPE html>
-<head>
-  <title> ESP32 Web Server </title>
-</head>
 <html>
-<!----------------------------CSS---------------------------->
+<head>
+<meta charset="utf-8">
+<meta name="viewport" content="width=device-width, initial-scale=1">
+<title>Helmet Interface</title>
 <style>
-  body {background-color: rgba(128, 128, 128, 0.884)}
-  h4 {font-family: arial; text-align: center; color: white;}
-  .card
-  {
-     max-width: 450px;
-     min-height: 100px;
-     background: rgba(255, 0, 0, 0.521);
-     padding: 10px;
-     font-weight: bold;
-     font: 15px calibri;
-     text-align: center;
-     box-sizing: border-box;
-     color: blue;
-     margin:20px;
-     box-shadow: 0px 2px 15px 15px rgba(0,0,0,0.75);
-  }
+  body {font-family: Arial, Helvetica, sans-serif;}
+  ul {list-style-type: none; margin: 0; padding: 0; overflow: hidden; background-color: #333;}
+  li {float: left;}
+  li a {display: block; color: white; text-align: center; padding: 14px 16px; text-decoration: none;}
+  li a:hover {background-color: #111;}
 </style>
-<!----------------------------HTML--------------------------->
-
-
+</head>
 <body>
-
-<!  DATA------------------------->
-  <div class="card">  
-    <h1> <span style="background-color:white">SENSOR</span> </h1>
-  
-    <h2> Pressure: <span style="color:yellow" id="pressure">0</span> Pa</h2>
-    <h2> Temperature: <span style="color:yellow" id="temperature">0</span> C</h2>
-    <h2> Humidity: <span style="color:yellow" id="humidity">0</span> %</h2>
-    <h2> CO2: <span style="color:yellow" id="PPM">0</span> ppm</h2>
-    <h2> TVOC: <span style="color:yellow" id="TVOC">0</span> tovc</h2>
-  </div>
-
-
-<!-------------------------JavaScrip------------------------->
-  <script>
-    setInterval(function()
-    {
-      getPressure();
-    }, 800);
-    setInterval(function()
-    {
-      getTemperature();
-    }, 800);
-   setInterval(function()
-    {
-      getHumidity();
-    }, 800);
-    setInterval(function()
-    {
-      getPPM();
-    }, 800);
-    setInterval(function()
-    {
-      getTVOC();
-    }, 800);
-
-    function getPressure()
-    {
-      var request = new XMLHttpRequest();
-      request.onreadystatechange = function()
-      {
-        if(this.readyState == 4 && this.status == 200)
-        {
-          document.getElementById("pressure").innerHTML = this.responseText;
-        }
-      };
-      request.open("GET", "readPressure", true);
-      request.send();
-    }
-
-    function getTemperature()
-    {
-      var request = new XMLHttpRequest();
-      request.onreadystatechange = function()
-      {
-        if(this.readyState == 4 && this.status == 200)
-        {
-          document.getElementById("temperature").innerHTML = this.responseText;
-        }
-      };
-      request.open("GET", "readTemperature", true);
-      request.send();
-    }
-
-    function getHumidity()
-    {
-      var request = new XMLHttpRequest();
-      request.onreadystatechange = function()
-      {
-        if(this.readyState == 4 && this.status == 200)
-        {
-          document.getElementById("humidity").innerHTML = this.responseText;
-        }
-      };
-      request.open("GET", "readHumidity", true);
-      request.send();
-    }
-
-    function getPPM()
-    {
-      var request = new XMLHttpRequest();
-      request.onreadystatechange = function()
-      {
-        if(this.readyState == 4 && this.status == 200)
-        {
-          document.getElementById("PPM").innerHTML = this.responseText;
-        }
-      };
-      request.open("GET", "readPPM", true);
-      request.send();
-    }
-
-    function getTVOC()
-    {
-      var request = new XMLHttpRequest();
-      request.onreadystatechange = function()
-      {
-        if(this.readyState == 4 && this.status == 200)
-        {
-          document.getElementById("TVOC").innerHTML = this.responseText;
-        }
-      };
-      request.open("GET", "readTVOC", true);
-      request.send();
-    }
-
-  </script>
+  <ul>
+    <li><a href="/helmetData">Helmet Data</a></li> <!-- Update this line -->
+    <li><a href="/sensorData">Sensor Data</a></li>
+    <li><a href="/control">Control</a></li>
+  </ul>
 </body>
 </html>
-)***";
+)rawliteral";
+
+
+
+const char helmetDataPage[] PROGMEM = R"rawliteral(
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Helmet Data</title>
+    <style>
+        body {
+            font-family: Arial, sans-serif;
+            text-align: center;
+        }
+        a {
+            display: inline-block;
+            background-color: #4CAF50;
+            color: white;
+            padding: 15px 25px;
+            text-decoration: none;
+            margin: 10px;
+        }
+        #data {
+            margin-top: 20px;
+        }
+        .item {
+            margin-bottom: 10px;
+        }
+    </style>
+    <script>
+        function refreshData() {
+            var xhr = new XMLHttpRequest();
+            xhr.onreadystatechange = function() {
+                if (xhr.readyState == 4 && xhr.status == 200) {
+                    var data = JSON.parse(xhr.responseText);
+                    document.getElementById('visorState').innerHTML = data.visorState;
+                    document.getElementById('IRState').innerHTML = data.IRState;
+                    document.getElementById('fanLevel').innerHTML = data.fanLevel;
+                    document.getElementById('lampLevel').innerHTML = data.lampLevel;
+                    document.getElementById('batteryLevel').innerHTML = data.batteryLevel;
+                    document.getElementById('audioState').innerHTML = data.audioState;
+                    document.getElementById('fanRPM').innerHTML = data.fanRPM;
+                }
+            };
+            xhr.open("GET", "/getHelmetData", true);
+            xhr.send();
+        }
+        setInterval(refreshData, 1000); // Refresh data every 1000 milliseconds (1 second)
+    </script>
+</head>
+<body>
+    <h1>Helmet Data</h1>
+    <div id="data">
+        <div class="item">Visor state: <span id="visorState"></span></div>
+        <div class="item">Helmet active: <span id="IRState"></span></div>
+        <div class="item">Fan speed: <span id="fanLevel"></span></div>
+        <div class="item">Lamp sensitivity: <span id="lampLevel"></span></div>
+        <div class="item">Battery level: <span id="batteryLevel"></span></div>
+        <div class="item">Audio state: <span id="audioState"></span></div>
+        <div class="item">Fan RPM: <span id="fanRPM"></span></div>
+    </div>
+    <a href="/">Back to Main</a>
+</body>
+</html>
+)rawliteral";
