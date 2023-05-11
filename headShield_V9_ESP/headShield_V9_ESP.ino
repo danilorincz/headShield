@@ -91,6 +91,7 @@ Timer refreshSensorDataTimer(1000);
 Timer connectSensorTimer(2000);
 //? GLOBAL
 int mode = 1;
+bool newSensorConnection = false;
 
 void setup()
 {
@@ -250,87 +251,8 @@ int scanMode()
   return newMode;
 }
 
-void modeSelector()
-{
-  int newMode = scanMode();
-
-  if (newMode != mode)
-  {
-    mode = newMode;
-    switch (mode)
-    {
-    case 1: //? NORMAL
-      beeper.playVisorDown();
-
-      fan.setLevel(fan.level);
-      lamp.setLevel(lamp.level);
-      audio.turn(audio.state);
-      break;
-
-    case 2: //? VISOR OFF
-      beeper.playVisorUp();
-
-      lamp.setLevel(lamp.level);
-      fan.suspend();
-      audio.suspend();
-      break;
-
-    case 3: //? IR OFF
-      beeper.playVisorUp();
-
-      fan.suspend();
-      lamp.suspend();
-      audio.suspend();
-      break;
-
-    case 4: //? ALL OFF
-      beeper.playVisorUp();
-
-      fan.suspend();
-      lamp.suspend();
-      audio.suspend();
-      break;
-    }
-  }
-}
-
 //* TOUCH
-void serveTouch()
-{
-  if (touchLeft.singleTap()) //! LAMP INPUT
-  {
-    lamp.toggle(0, 3);
-    if (lamp.level == 0)
-      beeper.playLampOff();
-    else
-      beeper.playLampOn();
-  }
 
-  if (touchRight.singleTap()) //! FAN INPUT
-  {
-    fan.toggle(1, 3);
-
-    switch (fan.level)
-    {
-    case 1:
-      beeper.playFanSpeedDown();
-      break;
-    case 2:
-    case 3:
-      beeper.playFanSpeedUp();
-      break;
-    }
-  }
-  else if (touchRight.longTap()) //! AUDIO INPUT
-  {
-    audio.toggle();
-
-    if (audio.state)
-      beeper.playVisorUp();
-    else
-      beeper.playVisorDown();
-  }
-}
 bool multiTouch()
 {
   if (touchLeft.readAtTheMoment() && touchRight.readAtTheMoment())
@@ -359,59 +281,8 @@ bool triggerServiceMode()
   }
   return false;
 }
-void reconsiderServiceMode()
-{
-  if (triggerServiceMode() || mode == 0)
-  {
-    while (true)
-    {
-      //* service mode stuff
-    }
-  }
-}
-
-//* BATTERY
-void checkBattery()
-{
-  if (checkBatteryTimer.timeElapsedMillis())
-    battery.getLevel();
-
-  switch (battery.level)
-  {
-  case 1:
-    break;
-  case 2:
-    break;
-  case 3:
-    break;
-  }
-}
-
-//* TACHOMETER
-void checkTachometer()
-{
-  if (chechTachometerTimer.timeElapsedMillis())
-    tachometer.getRPM();
-}
 
 //* SENSOR DATA
-void refreshSensorData()
-{
-  if (refreshSensorDataTimer.timeElapsedMillis())
-  {
-
-    perkData.temp = BME280.getTemperature();
-    perkData.press = BME280.getPressure();
-    perkData.humi = BME280.getHumidity();
-
-    perkData.status = ENS160.getENS160Status();
-    perkData.AQI = ENS160.getAQI();
-    perkData.TVOC = ENS160.getTVOC();
-    perkData.ECO2 = ENS160.getECO2();
-    perkData.log();
-  }
-}
-
 bool BME280Connected()
 {
   if (BME280.begin() != DFRobot_BME280_IIC::eStatusOK)
@@ -469,9 +340,8 @@ bool connectSensor()
     return false;
 }
 
-bool newSensorConnection = false;
-//* LOOP
-void loop()
+//* MAIN FUNCTIONS
+void main_sensorConnection()
 {
   if (connectSensorTimer.timeElapsedMillis())
   {
@@ -491,13 +361,164 @@ void loop()
       newSensorConnection = true;
     }
   }
+}
 
-  server.handleClient();
-  checkBattery();
-  checkTachometer();
-  refreshSensorData();
-  modeSelector();
-  serveTouch();
+void main_battery()
+{
+  if (checkBatteryTimer.timeElapsedMillis())
+    battery.getLevel();
 
-  reconsiderServiceMode();
+  switch (battery.level)
+  {
+  case 1:
+    break;
+  case 2:
+    break;
+  case 3:
+    break;
+  }
+}
+void main_tachometer()
+{
+  if (chechTachometerTimer.timeElapsedMillis())
+    tachometer.getRPM();
+}
+void main_sensorData()
+{
+  if (refreshSensorDataTimer.timeElapsedMillis())
+  {
+    perkData.temp = BME280.getTemperature();
+    perkData.press = BME280.getPressure();
+    perkData.humi = BME280.getHumidity();
+
+    perkData.status = ENS160.getENS160Status();
+    perkData.AQI = ENS160.getAQI();
+    perkData.TVOC = ENS160.getTVOC();
+    perkData.ECO2 = ENS160.getECO2();
+    //perkData.log();
+  }
+}
+void main_mode()
+{
+  int newMode = scanMode();
+
+  if (newMode != mode)
+  {
+    mode = newMode;
+    switch (mode)
+    {
+    case 1: //? NORMAL
+      beeper.playVisorDown();
+
+      fan.setLevel(fan.level);
+      lamp.setLevel(lamp.level);
+      audio.turn(audio.state);
+      break;
+
+    case 2: //? VISOR OFF
+      beeper.playVisorUp();
+
+      lamp.setLevel(lamp.level);
+      fan.suspend();
+      audio.suspend();
+      break;
+
+    case 3: //? IR OFF
+      beeper.playVisorUp();
+
+      fan.suspend();
+      lamp.suspend();
+      audio.suspend();
+      break;
+
+    case 4: //? ALL OFF
+      beeper.playVisorUp();
+
+      fan.suspend();
+      lamp.suspend();
+      audio.suspend();
+      break;
+    }
+  }
+}
+void main_touchInput()
+{
+  if (touchLeft.singleTap()) //! LAMP INPUT
+  {
+    lamp.toggle(0, 3);
+    if (lamp.level == 0)
+      beeper.playLampOff();
+    else
+      beeper.playLampOn();
+  }
+
+  if (touchRight.singleTap()) //! FAN INPUT
+  {
+    fan.toggle(1, 3);
+
+    switch (fan.level)
+    {
+    case 1:
+      beeper.playFanSpeedDown();
+      break;
+    case 2:
+    case 3:
+      beeper.playFanSpeedUp();
+      break;
+    }
+  }
+  else if (touchRight.longTap()) //! AUDIO INPUT
+  {
+    audio.toggle();
+
+    if (audio.state)
+      beeper.playVisorUp();
+    else
+      beeper.playVisorDown();
+  }
+}
+void main_serviceMode()
+{
+  if (triggerServiceMode() || mode == 0)
+  {
+    while (true)
+    {
+      //* service mode stuff
+    }
+  }
+}
+
+void main_handleClient(unsigned long _loopTime)
+{
+  static unsigned long timeSince = millis();
+  if (millis() - timeSince > _loopTime)
+  {
+    server.handleClient();
+    timeSince = millis();
+  }
+}
+//* LOOP
+void loop()
+{
+  //* LOOP
+  main_mode();
+  main_touchInput();
+  main_serviceMode();
+
+  //* TIMER
+  main_timerTester(1000);
+  main_handleClient(500);
+  main_sensorConnection();
+  main_sensorData();
+  main_battery();
+  main_tachometer();
+}
+void main_timerTester(unsigned long _loopTime)
+{
+  static unsigned long timeSince = millis();
+  if (millis() - timeSince > _loopTime)
+  {
+    Serial.println("Timer tester");
+    timeSince = millis();
+  }
 }
