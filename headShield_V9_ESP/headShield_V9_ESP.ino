@@ -306,7 +306,6 @@ bool sensorConnected()
 }
 bool connectSensor()
 {
-
   BME280.reset();
   if (BME280Connected())
   {
@@ -341,9 +340,10 @@ bool connectSensor()
 }
 
 //* MAIN FUNCTIONS
-void main_sensorConnection()
+void main_sensorConnection(unsigned long _loopTime)
 {
-  if (connectSensorTimer.timeElapsedMillis())
+  static unsigned long sinceStart = millis();
+  if (millis() - sinceStart > _loopTime)
   {
     if (connectSensor())
     {
@@ -360,12 +360,14 @@ void main_sensorConnection()
         beeper.playError();
       newSensorConnection = true;
     }
+    sinceStart = millis();
   }
 }
 
-void main_battery()
+void main_battery(unsigned long _loopTime)
 {
-  if (checkBatteryTimer.timeElapsedMillis())
+  static unsigned long sinceStart = millis();
+  if (millis() - sinceStart > _loopTime)
     battery.getLevel();
 
   switch (battery.level)
@@ -376,16 +378,22 @@ void main_battery()
     break;
   case 3:
     break;
+    sinceStart = millis();
   }
 }
-void main_tachometer()
+void main_tachometer(unsigned long _loopTime)
 {
-  if (chechTachometerTimer.timeElapsedMillis())
+  static unsigned long sinceStart = millis();
+  if (millis() - sinceStart > _loopTime)
+  {
     tachometer.getRPM();
+    sinceStart = millis();
+  }
 }
-void main_sensorData()
+void main_readSensorData(unsigned long _loopTime)
 {
-  if (refreshSensorDataTimer.timeElapsedMillis())
+  static unsigned long sinceStart = millis();
+  if (millis() - sinceStart > _loopTime)
   {
     perkData.temp = BME280.getTemperature();
     perkData.press = BME280.getPressure();
@@ -396,6 +404,7 @@ void main_sensorData()
     perkData.TVOC = ENS160.getTVOC();
     perkData.ECO2 = ENS160.getECO2();
     //perkData.log();
+    sinceStart = millis();
   }
 }
 void main_mode()
@@ -497,28 +506,74 @@ void main_handleClient(unsigned long _loopTime)
     timeSince = millis();
   }
 }
-//* LOOP
+
+
 void loop()
 {
-  //* LOOP
   main_mode();
   main_touchInput();
   main_serviceMode();
 
-  //* TIMER
-  main_timerTester(1000);
   main_handleClient(500);
-  main_sensorConnection();
-  main_sensorData();
-  main_battery();
-  main_tachometer();
+  main_sensorConnection(4000);
+  main_readSensorData(1000);
+  main_battery(5000);
+  main_tachometer(400);
 }
-void main_timerTester(unsigned long _loopTime)
+
+
+
+/*
+
+void loop()
 {
-  static unsigned long timeSince = millis();
-  if (millis() - timeSince > _loopTime)
-  {
-    Serial.println("Timer tester");
-    timeSince = millis();
-  }
+  unsigned long startTime;  // Variable to store the start time of each function
+
+  startTime = millis();
+  main_mode();
+  Serial.print("main_mode: ");
+  Serial.println(millis() - startTime);
+
+  startTime = millis();
+  main_touchInput();
+  Serial.print("main_touchInput: ");
+  Serial.println(millis() - startTime);
+
+  startTime = millis();
+  main_serviceMode();
+  Serial.print("main_serviceMode: ");
+  Serial.println(millis() - startTime);
+
+  startTime = millis();
+  main_handleClient(0);
+  Serial.print("main_handleClient: ");
+  Serial.println(millis() - startTime);
+
+  startTime = millis();
+  main_sensorConnection(0);
+  Serial.print("main_sensorConnection: ");
+  Serial.println(millis() - startTime);
+
+  startTime = millis();
+  main_readSensorData(0);
+  Serial.print("main_readSensorData: ");
+  Serial.println(millis() - startTime);
+
+  startTime = millis();
+  main_battery(0);
+  Serial.print("main_battery: ");
+  Serial.println(millis() - startTime);
+
+  startTime = millis();
+  main_tachometer(0);
+  Serial.print("main_tachometer: ");
+  Serial.println(millis() - startTime);
+
+  Serial.println(" ");
+  Serial.println(" ");
+  Serial.println(" ");
+  Serial.println(" ");
+  Serial.println(" ");
+  
 }
+*/
