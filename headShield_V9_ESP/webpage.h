@@ -417,6 +417,9 @@ const char controlPage[] PROGMEM = R"rawliteral(
         .red {
             background-color: red;
         }
+        .slightly-darker-yellow {
+            background-color: #FFD700;
+        }
         .yellow {
             background-color: yellow;
         }

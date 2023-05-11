@@ -173,15 +173,15 @@ void setup()
 //* HANDLERs
 void handle_root()
 {
-  server.send(200, "text/html", webpageCode);
+  server.send_P(200, "text/html", webpageCode);
 }
 void handler_sensorData()
 {
-  server.send(200, "text/html", sensorDataPage);
+  server.send_P(200, "text/html", sensorDataPage);
 }
 void handler_helmetData()
 {
-  server.send(200, "text/html", helmetDataPage);
+  server.send_P(200, "text/html", helmetDataPage);
 }
 void handler_getHelmetData()
 {
@@ -226,7 +226,7 @@ void handler_getSensorData()
 }
 void handler_controlPage()
 {
-  server.send(200, "text/html", controlPage);
+  server.send_P(200, "text/html", controlPage);
 }
 
 //* CONTROL HANDLERS
@@ -237,25 +237,26 @@ void handler_setFanSpeed()
   Serial.print("New fan value: ");
   Serial.println(newFanLevel);
 
-  server.send(200, "text/plain", "OK");
+  server.send_P(200, "text/plain", "OK");
 }
 void handler_setLampLevel()
 {
   int newLampLevel = server.arg("level").toInt();
   Serial.print("New lamp value: ");
   Serial.println(newLampLevel);
-  server.send(200, "text/plain", "Lamp level set");
+  server.send_P(200, "text/plain", "Lamp level set");
 }
 void handler_setAudioState() {
   String stateParam = server.arg("state"); // Get the state parameter from the request
   
-
+Serial.println("Audio has been toggled to: ");
   bool state = false;
-  if (stateParam == "true") {
+  if (stateParam == "true") 
+  {
     state = true;
   }
   
-  server.send(200, "text/plain", "OK");
+  server.send_P(200, "text/plain", "OK");
 }
 //* MODE
 int scanMode()
