@@ -118,6 +118,7 @@ void setup()
   server.on("/getSensorData", handler_getSensorData);
   server.on("/setFanSpeed", handler_setFanSpeed);
   server.on("/control", HTTP_GET, handler_controlPage);
+  server.on("/setLampLevel", HTTP_GET, handler_setLampLevel);
   server.begin();
 
   //* BME280
@@ -228,14 +229,21 @@ void handler_controlPage()
 }
 void handler_setFanSpeed()
 {
-  int value = server.arg("value").toInt();
-  // Here, you can update the fan speed value on the helmet
-  // ...
+  int newFanLevel = server.arg("value").toInt();
+
   Serial.print("New fan value: ");
-  Serial.println(value);
+  Serial.println(newFanLevel);
 
   server.send(200, "text/plain", "OK");
 }
+void handler_setLampLevel()
+{
+  int newLampLevel = server.arg("value").toInt();
+  Serial.print("New lamp value: ");
+  Serial.println(newLampLevel);
+  server.send(200, "text/plain", "Lamp level set");
+}
+
 //* MODE
 int scanMode()
 {
@@ -507,7 +515,6 @@ void main_handleClient(unsigned long _loopTime)
   }
 }
 
-
 void loop()
 {
   main_mode();
@@ -520,8 +527,6 @@ void loop()
   main_battery(5000);
   main_tachometer(400);
 }
-
-
 
 /*
 

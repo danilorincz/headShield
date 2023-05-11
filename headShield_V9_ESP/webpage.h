@@ -420,13 +420,12 @@ const char controlPage[] PROGMEM = R"rawliteral(
         .yellow {
             background-color: yellow;
         }
-        .slightly-darker-yellow {
-        background-color: #FFD700;
-        }
         .green {
             background-color: green;
         }
-
+        .slightly-darker-green {
+            background-color: #008000;
+        }
     </style>
     <script>
         function sendFanSpeed(speed) {
@@ -435,32 +434,66 @@ const char controlPage[] PROGMEM = R"rawliteral(
             xhr.send();
         }
 
-  function setFanSpeedText(level) {
-    var levelElement = document.getElementById('fanSpeedValue');
-    switch(level) {
-        case 0:
-            levelElement.innerHTML = "OFF";
-            levelElement.className = "state-box red";
-            break;
-        case 1:
-            levelElement.innerHTML = "low";
-            levelElement.className = "state-box yellow";
-            break;
-        case 2:
-            levelElement.innerHTML = "medium";
-            levelElement.className = "state-box slightly-darker-yellow";
-            break;
-        case 3:
-            levelElement.innerHTML = "high";
-            levelElement.className = "state-box green";
-            break;
-    }
-}
+        function sendLampLevel(level) {
+            var xhr = new XMLHttpRequest();
+            xhr.open("GET", "/setLampLevel?value=" + level, true);
+            xhr.send();
+        }
 
         function handleFanSpeedChange(value) {
             var speed = parseInt(value, 10);
             setFanSpeedText(speed);
             sendFanSpeed(speed);
+        }
+
+        function handleLampLevelChange(value) {
+            var level = parseInt(value, 10);
+            setLampLevelText(level);
+            sendLampLevel(level);
+        }
+
+        function setFanSpeedText(level) {
+            var levelElement = document.getElementById('fanSpeedValue');
+            switch(level) {
+                case 0:
+                    levelElement.innerHTML = "OFF";
+                    levelElement.className = "state-box red";
+                    break;
+                case 1:
+                    levelElement.innerHTML = "low";
+                    levelElement.className = "state-box yellow";
+                    break;
+                case 2:
+                    levelElement.innerHTML = "medium";
+                    levelElement.className = "state-box slightly-darker-yellow";
+                    break;
+                case 3:
+                    levelElement.innerHTML = "high";
+                    levelElement.className = "state-box green";
+                    break;
+            }
+        }
+
+        function setLampLevelText(level) {
+            var levelElement = document.getElementById('lampLevelValue');
+            switch(level) {
+                case 0:
+                    levelElement.innerHTML = "OFF";
+                    levelElement.className = "state-box red";
+                    break;
+                case 1:
+                    levelElement.innerHTML = "low";
+                    levelElement.className = "state-box yellow";
+                    break;
+                case 2:
+                    levelElement.innerHTML = "medium";
+                    levelElement.className = "state-box slightly-darker-yellow";
+                    break;
+                case 3:
+                    levelElement.innerHTML = "high";
+                    levelElement.className = "state-box green";
+                    break;
+            }
         }
     </script>
 </head>
@@ -468,9 +501,13 @@ const char controlPage[] PROGMEM = R"rawliteral(
     <h1>Control Page</h1>
     <div class="control-box">
         <h2>Fan Speed</h2>
-        <input type="range" min="0" max="3" value="0" step="1" onchange="handleFanSpeedChange(this.value)">
-    <div>Current Fan Speed: <span id="fanSpeedValue" class="state-box red">OFF</span></div>
-
+        <input type="range" min="0" max="3" step="1" onchange="handleFanSpeedChange(this.value)">
+        <div>Current Fan Speed: <span id="fanSpeedValue"></span></div>
+   </div>
+    <div class="control-box">
+        <h2>Lamp Level</h2>
+        <input type="range" min="0" max="3" step="1" onchange="handleLampLevelChange(this.value)">
+        <div>Current Lamp Level: <span id="lampLevelValue"></span></div>
     </div>
 </body>
 </html>
