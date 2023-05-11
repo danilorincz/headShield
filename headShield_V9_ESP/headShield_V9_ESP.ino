@@ -12,7 +12,7 @@
 #include "Wire.h"
 #include "DFRobot_BME280.h"
 #include <DFRobot_ENS160.h>
-
+#include <ArduinoJson.h>
 //? CUSTOM LIBRARIEs
 #include "webpage.h"
 #include "timer.h"
@@ -83,7 +83,7 @@ Audio audio(audioEnPin);
 
 //? TIMERS
 Timer serviceModeTimer(3000);
-Timer refreshSensorDataTimer(5000);
+Timer refreshSensorDataTimer(1000);
 Timer chechTachometerTimer(1000);
 Timer checkBatteryTimer(5000);
 //? GLOBAL
@@ -177,11 +177,31 @@ void handle_root()
 {
   server.send(200, "text/html", webpageCode);
 }
+void handler_sensorData()
+{
+  server.send(200, "text/html", sensorDataPage);
+}
 void handler_helmetData()
 {
   server.send(200, "text/html", helmetDataPage);
 }
+void handler_getHelmetData()
+{
+    StaticJsonDocument<200> doc;
 
+  doc["visorState"] = visor.state;
+  doc["IRState"] = IR.state;
+  doc["fanLevel"] = fan.level;
+  doc["lampLevel"] = lamp.level;
+  doc["batteryLevel"] = battery.level;
+  doc["audioState"] = audio.state;
+  doc["fanRPM"] = tachometer.speed_rpm;
+
+  String jsonData;
+  serializeJson(doc, jsonData);
+
+  server.send(200, "application/json", jsonData);
+}/*
 void handler_getHelmetData()
 {
   String jsonData = "{";
@@ -196,10 +216,7 @@ void handler_getHelmetData()
 
   server.send(200, "application/json", jsonData);
 }
-void handler_sensorData()
-{
-  server.send(200, "text/html", sensorDataPage);
-}
+*/
 void handler_getSensorData()
 {
   String jsonData = "{";
