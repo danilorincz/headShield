@@ -83,9 +83,12 @@ Audio audio(audioEnPin);
 
 //? TIMERS
 Timer serviceModeTimer(3000);
-Timer refreshSensorDataTimer(1000);
+
 Timer chechTachometerTimer(1000);
 Timer checkBatteryTimer(5000);
+
+Timer refreshSensorDataTimer(1000);
+Timer connectSensorTimer(2000);
 //? GLOBAL
 int mode = 1;
 
@@ -112,7 +115,8 @@ void setup()
   server.on("/getHelmetData", handler_getHelmetData);
   server.on("/sensorData", handler_sensorData);
   server.on("/getSensorData", handler_getSensorData);
-
+  server.on("/setFanSpeed", handler_setFanSpeed);
+  server.on("/control", HTTP_GET, handler_controlPage);
   server.begin();
 
   //* BME280
@@ -131,12 +135,12 @@ void setup()
   //* ENS160
   if (ENS160.begin() != NO_ERR)
   {
-    perkData.initializeEN160 = false;
+    perkData.initializeENS160 = false;
     Serial.println("ENS160 failed");
   }
   else
   {
-    perkData.initializeEN160 = true;
+    perkData.initializeENS160 = true;
     Serial.println("ENS160 sucess");
   }
 
@@ -197,9 +201,9 @@ void handler_getSensorData()
 {
   StaticJsonDocument<200> doc;
 
-  char tempStr[6];  // Buffer big enough for "-XX.X" and a null terminator
-  char humiStr[6];  // Buffer big enough for "-XX.X" and a null terminator
-  
+  char tempStr[6]; // Buffer big enough for "-XX.X" and a null terminator
+  char humiStr[6]; // Buffer big enough for "-XX.X" and a null terminator
+
   // Format temperature and humidity as strings with 1 decimal place
   dtostrf(perkData.temp, 5, 1, tempStr);
   dtostrf(perkData.humi, 5, 1, humiStr);
@@ -217,41 +221,20 @@ void handler_getSensorData()
 
   server.send(200, "application/json", jsonData);
 }
+void handler_controlPage()
+{
+  server.send(200, "text/html", controlPage);
+}
+void handler_setFanSpeed()
+{
+  int value = server.arg("value").toInt();
+  // Here, you can update the fan speed value on the helmet
+  // ...
+  Serial.print("New fan value: ");
+  Serial.println(value);
 
-
-/*
-  void handler_getHelmetData()
-  {
-  String jsonData = "{";
-  jsonData += "\"visorState\":" + String(visor.state) + ",";
-  jsonData += "\"IRState\":" + String(IR.state) + ",";
-  jsonData += "\"fanLevel\":" + String(fan.level) + ",";
-  jsonData += "\"lampLevel\":" + String(lamp.level) + ",";
-  jsonData += "\"batteryLevel\":" + String(battery.level) + ",";
-  jsonData += "\"audioState\":" + String(audio.state) + ",";
-  jsonData += "\"fanRPM\":" + String(tachometer.speed_rpm);
-  jsonData += "}";
-
-  server.send(200, "application/json", jsonData);
-  }
-
-
-
-  void handler_getSensorData()
-  {
-  String jsonData = "{";
-  jsonData += "\"temp\":" + String(perkData.temp) + ",";
-  jsonData += "\"press\":" + String(perkData.press) + ",";
-  jsonData += "\"humi\":" + String(perkData.humi) + ",";
-  jsonData += "\"AQI\":" + String(perkData.AQI) + ",";
-  jsonData += "\"TVOC\":" + String(perkData.TVOC) + ",";
-  jsonData += "\"ECO2\":" + String(perkData.ECO2) + ",";
-  jsonData += "\"status\":" + String(perkData.status);
-  jsonData += "}";
-
-  server.send(200, "application/json", jsonData);
-  }
-*/
+  server.send(200, "text/plain", "OK");
+}
 //* MODE
 int scanMode()
 {
@@ -401,8 +384,6 @@ void checkBattery()
     break;
   case 3:
     break;
-  default:
-    Serial.println("SWITCH_ERROR_BATTERY");
   }
 }
 
@@ -414,44 +395,104 @@ void checkTachometer()
 }
 
 //* SENSOR DATA
-
 void refreshSensorData()
 {
   if (refreshSensorDataTimer.timeElapsedMillis())
   {
-    if (perkData.initializeBME280)
-    {
-      Serial.println("Read BME280");
-      perkData.temp = BME280.getTemperature();
-      perkData.press = BME280.getPressure();
-      perkData.humi = BME280.getHumidity();
-    }
-    else
-    {
-      Serial.println("Read BME280 failed");
-    }
-    if (true)
-    {
-      Serial.println("Read ENS160");
-      perkData.status = ENS160.getENS160Status();
-      perkData.AQI = ENS160.getAQI();
-      perkData.TVOC = ENS160.getTVOC();
-      perkData.ECO2 = ENS160.getECO2();
-    }
-    else
-    {
-      Serial.println("Read ENS160 failed");
-    }
+
+    perkData.temp = BME280.getTemperature();
+    perkData.press = BME280.getPressure();
+    perkData.humi = BME280.getHumidity();
+
+    perkData.status = ENS160.getENS160Status();
+    perkData.AQI = ENS160.getAQI();
+    perkData.TVOC = ENS160.getTVOC();
+    perkData.ECO2 = ENS160.getECO2();
     perkData.log();
   }
 }
 
+bool BME280Connected()
+{
+  if (BME280.begin() != DFRobot_BME280_IIC::eStatusOK)
+    return false;
+  else
+    return true;
+}
+bool ENS160Connected()
+{
+  if (ENS160.begin() != NO_ERR)
+    return false;
+  else
+    return true;
+}
+bool sensorConnected()
+{
+  if (!BME280Connected() || !ENS160Connected())
+    return false;
+  else
+    return true;
+}
+bool connectSensor()
+{
+
+  BME280.reset();
+  if (BME280Connected())
+  {
+    perkData.initializeBME280 = true;
+    Serial.println("BME280 sucess");
+  }
+  else
+  {
+    perkData.initializeBME280 = false;
+    Serial.println("BME280 failed");
+  }
+
+  //* ENS160
+  if (ENS160Connected())
+  {
+    perkData.initializeENS160 = true;
+    Serial.println("ENS160 sucess");
+  }
+  else
+  {
+    perkData.initializeENS160 = false;
+    Serial.println("ENS160 failed");
+  }
+
+  ENS160.setPWRMode(ENS160_STANDARD_MODE);
+  ENS160.setTempAndHum(25.0, 50.0);
+
+  if (perkData.initializeENS160 && perkData.initializeBME280)
+    return true;
+  else
+    return false;
+}
+
+bool newSensorConnection = false;
 //* LOOP
 void loop()
 {
-  server.handleClient();
+  if (connectSensorTimer.timeElapsedMillis())
+  {
+    if (connectSensor())
+    {
+      if (newSensorConnection)
+      {
+        Serial.println("connection established");
+        beeper.playSuccess();
+        newSensorConnection = false;
+      }
+    }
+    else
+    {
+      if (!newSensorConnection)
+        beeper.playError();
+      newSensorConnection = true;
+    }
+  }
 
-  //refreshSensorData();
+  server.handleClient();
   checkBattery();
   checkTachometer();
   refreshSensorData();
@@ -460,49 +501,3 @@ void loop()
 
   reconsiderServiceMode();
 }
-
-// data shown on website
-
-//1 helmet data
-// visor state (up/down) {visor.state}
-// weather the user wearing the helmet or not (active/deactive) {IR.state}
-// fan speed (low/medium/high/OFF) {fan.level}
-// lamp sensitivity (low/medium/high/OFF) {lamp.level}
-// battery level (low/medium/high) {battrey.level}
-// audio state (on/off) {audio.state}
-// fan RPM (the number with RPM dimension) {tachometer.speed_rpm}
-
-//2 sensor data
-//2.1 BMS280
-// temperature {perkData.temp}
-// pressure {perkData.press}
-// humidity {perkData.humi}
-//2.2 ENS160
-// status (0-> normal, 1-> warm up up, 2-> start up) {perkdata.status}
-// AQI (air quality index) {perkdata.AQI}
-// TVOC (concentration of total volatile organic compounds) {perkdata.TVOC}
-// ECO2 (carbon dioxide equivalent concentration) {perkdata.EOC2}
-
-//3 control
-//3.1 fan control
-// four button in a row called low, medium, high, and OFF, where the currently acive states button is green and the other ones are grey
-//3.2 lamp control
-// four button in a row called low, medium, high, and OFF, where the currently acive states button is green and the other ones are grey
-//3.3 audio toggle
-// a single button which is called as the current state of the audio (on or off) and if the user press it, it will toggle between the two state
-
-/*
-  Sensor Data
-  "BMS280" all these must be in a box
-  "Temperature: " {perkData.temp} " Celsius"
-  "Pressure: " {perkData.press} " Pa"
-  "Humidity: " {perkData.humi} " %"
-
-  "ENS160" all these must be in a box
-  "AQI: " 1->"Excellent" (green), 2->"Good" (slightly darker green), 3->"Moderate" (yellow), 4->"Poor" (slightly darker yellow) , 5->"Unhealthy" (red) {perkdata.AQI}
-  "TVOC: " (concentration of total volatile organic compounds) {perkdata.TVOC} " ppb"
-  under this data there should be an explanatory text: "concentration of total volatile organic compounds"
-  "ECO2: " {perkdata.EOC2} " ppm"
-  under this data there should be an explanatory text: "detected data of VOCs and hydrogen"
-  "Status: " (if its 0-> "normal mode" with a green background , 1-> "warm up" with a yellow background, 2-> "start up" with a red background) {perkdata.status}
-*/

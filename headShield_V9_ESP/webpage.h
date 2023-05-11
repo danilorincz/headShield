@@ -390,3 +390,88 @@ setInterval(refreshData, 1000); // Refresh data every 1000 milliseconds (1 secon
 </body>
 </html>
 )rawliteral";
+
+const char controlPage[] PROGMEM = R"rawliteral(
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Control Page</title>
+    <style>
+        body {
+            font-family: Arial, sans-serif;
+            text-align: center;
+        }
+        .control-box {
+            border: 1px solid #000;
+            margin-bottom: 20px;
+            padding: 10px;
+        }
+        .state-box {
+            display: inline-block;
+            padding: 5px;
+            text-align: center;
+            width: 150px;
+        }
+        .red {
+            background-color: red;
+        }
+        .yellow {
+            background-color: yellow;
+        }
+        .slightly-darker-yellow {
+        background-color: #FFD700;
+        }
+        .green {
+            background-color: green;
+        }
+
+    </style>
+    <script>
+        function sendFanSpeed(speed) {
+            var xhr = new XMLHttpRequest();
+            xhr.open("GET", "/setFanSpeed?value=" + speed, true);
+            xhr.send();
+        }
+
+  function setFanSpeedText(level) {
+    var levelElement = document.getElementById('fanSpeedValue');
+    switch(level) {
+        case 0:
+            levelElement.innerHTML = "OFF";
+            levelElement.className = "state-box red";
+            break;
+        case 1:
+            levelElement.innerHTML = "low";
+            levelElement.className = "state-box yellow";
+            break;
+        case 2:
+            levelElement.innerHTML = "medium";
+            levelElement.className = "state-box slightly-darker-yellow";
+            break;
+        case 3:
+            levelElement.innerHTML = "high";
+            levelElement.className = "state-box green";
+            break;
+    }
+}
+
+        function handleFanSpeedChange(value) {
+            var speed = parseInt(value, 10);
+            setFanSpeedText(speed);
+            sendFanSpeed(speed);
+        }
+    </script>
+</head>
+<body>
+    <h1>Control Page</h1>
+    <div class="control-box">
+        <h2>Fan Speed</h2>
+        <input type="range" min="0" max="3" value="0" step="1" onchange="handleFanSpeedChange(this.value)">
+    <div>Current Fan Speed: <span id="fanSpeedValue" class="state-box red">OFF</span></div>
+
+    </div>
+</body>
+</html>
+)rawliteral";

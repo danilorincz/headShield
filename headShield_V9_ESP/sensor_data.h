@@ -8,7 +8,7 @@ public:
   float press;
   float humi;
   // ENS160
-  bool initializeEN160 = false;
+  bool initializeENS160 = false;
   uint8_t status;
   uint8_t AQI;
   uint16_t TVOC; //? Total Volatile Organic Compounds
