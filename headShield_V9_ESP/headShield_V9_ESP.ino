@@ -119,6 +119,7 @@ void setup()
   server.on("/setFanSpeed", handler_setFanSpeed);
   server.on("/control", HTTP_GET, handler_controlPage);
   server.on("/setLampLevel", HTTP_GET, handler_setLampLevel);
+    server.on("/setAudioState", HTTP_GET, handler_setAudioState);
   server.begin();
 
   //* BME280
@@ -227,6 +228,8 @@ void handler_controlPage()
 {
   server.send(200, "text/html", controlPage);
 }
+
+//* CONTROL HANDLERS
 void handler_setFanSpeed()
 {
   int newFanLevel = server.arg("value").toInt();
@@ -238,12 +241,22 @@ void handler_setFanSpeed()
 }
 void handler_setLampLevel()
 {
-  int newLampLevel = server.arg("value").toInt();
+  int newLampLevel = server.arg("level").toInt();
   Serial.print("New lamp value: ");
   Serial.println(newLampLevel);
   server.send(200, "text/plain", "Lamp level set");
 }
+void handler_setAudioState() {
+  String stateParam = server.arg("state"); // Get the state parameter from the request
+  
 
+  bool state = false;
+  if (stateParam == "true") {
+    state = true;
+  }
+  
+  server.send(200, "text/plain", "OK");
+}
 //* MODE
 int scanMode()
 {

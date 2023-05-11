@@ -423,36 +423,26 @@ const char controlPage[] PROGMEM = R"rawliteral(
         .green {
             background-color: green;
         }
-        .slightly-darker-green {
-            background-color: #008000;
+        .audio-button {
+            width: 70px;
+            height: 30px;
+            color: white;
+            text-align: center;
+            cursor: pointer;
+            margin: auto;
+            display: block;
         }
     </style>
     <script>
-        function sendFanSpeed(speed) {
+        var audioState = false;
+        function sendAudioState() 
+        {
             var xhr = new XMLHttpRequest();
-            xhr.open("GET", "/setFanSpeed?value=" + speed, true);
+            xhr.open("GET", "/setAudioState?state=" + audioState, true);
             xhr.send();
         }
-
-        function sendLampLevel(level) {
-            var xhr = new XMLHttpRequest();
-            xhr.open("GET", "/setLampLevel?value=" + level, true);
-            xhr.send();
-        }
-
-        function handleFanSpeedChange(value) {
-            var speed = parseInt(value, 10);
-            setFanSpeedText(speed);
-            sendFanSpeed(speed);
-        }
-
-        function handleLampLevelChange(value) {
-            var level = parseInt(value, 10);
-            setLampLevelText(level);
-            sendLampLevel(level);
-        }
-
-        function setFanSpeedText(level) {
+        function setFanSpeedText(level) 
+        {
             var levelElement = document.getElementById('fanSpeedValue');
             switch(level) {
                 case 0:
@@ -473,8 +463,8 @@ const char controlPage[] PROGMEM = R"rawliteral(
                     break;
             }
         }
-
-        function setLampLevelText(level) {
+        function setLampLevelText(level) 
+        {
             var levelElement = document.getElementById('lampLevelValue');
             switch(level) {
                 case 0:
@@ -495,6 +485,48 @@ const char controlPage[] PROGMEM = R"rawliteral(
                     break;
             }
         }
+        function toggleAudio() 
+        {
+            audioState = !audioState;
+            var audioButton = document.getElementById('audioButton');
+            if (audioState) 
+            {
+                audioButton.style.backgroundColor = "green";
+                audioButton.innerHTML = "ON";
+            } else 
+            {
+                audioButton.style.backgroundColor = "red";
+                audioButton.innerHTML = "OFF";
+            }
+            sendAudioState();
+        }
+
+        function sendFanSpeed(speed) 
+        {
+            var xhr = new XMLHttpRequest();
+            xhr.open("GET", "/setFanSpeed?value=" + speed, true);
+            xhr.send();
+        }
+
+        function handleFanSpeedChange(value) 
+        {
+            var speed = parseInt(value, 10);
+            setFanSpeedText(speed);
+            sendFanSpeed(speed);
+        }
+
+        function sendLampLevel(level) 
+        {
+            var xhr = new XMLHttpRequest();
+            xhr.open("GET", "/setLampLevel?level=" + level, true);
+            xhr.send();
+        }
+
+        function handleLampLevelChange(value) {
+            var level = parseInt(value, 10);
+            setLampLevelText(level);
+            sendLampLevel(level);
+        }
     </script>
 </head>
 <body>
@@ -503,11 +535,15 @@ const char controlPage[] PROGMEM = R"rawliteral(
         <h2>Fan Speed</h2>
         <input type="range" min="0" max="3" step="1" onchange="handleFanSpeedChange(this.value)">
         <div>Current Fan Speed: <span id="fanSpeedValue"></span></div>
-   </div>
+    </div>
     <div class="control-box">
         <h2>Lamp Level</h2>
         <input type="range" min="0" max="3" step="1" onchange="handleLampLevelChange(this.value)">
         <div>Current Lamp Level: <span id="lampLevelValue"></span></div>
+    </div>
+    <div class="control-box">
+        <h2>Audio</h2>
+        <button id="audioButton" class="audio-button" onclick="toggleAudio()">OFF</button>
     </div>
 </body>
 </html>
