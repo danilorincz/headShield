@@ -127,28 +127,19 @@ void setup()
     perkData.initializeBME280 = true;
     Serial.println("BME280 sucess");
   }
-  /*
+
   //* ENS160
   if (ENS160.begin() != NO_ERR)
   {
-    while (ENS160.begin() != NO_ERR)
-    Serial.println("ENS160 failed");
     perkData.initializeEN160 = false;
+    Serial.println("ENS160 failed");
   }
   else
   {
-    Serial.println("ENS160 sucess");
-    perkData.initializeEN160 = false;
-  }
-*/
-
-  while (NO_ERR != ENS160.begin())
-  {
     perkData.initializeEN160 = true;
-    Serial.println("Communication with device failed, please check connection");
-    delay(3000);
+    Serial.println("ENS160 sucess");
   }
-  Serial.println("Begin ok!");
+
   ENS160.setPWRMode(ENS160_STANDARD_MODE);
   ENS160.setTempAndHum(25.0, 50.0);
 
@@ -187,7 +178,7 @@ void handler_helmetData()
 }
 void handler_getHelmetData()
 {
-    StaticJsonDocument<200> doc;
+  StaticJsonDocument<200> doc;
 
   doc["visorState"] = visor.state;
   doc["IRState"] = IR.state;
@@ -201,9 +192,36 @@ void handler_getHelmetData()
   serializeJson(doc, jsonData);
 
   server.send(200, "application/json", jsonData);
-}/*
-void handler_getHelmetData()
+}
+void handler_getSensorData()
 {
+  StaticJsonDocument<200> doc;
+
+  char tempStr[6];  // Buffer big enough for "-XX.X" and a null terminator
+  char humiStr[6];  // Buffer big enough for "-XX.X" and a null terminator
+  
+  // Format temperature and humidity as strings with 1 decimal place
+  dtostrf(perkData.temp, 5, 1, tempStr);
+  dtostrf(perkData.humi, 5, 1, humiStr);
+
+  doc["temp"] = tempStr;
+  doc["press"] = perkData.press;
+  doc["humi"] = humiStr;
+  doc["AQI"] = perkData.AQI;
+  doc["TVOC"] = perkData.TVOC;
+  doc["ECO2"] = perkData.ECO2;
+  doc["status"] = perkData.status;
+
+  String jsonData;
+  serializeJson(doc, jsonData);
+
+  server.send(200, "application/json", jsonData);
+}
+
+
+/*
+  void handler_getHelmetData()
+  {
   String jsonData = "{";
   jsonData += "\"visorState\":" + String(visor.state) + ",";
   jsonData += "\"IRState\":" + String(IR.state) + ",";
@@ -215,10 +233,12 @@ void handler_getHelmetData()
   jsonData += "}";
 
   server.send(200, "application/json", jsonData);
-}
-*/
-void handler_getSensorData()
-{
+  }
+
+
+
+  void handler_getSensorData()
+  {
   String jsonData = "{";
   jsonData += "\"temp\":" + String(perkData.temp) + ",";
   jsonData += "\"press\":" + String(perkData.press) + ",";
@@ -230,8 +250,8 @@ void handler_getSensorData()
   jsonData += "}";
 
   server.send(200, "application/json", jsonData);
-}
-
+  }
+*/
 //* MODE
 int scanMode()
 {
@@ -472,17 +492,17 @@ void loop()
 // a single button which is called as the current state of the audio (on or off) and if the user press it, it will toggle between the two state
 
 /*
-Sensor Data
-"BMS280" all these must be in a box
-"Temperature: " {perkData.temp} " Celsius"
-"Pressure: " {perkData.press} " Pa"
-"Humidity: " {perkData.humi} " %"
+  Sensor Data
+  "BMS280" all these must be in a box
+  "Temperature: " {perkData.temp} " Celsius"
+  "Pressure: " {perkData.press} " Pa"
+  "Humidity: " {perkData.humi} " %"
 
-"ENS160" all these must be in a box
-"AQI: " 1->"Excellent" (green), 2->"Good" (slightly darker green), 3->"Moderate" (yellow), 4->"Poor" (slightly darker yellow) , 5->"Unhealthy" (red) {perkdata.AQI}
-"TVOC: " (concentration of total volatile organic compounds) {perkdata.TVOC} " ppb"
-under this data there should be an explanatory text: "concentration of total volatile organic compounds"
-"ECO2: " {perkdata.EOC2} " ppm"
-under this data there should be an explanatory text: "detected data of VOCs and hydrogen"
-"Status: " (if its 0-> "normal mode" with a green background , 1-> "warm up" with a yellow background, 2-> "start up" with a red background) {perkdata.status}
+  "ENS160" all these must be in a box
+  "AQI: " 1->"Excellent" (green), 2->"Good" (slightly darker green), 3->"Moderate" (yellow), 4->"Poor" (slightly darker yellow) , 5->"Unhealthy" (red) {perkdata.AQI}
+  "TVOC: " (concentration of total volatile organic compounds) {perkdata.TVOC} " ppb"
+  under this data there should be an explanatory text: "concentration of total volatile organic compounds"
+  "ECO2: " {perkdata.EOC2} " ppm"
+  under this data there should be an explanatory text: "detected data of VOCs and hydrogen"
+  "Status: " (if its 0-> "normal mode" with a green background , 1-> "warm up" with a yellow background, 2-> "start up" with a red background) {perkdata.status}
 */
