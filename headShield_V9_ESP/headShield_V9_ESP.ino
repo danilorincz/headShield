@@ -1,4 +1,4 @@
-// HEADSHIELD_V3.7 PCB_V10
+// HEADSHIELD_V4.3.1 PCB_V10
 //? SETTINGS
 #define SOUND_ACTIVE true
 
@@ -43,11 +43,10 @@ DFRobot_BME280_IIC BME280(&Wire, 0x76);
 
 //? FAN
 const int fanPin = 5;
-const int tachoPin = 17;
 Fan fan(fanPin);
 
 //? TACHOMETER
-const int tachometerPin = 17;
+const int tachometerPin = 39;
 Tachometer tachometer(tachometerPin);
 
 //? POWER LED
@@ -415,7 +414,7 @@ void main_tachometer(unsigned long _loopTime)
   static unsigned long sinceStart = millis();
   if (millis() - sinceStart > _loopTime)
   {
-    tachometer.getRPM();
+    //tachometer.getRPM();
     sinceStart = millis();
   }
 }
@@ -481,7 +480,7 @@ void main_mode()
 }
 void main_touchInput()
 {
-  if (touchLeft.singleTap()) //! LAMP INPUT
+  if (touchLeft.singleTap()) //! LAMP CONTROL
   {
     lamp.toggle(0, 3);
     if (lamp.level == 0)
@@ -490,7 +489,7 @@ void main_touchInput()
       beeper.playLampOn();
   }
 
-  if (touchRight.singleTap()) //! FAN INPUT
+  if (touchRight.singleTap()) //! FAN CONTROL
   {
     fan.toggle(1, 3);
 
@@ -505,7 +504,7 @@ void main_touchInput()
       break;
     }
   }
-  else if (touchRight.longTap()) //! AUDIO INPUT
+  else if (touchRight.longTap()) //! AUDIO CONTROL
   {
     audio.toggle();
 
@@ -535,18 +534,24 @@ void main_handleClient(unsigned long _loopTime)
     timeSince = millis();
   }
 }
-
+Timer tachometerTimer(1000);
 void loop()
 {
+  main_handleClient(100);
+
   main_mode();
   main_touchInput();
   main_serviceMode();
 
-  main_handleClient(500);
   main_sensorConnection(4000);
   main_readSensorData(1000);
   main_battery(5000);
   main_tachometer(400);
+
+  if (tachometerTimer.timeElapsedMillis())
+  {
+    tachometer.speed_rpm = tachometer.getSpeed();
+  }
 }
 
 /*
