@@ -15,5 +15,5 @@ MARÁS (1. rendelés) hibák
     //* az IR sensor lyukai túl kicsik ahhoz hogy a lábai tövénél lévő csavart rész is át tudjon menni
     //* a BATTERY BOARD DC005-ös adapter aljzatjának lyukai túl kicsik
     //* a battery boardnál a MB nincs bekötve
-    // a main board-on a tachometernek nem kell resistor, és egy analog bementbe kell mennie
-    // 
+    // a main board-on a tachometernek nem kell resistor, és egy analog bementbe kell mennie (vagy schmitt trigger)
+    // a perk board COVER felöli részén az USB foglalatot kijjebb kell helyezni

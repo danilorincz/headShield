@@ -82,12 +82,11 @@ Audio audio(audioEnPin);
 
 //? TIMERS
 Timer serviceModeTimer(3000);
-
 Timer chechTachometerTimer(1000);
 Timer checkBatteryTimer(5000);
-
 Timer refreshSensorDataTimer(1000);
 Timer connectSensorTimer(2000);
+
 //? GLOBAL
 int mode = 1;
 bool newSensorConnection = false;
@@ -280,7 +279,6 @@ int scanMode()
 }
 
 //* TOUCH
-
 bool multiTouch()
 {
   if (touchLeft.readAtTheMoment() && touchRight.readAtTheMoment())
@@ -537,13 +535,14 @@ void main_handleClient(unsigned long _loopTime)
 Timer tachometerTimer(1000);
 void loop()
 {
+  main_sensorConnection(4000);
+
   main_handleClient(100);
 
   main_mode();
   main_touchInput();
   main_serviceMode();
 
-  main_sensorConnection(4000);
   main_readSensorData(1000);
   main_battery(5000);
   main_tachometer(400);
@@ -555,7 +554,6 @@ void loop()
 }
 
 /*
-
 void loop()
 {
   unsigned long startTime;  // Variable to store the start time of each function
