@@ -49,6 +49,6 @@ public:
             timeWhenFinished = micros();
 
             dutyCycle = timeWhenFinished - timeWhenStart;
-        } while (dutyCycle < 3900);
+        } while (dutyCycle < 3920);
     }
 };
