@@ -7,12 +7,14 @@ class Tachometer
 private:
     const int analogPin;
     Timer maxTimer;
+    Timer debounceTimer; // Add this line to declare a debounce timer
     int lastAnalogValue = 0;
     int newAnalogValue = 0;
     int pulseCount = 0;
     unsigned long currentTime = 0;
     unsigned long pulseStart = 0;
     unsigned long totalPulseDuration = 0;
+    unsigned long debounceTime = 50; // Add this line to set a debounce time (in ms)
 
     int minStateChanges;
     int maxStateChanges;
@@ -25,7 +27,8 @@ public:
         : analogPin(analogPin),
           minStateChanges(minStateChanges),
           maxStateChanges(maxStateChanges),
-          maxTimer(maxTime)
+          maxTimer(maxTime),
+          debounceTimer(debounceTime) // Initialize the debounce timer here
     {
     }
     void begin()
@@ -35,7 +38,8 @@ public:
     void update()
     {
         maxTimer.preTime = millis();
-        while (!maxTimer.timeElapsedMillis())
+        debounceTimer.preTime = micros();
+        while (pulseCount < maxStateChanges)
         {
             newAnalogValue = analogRead(analogPin);
             currentTime = millis();
@@ -49,13 +53,13 @@ public:
             else if (risingEdge(lastAnalogValue, newAnalogValue)) // rising edge detected
             {
                 pulseStart = currentTime;
+
             }
 
             lastAnalogValue = newAnalogValue;
 
-            if (pulseCount > maxStateChanges)
+            if (maxTimer.timeElapsedMillis())
                 break;
-
         }
 
         if (pulseCount > minStateChanges)
