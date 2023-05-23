@@ -12,6 +12,8 @@ WebServer server(80);
 #define inputPin 39
 #define outputPin 5
 
+bool fanState = false;
+
 const char *webpageCode = R"rawliteral(
 <!DOCTYPE html>
 <html>
@@ -26,12 +28,17 @@ const char *webpageCode = R"rawliteral(
             });
         }
 
+        function toggleFan() {
+            fetch('/toggleFan');
+        }
+
         setInterval(fetchValue, 1000);
     </script>
 </head>
 <body>
     <h1>Hello World</h1>
     <p id="analogValue">Analog value: </p>
+    <button onclick="toggleFan()">Toggle Fan</button>
 </body>
 </html>
 )rawliteral";
@@ -46,6 +53,13 @@ void handle_value()
     server.send(200, "text/plain", String(analogRead(inputPin)).c_str());
 }
 
+void handle_toggleFan()
+{
+    fanState = !fanState;
+    digitalWrite(outputPin, fanState ? HIGH : LOW);
+    server.send(200, "text/plain", "Toggled");
+}
+
 void setup()
 {
     pinMode(inputPin, INPUT);
@@ -57,6 +71,7 @@ void setup()
 
     server.on("/", handle_root);
     server.on("/value", handle_value);
+    server.on("/toggleFan", handle_toggleFan);
     server.begin();
 }
 
