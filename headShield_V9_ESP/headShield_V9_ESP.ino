@@ -25,7 +25,7 @@
 #include "infraredSensor.h"
 #include "audioEN.h"
 #include "sensor_data.h"
-#include "tachometer.h"
+#include "tacho.h"
 
 //? WIFI
 const char *ssid = "headShield";
@@ -47,7 +47,10 @@ Fan fan(fanPin);
 
 //? TACHOMETER
 const int tachometerPin = 39;
-Tachometer tachometer(tachometerPin);
+const int analogTreshold = 1000;
+const int minStateChanges = 10;
+const unsigned long maxSampleTime = 100;
+Tachometer tacho(tachometerPin, analogTreshold, minStateChanges, maxSampleTime);
 
 //? POWER LED
 const int LEDPin = 19;
@@ -82,11 +85,10 @@ Audio audio(audioEnPin);
 
 //? TIMERS
 Timer serviceModeTimer(3000);
-Timer chechTachometerTimer(1000);
 Timer checkBatteryTimer(5000);
 Timer refreshSensorDataTimer(1000);
 Timer connectSensorTimer(2000);
-
+int tresholdValue = 100;
 //? GLOBAL
 int mode = 1;
 bool newSensorConnection = false;
@@ -101,7 +103,7 @@ void setup()
   beeper.begin(SOUND_ACTIVE);
   visor.begin();
   battery.begin();
-  tachometer.begin();
+  tacho.begin();
 
   //* WIFI
   WiFi.softAP(ssid, password);
@@ -154,7 +156,7 @@ void setup()
 
   //* INITIALIZE STARTING VALUES
   lamp.level = 0;
-  fan.level = 2;
+  fan.level = 0;
   audio.state = LOW;
 
   //* SERVICE MODE
@@ -191,7 +193,8 @@ void handler_getHelmetData()
   doc["lampLevel"] = lamp.level;
   doc["batteryLevel"] = battery.level;
   doc["audioState"] = audio.state;
-  doc["fanRPM"] = tachometer.speed_rpm;
+  doc["fanRPM"] = tacho.averagePulseWidth;
+  //doc["analogTreshold"] = tresholdValue;
 
   String jsonData;
   serializeJson(doc, jsonData);
@@ -407,15 +410,7 @@ void main_battery(unsigned long _loopTime)
     sinceStart = millis();
   }
 }
-void main_tachometer(unsigned long _loopTime)
-{
-  static unsigned long sinceStart = millis();
-  if (millis() - sinceStart > _loopTime)
-  {
-    //tachometer.getRPM();
-    sinceStart = millis();
-  }
-}
+
 void main_readSensorData(unsigned long _loopTime)
 {
   static unsigned long sinceStart = millis();
@@ -522,7 +517,15 @@ void main_serviceMode()
     }
   }
 }
-
+void main_updateTachometer(unsigned long _loopTime)
+{
+  static unsigned long timeSince = millis();
+  if (millis() - timeSince > _loopTime)
+  {
+    Serial.println("LEFUT");
+    tacho.update();
+  }
+}
 void main_handleClient(unsigned long _loopTime)
 {
   static unsigned long timeSince = millis();
@@ -532,77 +535,18 @@ void main_handleClient(unsigned long _loopTime)
     timeSince = millis();
   }
 }
-Timer tachometerTimer(1000);
+
 void loop()
 {
-  main_sensorConnection(4000);
-
-  main_handleClient(100);
+  main_handleClient(10);
+  if (fan.level != 0)
+    main_updateTachometer(1000);
 
   main_mode();
   main_touchInput();
   main_serviceMode();
-
+  return;
+  main_sensorConnection(4000);
   main_readSensorData(1000);
   main_battery(5000);
-  main_tachometer(400);
-
-  if (tachometerTimer.timeElapsedMillis())
-  {
-    tachometer.speed_rpm = tachometer.getSpeed();
-  }
 }
-
-/*
-void loop()
-{
-  unsigned long startTime;  // Variable to store the start time of each function
-
-  startTime = millis();
-  main_mode();
-  Serial.print("main_mode: ");
-  Serial.println(millis() - startTime);
-
-  startTime = millis();
-  main_touchInput();
-  Serial.print("main_touchInput: ");
-  Serial.println(millis() - startTime);
-
-  startTime = millis();
-  main_serviceMode();
-  Serial.print("main_serviceMode: ");
-  Serial.println(millis() - startTime);
-
-  startTime = millis();
-  main_handleClient(0);
-  Serial.print("main_handleClient: ");
-  Serial.println(millis() - startTime);
-
-  startTime = millis();
-  main_sensorConnection(0);
-  Serial.print("main_sensorConnection: ");
-  Serial.println(millis() - startTime);
-
-  startTime = millis();
-  main_readSensorData(0);
-  Serial.print("main_readSensorData: ");
-  Serial.println(millis() - startTime);
-
-  startTime = millis();
-  main_battery(0);
-  Serial.print("main_battery: ");
-  Serial.println(millis() - startTime);
-
-  startTime = millis();
-  main_tachometer(0);
-  Serial.print("main_tachometer: ");
-  Serial.println(millis() - startTime);
-
-  Serial.println(" ");
-  Serial.println(" ");
-  Serial.println(" ");
-  Serial.println(" ");
-  Serial.println(" ");
-  
-}
-*/
