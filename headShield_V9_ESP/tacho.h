@@ -6,86 +6,50 @@ class Tachometer
 {
 private:
     const int analogPin;
-    Timer maxTimer;
-    Timer debounceTimer; // Add this line to declare a debounce timer
-    int lastAnalogValue = 0;
-    int newAnalogValue = 0;
-    int pulseCount = 0;
-    unsigned long currentTime = 0;
-    unsigned long pulseStart = 0;
-    unsigned long totalPulseDuration = 0;
-    unsigned long debounceTime = 50; // Add this line to set a debounce time (in ms)
+    unsigned long timeWhenStart = 0;
+    unsigned long timeWhenFinished = 0;
+    bool initialValue;
+    bool rollingValue;
 
-    int minStateChanges;
-    int maxStateChanges;
 
 public:
-    float rpm = 0.0f; // Add this line to declare the rpm variable.
-    float averagePulseWidth = 0.0f;
-
-    Tachometer(int analogPin, int minStateChanges, int maxStateChanges, unsigned long maxTime)
-        : analogPin(analogPin),
-          minStateChanges(minStateChanges),
-          maxStateChanges(maxStateChanges),
-          maxTimer(maxTime),
-          debounceTimer(debounceTime) // Initialize the debounce timer here
+    unsigned long dutyCycle = 0;
+    Tachometer(int analogPin)
+        : analogPin(analogPin)
     {
     }
     void begin()
     {
         pinMode(analogPin, INPUT);
     }
+
+    bool getDigital()
+    {
+        if (analogRead(analogPin)==0)
+            return false;
+        else
+            return true;
+    }
     void update()
     {
-        maxTimer.preTime = millis();
-        debounceTimer.preTime = micros();
-        while (pulseCount < maxStateChanges)
+        initialValue = getDigital();
+        rollingValue = initialValue;
+        while (rollingValue == initialValue) // wait until state changes the first time
         {
-            newAnalogValue = analogRead(analogPin);
-            currentTime = millis();
-
-            // since the LOW value is consistently zero
-            if (fallingEdge(lastAnalogValue, newAnalogValue)) // falling edge detected
-            {
-                pulseCount++;
-                totalPulseDuration += currentTime - pulseStart;
-            }
-            else if (risingEdge(lastAnalogValue, newAnalogValue)) // rising edge detected
-            {
-                pulseStart = currentTime;
-
-            }
-
-            lastAnalogValue = newAnalogValue;
-
-            if (maxTimer.timeElapsedMillis())
-                break;
+            rollingValue = getDigital();
         }
 
-        if (pulseCount > minStateChanges)
+        timeWhenStart = micros();
+        while (rollingValue != initialValue)
         {
-            averagePulseWidth = (float)totalPulseDuration / pulseCount;
+            rollingValue = getDigital();
         }
+        while (rollingValue == initialValue)
+        {
+            rollingValue = getDigital();
+        }
+        timeWhenFinished = micros();
 
-        resetVariables();
-    }
-
-private:
-    bool risingEdge(int oldValue, int newValue)
-    {
-        return newValue != 0 && oldValue == 0;
-    }
-
-    bool fallingEdge(int oldValue, int newValue)
-    {
-        return newValue == 0 && oldValue != 0;
-    }
-
-    void resetVariables()
-    {
-        lastAnalogValue = 0;
-        pulseCount = 0;
-        pulseStart = 0;
-        totalPulseDuration = 0;
+        dutyCycle = timeWhenFinished - timeWhenStart;
     }
 };

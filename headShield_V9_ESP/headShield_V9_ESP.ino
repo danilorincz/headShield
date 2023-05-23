@@ -47,10 +47,8 @@ Fan fan(fanPin);
 
 //? TACHOMETER
 const int tachometerPin = 39;
-const int minStateChanges = 50;
-const int maxStateChanges = 1000;
-const unsigned long maxTime = 400;
-Tachometer tacho(tachometerPin, minStateChanges, maxStateChanges, maxTime);
+
+Tachometer tacho(tachometerPin);
 
 //? POWER LED
 const int LEDPin = 19;
@@ -193,9 +191,7 @@ void handler_getHelmetData()
   doc["lampLevel"] = lamp.level;
   doc["batteryLevel"] = battery.level;
   doc["audioState"] = audio.state;
-
-  doc["fanRPM"] = tacho.averagePulseWidth;
-  //doc["analogTreshold"] = tresholdValue;
+  doc["fanRPM"] = tacho.dutyCycle;
 
   String jsonData;
   serializeJson(doc, jsonData);
@@ -524,7 +520,6 @@ void main_updateTachometer(unsigned long _loopTime)
   static unsigned long timeSince = millis();
   if (millis() - timeSince > _loopTime)
   {
-    Serial.println("LEFUT");
     tacho.update();
   }
 }
@@ -540,10 +535,10 @@ void main_handleClient(unsigned long _loopTime)
 
 void loop()
 {
-  main_handleClient(10);
-  if (fan.level != 0)
+  main_handleClient(100);
+  if (fan.level == 3)
     main_updateTachometer(1000);
-
+  delay(10);
   main_mode();
   main_touchInput();
   main_serviceMode();
