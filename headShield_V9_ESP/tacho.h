@@ -1,26 +1,30 @@
 #pragma once
-
 #include "Arduino.h"
+#include "Timer.h"
+
 class Tachometer
 {
 private:
     const int analogPin;
-    int analogThreshold;
-    const int minStateChanges;
     Timer maxTimer;
     int lastAnalogValue = 0;
-    int sampleCount = 0;
-    int stateChanges = 0;
+    int newAnalogValue = 0;
+    int pulseCount = 0;
+    unsigned long currentTime = 0;
     unsigned long pulseStart = 0;
-    unsigned long totalPulseWidth = 0;
-    int counter = 0;
+    unsigned long totalPulseDuration = 0;
+
+    int minStateChanges;
+    int maxStateChanges;
 
 public:
-    int averagePulseWidth = 0;
-    Tachometer(int analogPin, int analogThreshold, int minStateChanges, unsigned long maxTime)
+    float rpm = 0.0f; // Add this line to declare the rpm variable.
+    float averagePulseWidth = 0.0f;
+
+    Tachometer(int analogPin, int minStateChanges, int maxStateChanges, unsigned long maxTime)
         : analogPin(analogPin),
-          analogThreshold(analogThreshold),
           minStateChanges(minStateChanges),
+          maxStateChanges(maxStateChanges),
           maxTimer(maxTime)
     {
     }
@@ -28,63 +32,54 @@ public:
     {
         pinMode(analogPin, INPUT);
     }
-    void changeAnalogTreshold(int newValue)
-    {
-        analogThreshold = newValue;
-    }
     void update()
     {
         maxTimer.preTime = millis();
-        while (!maxTimer.timeElapsedMillis()) //stateChanges < minStateChanges &&
+        while (!maxTimer.timeElapsedMillis())
         {
-            int newAnalogValue = analogRead(analogPin);
-            unsigned long currentTime = millis();
+            newAnalogValue = analogRead(analogPin);
+            currentTime = millis();
 
-            if (didStateChange(lastAnalogValue, newAnalogValue))
+            // since the LOW value is consistently zero
+            if (fallingEdge(lastAnalogValue, newAnalogValue)) // falling edge detected
             {
-                stateChanges++;
-                sampleCount++;
-
-                if (isRisingEdge(lastAnalogValue, newAnalogValue))
-                {
-                    pulseStart = currentTime;
-                }
-                else if (isFallingEdge(lastAnalogValue, newAnalogValue))
-                {
-                    totalPulseWidth += currentTime - pulseStart;
-                }
+                pulseCount++;
+                totalPulseDuration += currentTime - pulseStart;
+            }
+            else if (risingEdge(lastAnalogValue, newAnalogValue)) // rising edge detected
+            {
+                pulseStart = currentTime;
             }
 
             lastAnalogValue = newAnalogValue;
         }
-        averagePulseWidth = stateChanges;
+
+        if (pulseCount > 0)
+        {
+            averagePulseWidth = (float)totalPulseDuration / pulseCount;
+                   
+        }
+        
 
         resetVariables();
     }
 
 private:
-    bool isRisingEdge(int oldValue, int newValue)
+    bool risingEdge(int oldValue, int newValue)
     {
-        return oldValue < analogThreshold && newValue >= analogThreshold;
+        return newValue != 0 && oldValue == 0;
     }
 
-    bool isFallingEdge(int oldValue, int newValue)
+    bool fallingEdge(int oldValue, int newValue)
     {
-        return oldValue >= analogThreshold && newValue < analogThreshold;
-    }
-
-    bool didStateChange(int oldValue, int newValue)
-    {
-        return isRisingEdge(oldValue, newValue) || isFallingEdge(oldValue, newValue);
+        return newValue == 0 && oldValue != 0;
     }
 
     void resetVariables()
     {
         lastAnalogValue = 0;
-        sampleCount = 0;
-        stateChanges = 0;
+        pulseCount = 0;
         pulseStart = 0;
-        totalPulseWidth = 0;
-        maxTimer.preTime = 0;
+        totalPulseDuration = 0;
     }
 };

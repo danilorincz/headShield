@@ -1,8 +1,8 @@
 #include <Arduino.h>
 #include <WiFi.h>
 #include <WebServer.h>
-
-const char *ssid = "ESP32_AP";
+#include <analogWrite.h>
+const char *ssid = "headShield";
 const char *password = "123456789";
 IPAddress local_ip(192, 168, 1, 1);
 IPAddress gateway(192, 168, 1, 1);
@@ -54,7 +54,7 @@ const char *webpageCode = R"rawliteral(
 
 void handle_root()
 {
-    server.send_P(200, "text/html", webpageCode);
+    server.send(200, "text/html", webpageCode);
 }
 
 void handle_value()
@@ -65,7 +65,10 @@ void handle_value()
 void handle_toggleFan()
 {
     fanState = !fanState;
-    digitalWrite(outputPin, fanState ? HIGH : LOW);
+    if (fanState)
+        analogWrite(outputPin, 190);
+    else
+        analogWrite(outputPin, 0);
     server.send(200, "text/plain", "Toggled");
 }
 

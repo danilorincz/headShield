@@ -47,10 +47,10 @@ Fan fan(fanPin);
 
 //? TACHOMETER
 const int tachometerPin = 39;
-const int analogTreshold = 1000;
 const int minStateChanges = 10;
-const unsigned long maxSampleTime = 100;
-Tachometer tacho(tachometerPin, analogTreshold, minStateChanges, maxSampleTime);
+const int maxStateChanges = 100;
+const unsigned long maxTime = 100;
+Tachometer tacho(tachometerPin, minStateChanges, maxStateChanges, maxTime);
 
 //? POWER LED
 const int LEDPin = 19;
@@ -193,6 +193,7 @@ void handler_getHelmetData()
   doc["lampLevel"] = lamp.level;
   doc["batteryLevel"] = battery.level;
   doc["audioState"] = audio.state;
+
   doc["fanRPM"] = tacho.averagePulseWidth;
   //doc["analogTreshold"] = tresholdValue;
 
@@ -238,7 +239,7 @@ void handler_setFanSpeed()
   Serial.print("New fan value: ");
   Serial.println(newFanLevel);
   fan.setLevel(newFanLevel);
-  server.send_P(200, "text/plain", "OK");
+  server.send(200, "text/plain", "OK");
 }
 void handler_setLampLevel()
 {
@@ -246,7 +247,7 @@ void handler_setLampLevel()
   Serial.print("New lamp value: ");
   Serial.println(newLampLevel);
   lamp.setLevel(newLampLevel);
-  server.send_P(200, "text/plain", "Lamp level set");
+  server.send(200, "text/plain", "Lamp level set");
 }
 void handler_setAudioState()
 {
@@ -264,7 +265,7 @@ void handler_setAudioState()
     audio.off();
   }
 
-  server.send_P(200, "text/plain", "OK");
+  server.send(200, "text/plain", "OK");
 }
 //* MODE
 int scanMode()
@@ -499,6 +500,7 @@ void main_touchInput()
   }
   else if (touchRight.longTap()) //! AUDIO CONTROL
   {
+
     audio.toggle();
 
     if (audio.state)
