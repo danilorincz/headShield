@@ -52,14 +52,16 @@ public:
             }
 
             lastAnalogValue = newAnalogValue;
+
+            if (pulseCount > maxStateChanges)
+                break;
+
         }
 
-        if (pulseCount > 0)
+        if (pulseCount > minStateChanges)
         {
             averagePulseWidth = (float)totalPulseDuration / pulseCount;
-                   
         }
-        
 
         resetVariables();
     }

@@ -47,9 +47,9 @@ Fan fan(fanPin);
 
 //? TACHOMETER
 const int tachometerPin = 39;
-const int minStateChanges = 10;
-const int maxStateChanges = 100;
-const unsigned long maxTime = 100;
+const int minStateChanges = 50;
+const int maxStateChanges = 1000;
+const unsigned long maxTime = 400;
 Tachometer tacho(tachometerPin, minStateChanges, maxStateChanges, maxTime);
 
 //? POWER LED
