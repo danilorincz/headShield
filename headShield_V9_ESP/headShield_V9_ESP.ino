@@ -535,10 +535,10 @@ void main_handleClient(unsigned long _loopTime)
 
 void loop()
 {
-  main_handleClient(100);
+  main_handleClient(200);
   if (fan.level == 3)
     main_updateTachometer(1000);
-  delay(10);
+  delay(100);
   main_mode();
   main_touchInput();
   main_serviceMode();

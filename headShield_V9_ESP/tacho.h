@@ -11,7 +11,6 @@ private:
     bool initialValue;
     bool rollingValue;
 
-
 public:
     unsigned long dutyCycle = 0;
     Tachometer(int analogPin)
@@ -25,31 +24,31 @@ public:
 
     bool getDigital()
     {
-        if (analogRead(analogPin)==0)
-            return false;
-        else
-            return true;
+        return analogRead(analogPin) > 0;
     }
     void update()
     {
-        initialValue = getDigital();
-        rollingValue = initialValue;
-        while (rollingValue == initialValue) // wait until state changes the first time
+        do
         {
-            rollingValue = getDigital();
-        }
+            initialValue = getDigital();
+            rollingValue = initialValue;
+            while (rollingValue == initialValue) // wait until state changes the first time
+            {
+                rollingValue = getDigital();
+            }
 
-        timeWhenStart = micros();
-        while (rollingValue != initialValue)
-        {
-            rollingValue = getDigital();
-        }
-        while (rollingValue == initialValue)
-        {
-            rollingValue = getDigital();
-        }
-        timeWhenFinished = micros();
+            timeWhenStart = micros();
+            while (rollingValue != initialValue)
+            {
+                rollingValue = getDigital();
+            }
+            while (rollingValue == initialValue)
+            {
+                rollingValue = getDigital();
+            }
+            timeWhenFinished = micros();
 
-        dutyCycle = timeWhenFinished - timeWhenStart;
+            dutyCycle = timeWhenFinished - timeWhenStart;
+        } while (dutyCycle < 3900);
     }
 };
