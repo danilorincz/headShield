@@ -3,7 +3,7 @@
 #include <ESPAsyncWebServer.h>
 #include <AsyncElegantOTA.h>
 
-const char *ssid = "headShield_3";
+const char *ssid = "headShield_6";
 const char *password = "123456789";
 
 IPAddress local_ip(192, 168, 1, 1);
@@ -38,7 +38,9 @@ void setup()
   Serial.print("IP address: ");
   Serial.println(WiFi.softAPIP());
   
-  server.on("/", HTTP_GET, handle_root);
+  server.on("/", HTTP_GET, [](AsyncWebServerRequest *request){
+    handle_root(request);
+  });
   AsyncElegantOTA.begin(&server);    // Start ElegantOTA
   server.begin();
 }
