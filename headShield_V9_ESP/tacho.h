@@ -14,6 +14,7 @@ private:
     unsigned long timeHigh = 0;
     unsigned long timeLow = 0;
     bool rollingValue;
+    int maxMeasure = 3;
 
 public:
     unsigned long dutyCycle = 0;
@@ -32,6 +33,7 @@ public:
     }
     void update()
     {
+        int measureCounter = 0;
         do
         {
             bool lastState = getDigital();
@@ -51,9 +53,12 @@ public:
                 timeHigh = micros() - timeWhenHighStart;
             else
                 timeLow = micros() - timeWhenLowStart;
-
+/*
+            measureCounter++;
+            if (measureCounter >= maxMeasure)
+                break;*/
             dutyCycle = timeHigh + timeLow;
-        } while (abs(timeHigh - timeLow) > 0.10 * dutyCycle || dutyCycle < 3800); // change this value as needed
+        } while (abs(timeHigh - timeLow) > 0.10 * dutyCycle || dutyCycle < 3000); // change this value as needed
     }
     unsigned long measureAverageDutyCycle(int numMeasurements, double outlierThreshold)
     {

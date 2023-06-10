@@ -17,9 +17,10 @@ const char *webpageCode = R"rawliteral(
 </head>
 <body>
   <ul>
-    <li><a href="/helmetData">Helmet Data</a></li> <!-- Update this line -->
+    <li><a href="/helmetData">Helmet Data</a></li>
     <li><a href="/sensorData">Sensor Data</a></li>
     <li><a href="/control">Control</a></li>
+    <li><a href="/debugData">Debug Data</a></li>
   </ul>
 </body>
 </html>
@@ -549,5 +550,33 @@ const char controlPage[] PROGMEM = R"rawliteral(
         <button id="audioButton" class="audio-button" onclick="toggleAudio()">OFF</button>
     </div>
 </body>
+</html>
+)rawliteral";
+
+
+const char DEBUG_PAGE[] = R"rawliteral(
+<!DOCTYPE html>
+<html>
+    <head>
+        <title>Debug Page</title>
+    </head>
+    <body>
+        <h1>Debug Page</h1>
+        <p>
+            <strong>Dummy Value 1:</strong> <span id="dummy1">--</span><br>
+            <strong>Dummy Value 2:</strong> <span id="dummy2">--</span><br>
+            <strong>Dummy Value 3:</strong> <span id="dummy3">--</span>
+        </p>
+        <script>
+            setInterval(() => {
+                fetch('/debugdata').then(response => response.json())
+                .then(data => {
+                    document.getElementById('dummy1').textContent = data.dummy1;
+                    document.getElementById('dummy2').textContent = data.dummy2;
+                    document.getElementById('dummy3').textContent = data.dummy3;
+                });
+            }, 1000); // Fetch data every second
+        </script>
+    </body>
 </html>
 )rawliteral";

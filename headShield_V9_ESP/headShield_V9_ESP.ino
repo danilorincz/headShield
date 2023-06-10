@@ -117,6 +117,8 @@ void setup()
   server.on("/control", HTTP_GET, handler_controlPage);
   server.on("/setLampLevel", HTTP_GET, handler_setLampLevel);
   server.on("/setAudioState", HTTP_GET, handler_setAudioState);
+  server.on("/debugData", HTTP_GET, handleDebugPage);
+  server.on("/debugdata", HTTP_GET, handleDebugDataRequest);
   server.begin();
 
   //* BME280
@@ -261,6 +263,20 @@ void handler_setAudioState()
   }
 
   server.send(200, "text/plain", "OK");
+}
+void handleDebugPage() {
+  server.send_P(200, "text/html", DEBUG_PAGE);
+}
+
+void handleDebugDataRequest()
+{
+  StaticJsonDocument<200> doc;
+  doc["dummy1"] = touchRight.readRaw();
+  doc["dummy2"] = touchLeft.readRaw();
+  doc["dummy3"] = 20;
+  String jsonData;
+  serializeJson(doc, jsonData);
+  server.send(200, "application/json", jsonData);
 }
 //* MODE
 int scanMode()
@@ -519,7 +535,7 @@ void main_updateTachometer(unsigned long _loopTime)
   static unsigned long timeSince = millis();
   if (millis() - timeSince > _loopTime)
   {
-    avarageValue=tacho.measureAverageDutyCycle(100, 50);
+    avarageValue = tacho.measureAverageDutyCycle(200, 10);
   }
 }
 void main_handleClient(unsigned long _loopTime)
@@ -537,7 +553,7 @@ void loop()
   main_handleClient(100);
   if (fan.level == 3)
     main_updateTachometer(1000);
-  delay(500);
+
   main_mode();
   main_touchInput();
   main_serviceMode();
