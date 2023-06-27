@@ -36,7 +36,7 @@ public:
     }
     bool readAtTheMoment()
     {
-        if (touchRead(pin) < threshold)
+        if (readRaw() < threshold)
             return true;
         else
             return false;

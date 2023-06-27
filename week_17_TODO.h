@@ -13,14 +13,17 @@
         //* csavarok/anyák
         //* mágnesek (nagy: 8 db, kicsi: 4+6)
     // használati útmutató írása
-
+        // szoftver frissítés hogyan működik
+        // szűrő tömítettségének kifejtése
+        // a webes interfészről írni, miket lehet csinálni, mire jó
+        // jelző hangok magyarázata
     //* képek
         //* akkumulátor használatáról
         //* LED csatlakozás
         //* szűrők felhejezése
         //* USB csatlakozó
     // felhasznált anyagok listája
-    // PCB képek készítése
+    //* PCB képek készítése
 // 5 TEXTIL
     // szabásminta elkészítése
 

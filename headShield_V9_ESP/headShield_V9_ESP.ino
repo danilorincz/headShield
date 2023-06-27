@@ -1,7 +1,8 @@
 // HEADSHIELD_V4.3.1 PCB_V10
 //? SETTINGS
 #define SOUND_ACTIVE true
-
+// right not tocuhing: 37 / 22 -> 30
+// left not touching 65 / 37 -> 45
 //? DOWNLOADED LIBRARIEs
 #include <Arduino.h>
 #include <WiFi.h>
@@ -13,6 +14,7 @@
 #include "DFRobot_BME280.h"
 #include <DFRobot_ENS160.h>
 #include <ArduinoJson.h>
+
 //? CUSTOM LIBRARIEs
 #include "webpage.h"
 #include "timer.h"
@@ -49,6 +51,7 @@ Fan fan(fanPin);
 const int tachometerPin = 39;
 Tachometer tacho(tachometerPin);
 int avarageValue = 0;
+
 //? POWER LED
 const int LEDPin = 19;
 LED lamp(LEDPin);
@@ -60,8 +63,8 @@ infraredSensor IR(infraredPin);
 //? TOUCH INPUT
 const int touchRightPin = 33;
 const int touchLeftPin = 15;
-touchInput touchRight(touchRightPin, 30);
-touchInput touchLeft(touchLeftPin, 30);
+touchInput touchRight(touchRightPin, 24);
+touchInput touchLeft(touchLeftPin, 48);
 
 //? REED SWITCH
 const int reedSwitchPin = 18;
@@ -86,6 +89,7 @@ Timer checkBatteryTimer(5000);
 Timer refreshSensorDataTimer(1000);
 Timer connectSensorTimer(2000);
 int tresholdValue = 100;
+
 //? GLOBAL
 int mode = 1;
 bool newSensorConnection = false;
@@ -102,12 +106,15 @@ void setup()
   battery.begin();
   tacho.begin();
 
+  adcAttachPin(infraredPin);
   //* WIFI
+
   WiFi.softAP(ssid, password);
   WiFi.softAPConfig(local_ip, gateway, subnet);
   delay(100);
-
+  WiFi.setTxPower(WIFI_POWER_MINUS_1dBm);
   //* HANDLERS
+
   server.on("/", handle_root);
   server.on("/helmetData", handler_helmetData);
   server.on("/getHelmetData", handler_getHelmetData);
@@ -163,10 +170,21 @@ void setup()
   {
     if (serviceModeTimer.timeElapsedMillis())
     {
-      mode = 0;
-      break;
+      while (true)
+      {
+      }
     }
   }
+
+  analogReadResolution(12); // Default resolution to 12 bits
+  analogSetWidth(12);       // Default width to 12 bits
+  //analogSetCycles(8);                     // Default cycles per sample
+  //analogSetSamples(1);                    // Default number of samples
+  analogSetClockDiv(1); // Default divider for ADC clock
+  //analogSetAttenuation(ADC_11db);         // Default attenuation for all ADC pins
+  analogSetPinAttenuation(infraredPin, ADC_11db); // Default attenuation for the specified pin
+
+  adcAttachPin(infraredPin); // Attach the pin to the ADC
 }
 
 //* HANDLERs
@@ -264,7 +282,8 @@ void handler_setAudioState()
 
   server.send(200, "text/plain", "OK");
 }
-void handleDebugPage() {
+void handleDebugPage()
+{
   server.send_P(200, "text/html", DEBUG_PAGE);
 }
 
@@ -273,7 +292,7 @@ void handleDebugDataRequest()
   StaticJsonDocument<200> doc;
   doc["dummy1"] = touchRight.readRaw();
   doc["dummy2"] = touchLeft.readRaw();
-  doc["dummy3"] = 20;
+  doc["dummy3"] = IR.read();
   String jsonData;
   serializeJson(doc, jsonData);
   server.send(200, "application/json", jsonData);
@@ -281,16 +300,17 @@ void handleDebugDataRequest()
 //* MODE
 int scanMode()
 {
-  int newMode;
-  if (IR.scan() && visor.scan())
-    newMode = 1;
-  else if (IR.scan() && !visor.scan())
-    newMode = 2;
-  else if (!IR.scan() && visor.scan())
-    newMode = 3;
-  else if (!IR.scan() && !visor.scan())
-    newMode = 4;
-  return newMode;
+  bool IRState = IR.scan();
+  bool visorState = visor.scan();
+
+  if (IRState && visorState)
+    return 1;
+  else if (IRState && !visorState)
+    return 2;
+  else if (!IRState && visorState)
+    return 3;
+  else if (!IRState && !visorState)
+    return 4;
 }
 
 //* TOUCH
@@ -497,7 +517,6 @@ void main_touchInput()
   if (touchRight.singleTap()) //! FAN CONTROL
   {
     fan.toggle(1, 3);
-
     switch (fan.level)
     {
     case 1:
@@ -511,7 +530,6 @@ void main_touchInput()
   }
   else if (touchRight.longTap()) //! AUDIO CONTROL
   {
-
     audio.toggle();
 
     if (audio.state)
@@ -526,6 +544,7 @@ void main_serviceMode()
   {
     while (true)
     {
+      beeper.playError();
       //* service mode stuff
     }
   }
@@ -550,15 +569,16 @@ void main_handleClient(unsigned long _loopTime)
 
 void loop()
 {
+  Serial.println("LOOP");
+  main_touchInput();
   main_handleClient(100);
+  main_serviceMode();
+
   if (fan.level == 3)
     main_updateTachometer(1000);
 
   main_mode();
-  main_touchInput();
-  main_serviceMode();
-  return;
-  main_sensorConnection(4000);
-  main_readSensorData(1000);
+  //main_sensorConnection(4000);
+  //main_readSensorData(1000);
   main_battery(5000);
 }

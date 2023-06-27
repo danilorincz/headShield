@@ -16,11 +16,14 @@ public:
     }
     bool scan()
     {
-        if (analogRead(pin) < 3000)
-            state = true;
-        else
-            state = false;
-            
-        return state;
+        for (int i = 0; i < 10; i++)
+        {
+            if (read() < 3600)
+                return true;
+        }
+        return false;
     }
+
+
+    
 };

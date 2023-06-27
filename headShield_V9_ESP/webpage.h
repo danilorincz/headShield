@@ -575,7 +575,7 @@ const char DEBUG_PAGE[] = R"rawliteral(
                     document.getElementById('dummy2').textContent = data.dummy2;
                     document.getElementById('dummy3').textContent = data.dummy3;
                 });
-            }, 1000); // Fetch data every second
+            }, 600); // Fetch data every 0,6 second
         </script>
     </body>
 </html>
