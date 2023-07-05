@@ -569,7 +569,6 @@ void main_handleClient(unsigned long _loopTime)
 
 void loop()
 {
-  Serial.println("LOOP");
   main_touchInput();
   main_handleClient(100);
   main_serviceMode();
@@ -578,7 +577,7 @@ void loop()
     main_updateTachometer(1000);
 
   main_mode();
-  //main_sensorConnection(4000);
-  //main_readSensorData(1000);
+  main_sensorConnection(4000);
+  main_readSensorData(1000);
   main_battery(5000);
 }
