@@ -17,26 +17,27 @@ public:
     int doubleTapTimeMin = 30;
     int doubleTapTimeMax = 250;
     int sequence = 0;
-    long int t0 = 0;
-    long int t1 = 0;
-    long int t2 = 0;
-    long int t3 = 0;
-    int T01 = 0;
-    int T12 = 0;
-    int T23 = 0;
+
+    long int firstTapStart = 0;
+    long int firstTapEnd = 0;
+    long int secondTapStart = 0;
+    long int secondTapEnd = 0;
+    int firstTapDuration = 0;
+    int betweenTapsDuration = 0;
+    int secondTapDuration = 0;
 
     touchInput(int pin, int threshold)
     {
         this->pin = pin;
         this->threshold = threshold;
     }
-    int readRaw()
+    int getAnalog()
     {
         return touchRead(pin);
     }
-    bool readAtTheMoment()
+    bool getDigital()
     {
-        if (readRaw() < threshold)
+        if (getAnalog() < threshold)
             return true;
         else
             return false;
@@ -44,7 +45,7 @@ public:
 
     bool singleTap()
     {
-        if (readAtTheMoment())
+        if (getDigital())
         {
             if (!timeStartedFlag)
             {
@@ -70,43 +71,14 @@ public:
         }
     }
 
-    //! CHATGPT
-    bool singleTap_chatGPT()
-    {
-        if (readAtTheMoment())
-        {
-            if (!timeStartedFlag)
-            {
-                timeWhenSingleTap = millis();
-                timeStartedFlag = true;
-            }
-            releasedFlag = false;
-        }
-        else
-        {
-            if (timeStartedFlag && !releasedFlag)
-            {
-                releasedFlag = true;
-                timeStartedFlag = false;
-                unsigned long timeElapsed = millis() - timeWhenSingleTap;
-                if (timeElapsed >= singleTapTimeMin && timeElapsed <= singleTapTimeMax)
-                {
-                    return true;
-                }
-            }
-        }
-        return false;
-    }
-
-    //! CHATGPT
-
     bool longTapTimeFlag = false;
     long int timeWhenLongTap = 0;
     int longTapTime = 1000;
     bool releasedLongTapFlag = false;
+
     bool longTap()
     {
-        if (readAtTheMoment())
+        if (getDigital())
         {
             if (!longTapTimeFlag)
             {
@@ -137,18 +109,18 @@ public:
         switch (sequence)
         {
         case 0:
-            if (readAtTheMoment())
+            if (getDigital())
             {
                 sequence = 1;
-                t0 = millis();
+                firstTapStart = millis();
             }
             break;
         case 1:
-            if (!readAtTheMoment())
+            if (!getDigital())
             {
-                t1 = millis();
-                T01 = t1 - t0;
-                if (doubleTapTimeMin < T01 && T01 < doubleTapTimeMax)
+                firstTapEnd = millis();
+                firstTapDuration = firstTapEnd - firstTapStart;
+                if (doubleTapTimeMin < firstTapDuration && firstTapDuration < doubleTapTimeMax)
                 {
                     sequence = 2;
                 }
@@ -159,11 +131,11 @@ public:
             }
             break;
         case 2:
-            if (readAtTheMoment())
+            if (getDigital())
             {
-                t2 = millis();
-                T12 = t2 - t1;
-                if (doubleTapTimeMin < T12 && T12 < doubleTapTimeMax)
+                secondTapStart = millis();
+                betweenTapsDuration = secondTapStart - firstTapEnd;
+                if (doubleTapTimeMin < betweenTapsDuration && betweenTapsDuration < doubleTapTimeMax)
                 {
                     sequence = 3;
                 }
@@ -174,11 +146,11 @@ public:
             }
             break;
         case 3:
-            if (!readAtTheMoment())
+            if (!getDigital())
             {
-                t3 = millis();
-                T23 = t3 - t2;
-                if (doubleTapTimeMin < T23 && T23 < doubleTapTimeMax)
+                secondTapEnd = millis();
+                secondTapDuration = secondTapEnd - secondTapStart;
+                if (doubleTapTimeMin < secondTapDuration && secondTapDuration < doubleTapTimeMax)
                 {
                     sequence = 4;
                 }
