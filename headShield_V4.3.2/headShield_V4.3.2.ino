@@ -63,8 +63,8 @@ infraredSensor IR(infraredPin);
 //? TOUCH INPUT
 const int touchRightPin = 33;
 const int touchLeftPin = 15;
-touchInput touchRight(touchRightPin, 24);
-touchInput touchLeft(touchLeftPin, 48);
+Touch touchRight(touchRightPin, 24);
+Touch touchLeft(touchLeftPin, 48);
 
 //? REED SWITCH
 const int reedSwitchPin = 18;
@@ -176,15 +176,7 @@ void setup()
     }
   }
 
-  analogReadResolution(12); // Default resolution to 12 bits
-  analogSetWidth(12);       // Default width to 12 bits
-  //analogSetCycles(8);                     // Default cycles per sample
-  //analogSetSamples(1);                    // Default number of samples
-  analogSetClockDiv(1); // Default divider for ADC clock
-  //analogSetAttenuation(ADC_11db);         // Default attenuation for all ADC pins
-  analogSetPinAttenuation(infraredPin, ADC_11db); // Default attenuation for the specified pin
 
-  adcAttachPin(infraredPin); // Attach the pin to the ADC
 }
 
 //* HANDLERs
@@ -251,16 +243,12 @@ void handler_setFanSpeed()
 {
   int newFanLevel = server.arg("value").toInt();
 
-  Serial.print("New fan value: ");
-  Serial.println(newFanLevel);
   fan.setLevel(newFanLevel);
   server.send(200, "text/plain", "OK");
 }
 void handler_setLampLevel()
 {
   int newLampLevel = server.arg("level").toInt();
-  Serial.print("New lamp value: ");
-  Serial.println(newLampLevel);
   lamp.setLevel(newLampLevel);
   server.send(200, "text/plain", "Lamp level set");
 }
@@ -268,12 +256,9 @@ void handler_setAudioState()
 {
   String stateParam = server.arg("state"); // Get the state parameter from the request
 
-  Serial.println("Audio has been toggled to: ");
-  bool state = false;
   if (stateParam == "true")
   {
     audio.on();
-    state = true;
   }
   else
   {
@@ -290,8 +275,8 @@ void handleDebugPage()
 void handleDebugDataRequest()
 {
   StaticJsonDocument<200> doc;
-  doc["dummy1"] = touchRight.readRaw();
-  doc["dummy2"] = touchLeft.readRaw();
+  doc["dummy1"] = touchRight.getAnalog();
+  doc["dummy2"] = touchLeft.getAnalog();
   doc["dummy3"] = IR.read();
   String jsonData;
   serializeJson(doc, jsonData);
@@ -316,7 +301,7 @@ int scanMode()
 //* TOUCH
 bool multiTouch()
 {
-  if (touchLeft.readAtTheMoment() && touchRight.readAtTheMoment())
+  if (touchLeft.getDigital() && touchRight.getDigital())
     return true;
   else
     return false;
@@ -569,15 +554,46 @@ void main_handleClient(unsigned long _loopTime)
 
 void loop()
 {
+  if (touchLeft.singleTap())
+  {
+    Serial.println("Left single tap");
+  }
+  if (touchLeft.doubleTap())
+  {
+    Serial.println("Left double tap");
+  }
+  if (touchLeft.longTap())
+  {
+    Serial.println("Left long tap");
+  }
+
+  if (touchRight.singleTap())
+  {
+    Serial.println("Right single tap");
+  }
+  if (touchRight.doubleTap())
+  {
+    Serial.println("Right double tap");
+  }
+  if (touchRight.longTap())
+  {
+    Serial.println("Right long tap");
+  }
+}
+
+
+/*
+old loop:
   main_touchInput();
   //main_handleClient(100);
   main_serviceMode();
-/*
+
   if (fan.level == 3)
     main_updateTachometer(1000);
-*/
+
   //main_mode();
  // main_sensorConnection(4000);
  // main_readSensorData(1000);
   //main_battery(5000);
-}
+
+*/

@@ -1,109 +1,97 @@
 #pragma once
 
-class touchInput
+class Touch
 {
-public:
+private:
     int pin;
     int threshold;
 
-    //? SINGLE TAP
-    int singleTapTimeMax = 100;
-    int singleTapTimeMin = 30;
-    long int timeWhenSingleTap = 0;
-    bool timeStartedFlag = false;
-    bool releasedFlag = false;
+private: //* SINGLE TAP
+    int tapTimeMax;
+    int tapTimeMin;
+    bool released;
+    long int singleTouchStartTime;
+    bool singleTouchInProgress;
 
-    //? DOUBLE TAP
+private: //* LONG TAP
+    bool longTouchInProgress = false;
+    unsigned long longTouchStartTime = 0;
+    unsigned long longTapTreshold = 1000;
+
+private: //* DOUBLE TAP
     int doubleTapTimeMin = 30;
     int doubleTapTimeMax = 250;
     int sequence = 0;
 
-    long int firstTapStart = 0;
-    long int firstTapEnd = 0;
-    long int secondTapStart = 0;
-    long int secondTapEnd = 0;
-    int firstTapDuration = 0;
-    int betweenTapsDuration = 0;
-    int secondTapDuration = 0;
+    long int firstTapStart;
+    long int firstTapEnd;
+    long int secondTapStart;
+    long int secondTapEnd;
 
-    touchInput(int pin, int threshold)
-    {
-        this->pin = pin;
-        this->threshold = threshold;
-    }
+    int firstTapDuration;
+    int betweenTapsDuration;
+    int secondTapDuration;
+
+public:
+    Touch(int pin, int threshold) : pin(pin), threshold(threshold) {}
+
     int getAnalog()
     {
         return touchRead(pin);
     }
+
     bool getDigital()
     {
-        if (getAnalog() < threshold)
-            return true;
-        else
-            return false;
+        return getAnalog() < threshold;
     }
-
     bool singleTap()
     {
         if (getDigital())
         {
-            if (!timeStartedFlag)
+            if (!singleTouchInProgress)
             {
-                timeWhenSingleTap = millis();
-                timeStartedFlag = true;
+                singleTouchStartTime = millis();
+                singleTouchInProgress = true;
             }
-            if (millis() - timeWhenSingleTap > singleTapTimeMax && releasedFlag)
+            if ((millis() - singleTouchStartTime) > tapTimeMax && released)
             {
-                releasedFlag = false;
-                timeStartedFlag = false;
+                singleTouchInProgress = false;
+                released = false;
                 return true;
             }
-            else
-            {
-                return false;
-            }
+            return false;
         }
         else
         {
-            releasedFlag = true;
-            timeStartedFlag = false;
+            released = true;
+            singleTouchInProgress = false;
             return false;
         }
     }
-
-    bool longTapTimeFlag = false;
-    long int timeWhenLongTap = 0;
-    int longTapTime = 1000;
-    bool releasedLongTapFlag = false;
 
     bool longTap()
     {
-        if (getDigital())
+        if (!getDigital())
         {
-            if (!longTapTimeFlag)
-            {
-                timeWhenLongTap = millis();
-                longTapTimeFlag = true;
-            }
-            if (millis() - timeWhenLongTap > longTapTime && releasedLongTapFlag)
-            {
-                releasedLongTapFlag = false;
-                longTapTimeFlag = false;
-                return true;
-            }
-            else
-            {
-                return false;
-            }
+            longTouchInProgress = false;
+            longTouchStartTime = 0;
+            return false;
         }
         else
         {
-            releasedLongTapFlag = true;
-            longTapTimeFlag = false;
-            return false;
+            if (!longTouchInProgress)
+            {
+                longTouchStartTime = millis();
+                longTouchInProgress = true;
+            }
+            if ((millis() - longTouchStartTime) > longTapTreshold && longTouchInProgress)
+            {
+                longTouchInProgress = false;
+                return true;
+            }
         }
+        return false;
     }
-
     bool doubleTap()
     {
         switch (sequence)
