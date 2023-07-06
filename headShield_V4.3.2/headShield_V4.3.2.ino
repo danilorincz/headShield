@@ -28,6 +28,7 @@
 #include "audioEN.h"
 #include "sensor_data.h"
 #include "tacho.h"
+#include "movingAverage.h"
 
 //? WIFI
 const char *ssid = "headShield";
@@ -56,9 +57,9 @@ int avarageValue = 0;
 const int LEDPin = 19;
 LED lamp(LEDPin);
 
-//? IR
+//? HEAD SENSOR
 const int infraredPin = 35;
-infraredSensor IR(infraredPin);
+infraredSensor headSensor(infraredPin);
 
 //? TOUCH INPUT
 const int touchRightPin = 33;
@@ -200,7 +201,7 @@ void handler_getHelmetData()
   StaticJsonDocument<200> doc;
 
   doc["visorState"] = visor.state;
-  doc["IRState"] = IR.state;
+  doc["IRState"] = headSensor.state;
   doc["fanLevel"] = fan.level;
   doc["lampLevel"] = lamp.level;
   doc["batteryLevel"] = battery.level;
@@ -279,7 +280,7 @@ void handleDebugDataRequest()
   StaticJsonDocument<200> doc;
   doc["dummy1"] = touchRight.getAnalog();
   doc["dummy2"] = touchLeft.getAnalog();
-  doc["dummy3"] = IR.read();
+  doc["dummy3"] = headSensor.read();
   String jsonData;
   serializeJson(doc, jsonData);
   server.send(200, "application/json", jsonData);
@@ -553,17 +554,34 @@ void visorStateHandler()
     }
   }
 }
+
+void headSensorHandler()
+{
+}
+
+MovingAverage headSensorAverage;
+
 void loop()
 {
   touchInputHandler();
   visorStateHandler();
+  headSensorHandler();
+
+  headSensorAverage.add(headSensor.read());
+
+  static Timer log(50);
+  if (log.timeElapsedMillis())
+  {
+    Serial.print("Head sensor average: ");
+    Serial.println(headSensorAverage.average());
+  }
 }
 
 /*
 //* MODE
 int scanMode()
 {
-  bool IRState = IR.scan();
+  bool IRState = headSensor.scan();
   bool visorState = visor.scan();
 
   if (IRState && visorState) //* IR: ON, visor: ON
