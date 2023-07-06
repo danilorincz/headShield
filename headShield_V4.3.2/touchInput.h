@@ -18,20 +18,6 @@ private: //* LONG TAP
     unsigned long longTouchStartTime = 0;
     unsigned long longTapTreshold = 1000;
 
-private: //* DOUBLE TAP
-    int doubleTapTimeMin = 30;
-    int doubleTapTimeMax = 250;
-    int sequence = 0;
-
-    long int firstTapStart;
-    long int firstTapEnd;
-    long int secondTapStart;
-    long int secondTapEnd;
-
-    int firstTapDuration;
-    int betweenTapsDuration;
-    int secondTapDuration;
-
 public:
     Touch(int pin, int threshold) : pin(pin), threshold(threshold) {}
 
@@ -63,16 +49,17 @@ public:
         }
         else if (singleTouchInProgress)
         {
-            if ((millis() - singleTouchStartTime) > singleTapTimeMin && (millis() - singleTouchStartTime) < singleTapTimeMax)
+            bool returnValue = false;
+            unsigned long touchEndTime = millis();
+            unsigned long touchDuration = touchEndTime - singleTouchStartTime;
+            if (touchDuration > singleTapTimeMin && touchDuration < singleTapTimeMax)
             {
                 singleTouchInProgress = false;
-                return true;
+                returnValue = true;
             }
-        }
-        else
-        {
             singleTouchInProgress = false;
             singleTouchStartTime = 0;
+            return returnValue;
         }
         return false;
     }
@@ -97,69 +84,6 @@ public:
                 longTouchInProgress = false;
                 return true;
             }
-        }
-        return false;
-    }
-    bool doubleTap()
-    {
-        switch (sequence)
-        {
-        case 0:
-            if (getDigital())
-            {
-                sequence = 1;
-                firstTapStart = millis();
-            }
-            break;
-        case 1:
-            if (!getDigital())
-            {
-                firstTapEnd = millis();
-                firstTapDuration = firstTapEnd - firstTapStart;
-                if (doubleTapTimeMin < firstTapDuration && firstTapDuration < doubleTapTimeMax)
-                {
-                    sequence = 2;
-                }
-                else
-                {
-                    sequence = 0;
-                }
-            }
-            break;
-        case 2:
-            if (getDigital())
-            {
-                secondTapStart = millis();
-                betweenTapsDuration = secondTapStart - firstTapEnd;
-                if (doubleTapTimeMin < betweenTapsDuration && betweenTapsDuration < doubleTapTimeMax)
-                {
-                    sequence = 3;
-                }
-                else
-                {
-                    sequence = 0;
-                }
-            }
-            break;
-        case 3:
-            if (!getDigital())
-            {
-                secondTapEnd = millis();
-                secondTapDuration = secondTapEnd - secondTapStart;
-                if (doubleTapTimeMin < secondTapDuration && secondTapDuration < doubleTapTimeMax)
-                {
-                    sequence = 4;
-                }
-                else
-                {
-                    sequence = 0;
-                }
-            }
-            break;
-        case 4:
-            sequence = 0;
-            return true;
-            break;
         }
         return false;
     }

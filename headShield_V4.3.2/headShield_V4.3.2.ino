@@ -175,8 +175,6 @@ void setup()
       }
     }
   }
-
-
 }
 
 //* HANDLERs
@@ -281,21 +279,6 @@ void handleDebugDataRequest()
   String jsonData;
   serializeJson(doc, jsonData);
   server.send(200, "application/json", jsonData);
-}
-//* MODE
-int scanMode()
-{
-  bool IRState = IR.scan();
-  bool visorState = visor.scan();
-
-  if (IRState && visorState)
-    return 1;
-  else if (IRState && !visorState)
-    return 2;
-  else if (!IRState && visorState)
-    return 3;
-  else if (!IRState && !visorState)
-    return 4;
 }
 
 //* TOUCH
@@ -445,6 +428,22 @@ void main_readSensorData(unsigned long _loopTime)
     sinceStart = millis();
   }
 }
+
+//* MODE
+int scanMode()
+{
+  bool IRState = IR.scan();
+  bool visorState = visor.scan();
+
+  if (IRState && visorState) //* IR: ON, visor: ON
+    return 1;
+  else if (IRState && !visorState) //* IR: ON, visor: OFF
+    return 2;
+  else if (!IRState && visorState) //* IR: OFF, visor: ON
+    return 3;
+  else if (!IRState && !visorState) //* IR: OFF, visor: OFF
+    return 4;
+}
 void main_mode()
 {
   int newMode = scanMode();
@@ -488,19 +487,28 @@ void main_mode()
     }
   }
 }
-void main_touchInput()
+void touchInputHandler()
 {
   if (touchLeft.singleTap()) //! LAMP CONTROL
   {
+    Serial.println("Left single tap");
+    /*
     lamp.toggle(0, 3);
     if (lamp.level == 0)
       beeper.playLampOff();
     else
-      beeper.playLampOn();
+      beeper.playLampOn();*/
+  }
+
+  if (touchLeft.longTap())
+  {
+    Serial.println("left long tap");
   }
 
   if (touchRight.singleTap()) //! FAN CONTROL
   {
+    Serial.println("right single tap");
+    /*
     fan.toggle(1, 3);
     switch (fan.level)
     {
@@ -511,16 +519,19 @@ void main_touchInput()
     case 3:
       beeper.playFanSpeedUp();
       break;
-    }
+    }*/
   }
-  else if (touchRight.longTap()) //! AUDIO CONTROL
+
+  if (touchRight.longTap()) //! AUDIO CONTROL
   {
+    Serial.println("right long tap");
+    /*
     audio.toggle();
 
     if (audio.state)
       beeper.playVisorUp();
     else
-      beeper.playVisorDown();
+      beeper.playVisorDown();*/
   }
 }
 void main_serviceMode()
@@ -551,19 +562,21 @@ void main_handleClient(unsigned long _loopTime)
     timeSince = millis();
   }
 }
-
+Timer loopTimer(1000);
 void loop()
 {
-
-
+  if (loopTimer.timeElapsedMillis())
+  {
+    Serial.println("LOOP");
+    Serial.println(touchLeft.getAnalog());
+  }
+  touchInputHandler();
+  return;
   if (touchLeft.singleTap())
   {
     Serial.println("Left single tap");
   }
-  if (touchLeft.doubleTap())
-  {
-    Serial.println("Left double tap");
-  }
+
   if (touchLeft.longTap())
   {
     Serial.println("Left long tap");
@@ -573,16 +586,14 @@ void loop()
   {
     Serial.println("Right single tap");
   }
-  if (touchRight.doubleTap())
-  {
-    Serial.println("Right double tap");
-  }
+
   if (touchRight.longTap())
   {
     Serial.println("Right long tap");
   }
-}
 
+  //* HANDLE SENSOR CONNECTION
+}
 
 /*
 old loop:
