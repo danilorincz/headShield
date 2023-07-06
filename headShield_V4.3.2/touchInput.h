@@ -7,11 +7,11 @@ private:
     int threshold;
 
 private: //* SINGLE TAP
-    int tapTimeMax;
-    int tapTimeMin;
+    int singleTapTimeMax = 400;
+    int singleTapTimeMin = 30;
     bool released;
     long int singleTouchStartTime;
-    bool singleTouchInProgress;
+    bool singleTouchInProgress = false;
 
 private: //* LONG TAP
     bool longTouchInProgress = false;
@@ -37,12 +37,19 @@ public:
 
     int getAnalog()
     {
+        touchRead(pin);
         return touchRead(pin);
     }
 
     bool getDigital()
     {
-        return getAnalog() < threshold;
+        int value = getAnalog();
+        if (value < threshold)
+        {
+            return true;
+        }
+        else
+            return false;
     }
     bool singleTap()
     {
@@ -53,20 +60,21 @@ public:
                 singleTouchStartTime = millis();
                 singleTouchInProgress = true;
             }
-            if ((millis() - singleTouchStartTime) > tapTimeMax && released)
+        }
+        else if (singleTouchInProgress)
+        {
+            if ((millis() - singleTouchStartTime) > singleTapTimeMin && (millis() - singleTouchStartTime) < singleTapTimeMax)
             {
                 singleTouchInProgress = false;
-                released = false;
                 return true;
             }
-            return false;
         }
         else
         {
-            released = true;
             singleTouchInProgress = false;
-            return false;
+            singleTouchStartTime = 0;
         }
+        return false;
     }
 
     bool longTap()

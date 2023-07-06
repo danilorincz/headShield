@@ -64,7 +64,7 @@ infraredSensor IR(infraredPin);
 const int touchRightPin = 33;
 const int touchLeftPin = 15;
 Touch touchRight(touchRightPin, 24);
-Touch touchLeft(touchLeftPin, 48);
+Touch touchLeft(touchLeftPin, 24);
 
 //? REED SWITCH
 const int reedSwitchPin = 18;
@@ -554,6 +554,8 @@ void main_handleClient(unsigned long _loopTime)
 
 void loop()
 {
+
+
   if (touchLeft.singleTap())
   {
     Serial.println("Left single tap");
