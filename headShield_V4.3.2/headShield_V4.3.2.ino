@@ -555,26 +555,76 @@ void visorStateHandler()
   }
 }
 
-void headSensorHandler()
+bool headSensorChange()
 {
+  bool newState = headSensor.scan();
+  static bool prevState = newState;
+  if (newState != prevState)
+  {
+    prevState = newState;
+    return true;
+  }
+  return false;
 }
 
-MovingAverage headSensorAverage;
+bool headSensorStateChange()
+{
+  const int minimumDuration = 400;
+
+  static MovingAverage headSensorAverage;
+  static bool timeStarted = false;
+  static unsigned long timeWhenStart = 0;
+  static bool changedTo = false;
+  if (headSensorChange())
+  {
+    changedTo = headSensor.scan();
+    if (!timeStarted)
+    {
+      timeStarted = true;
+      timeWhenStart = millis();
+    }
+  }
+
+  if (timeStarted)
+  {
+    if (changedTo == headSensor.scan())
+    {
+      if (millis() - timeWhenStart > minimumDuration)
+      {
+        timeStarted = false;
+        return true;
+      }
+    }
+    else
+    {
+      timeStarted = false;
+    }
+  }
+
+  return false;
+}
+
+void headSensorStateHandler()
+{
+  if (headSensorStateChange())
+  {
+    switch (headSensor.state)
+    {
+    case 1:
+    Serial.println("head sensor ON");
+      break;
+    case 0:
+    Serial.println("head sensor OFF");
+      break;
+    }
+  }
+}
 
 void loop()
 {
   touchInputHandler();
   visorStateHandler();
-  headSensorHandler();
-
-  headSensorAverage.add(headSensor.read());
-
-  static Timer log(50);
-  if (log.timeElapsedMillis())
-  {
-    Serial.print("Head sensor average: ");
-    Serial.println(headSensorAverage.average());
-  }
+  headSensorStateHandler();
 }
 
 /*

@@ -16,14 +16,12 @@ public:
     }
     bool scan()
     {
-        for (int i = 0; i < 10; i++)
+        if (read() != 4095)
         {
-            if (read() < 3600)
-                return true;
+            state = true;
+            return true;
         }
+        state = false;
         return false;
     }
-
-
-    
 };
