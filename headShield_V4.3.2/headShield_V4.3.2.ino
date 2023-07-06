@@ -570,14 +570,14 @@ void main_handleClient(unsigned long _loopTime)
 void loop()
 {
   main_touchInput();
-  main_handleClient(100);
+  //main_handleClient(100);
   main_serviceMode();
-
+/*
   if (fan.level == 3)
     main_updateTachometer(1000);
-
-  main_mode();
-  main_sensorConnection(4000);
-  main_readSensorData(1000);
-  main_battery(5000);
+*/
+  //main_mode();
+ // main_sensorConnection(4000);
+ // main_readSensorData(1000);
+  //main_battery(5000);
 }

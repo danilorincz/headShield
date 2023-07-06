@@ -24,8 +24,8 @@
         //* USB csatlakozó
     // felhasznált anyagok listája
     //* PCB képek készítése
-// 5 TEXTIL
-    // szabásminta elkészítése
+//* 5 TEXTIL
+    //* szabásminta elkészítése
 
 
 modell tisztázása -> vonal rajzok készítése -> dokumentumok megírása
