@@ -16,10 +16,10 @@ public:
             setIntensity(0);
             break;
         case 1:
-            setIntensity(80);
+            setIntensity(60);
             break;
         case 2:
-            setIntensity(90);
+            setIntensity(85);
             break;
         case 3:
             setIntensity(100);
