@@ -4,3 +4,4 @@ Problems in the code
     //* long touch input registers tap first
     // optimize the fan speed reading
     // create a method to turn off the fans completely
+    // do a touch calibration before every start

@@ -166,12 +166,17 @@ void setup()
   audio.state = LOW;
 
   //* SERVICE MODE
-  while (multiTouch())
+  while (touchLeft.getDigital() && touchRight.getDigital())
   {
     if (serviceModeTimer.timeElapsedMillis())
     {
       while (true)
       {
+        static Timer serviceModePrint(1000);
+        if (serviceModePrint.timeElapsedMillis())
+        {
+          Serial.println("SERVICE MODE ENABLED");
+        }
       }
     }
   }
@@ -284,10 +289,33 @@ void handleDebugDataRequest()
 //* TOUCH
 bool multiTouch()
 {
+  bool returnValue = false;
+  unsigned int timeMax = 2000;
+  unsigned int timeMin = 1000;
+  static unsigned long timeWhenStart = 0;
+  static bool timeStarted = false;
+
   if (touchLeft.getDigital() && touchRight.getDigital())
-    return true;
+  {
+    if (!timeStarted)
+    {
+      timeWhenStart = millis();
+      timeStarted = true;
+    }
+
+    if (millis() - timeWhenStart > timeMin)
+    {
+      timeStarted = false;
+      returnValue = true;
+    }
+  }
   else
-    return false;
+  {
+    timeWhenStart = 0;
+    timeStarted = false;
+  }
+
+  return returnValue;
 }
 
 //* SERVICE MODE
@@ -487,28 +515,26 @@ void main_mode()
     }
   }
 }
+
+//* TOUCH INPUT
 void touchInputHandler()
 {
-  if (touchLeft.singleTap()) //! LAMP CONTROL
+  if (touchLeft.singleTap() && !touchRight.getDigital()) //! LAMP CONTROL
   {
-    Serial.println("Left single tap");
-    /*
     lamp.toggle(0, 3);
     if (lamp.level == 0)
       beeper.playLampOff();
     else
-      beeper.playLampOn();*/
+      beeper.playLampOn();
   }
 
-  if (touchLeft.longTap())
+  if (touchLeft.longTap() && !touchRight.getDigital()) //! EMPTY
   {
     Serial.println("left long tap");
   }
 
-  if (touchRight.singleTap()) //! FAN CONTROL
+  if (touchRight.singleTap() && !touchLeft.getDigital()) //! FAN CONTROL
   {
-    Serial.println("right single tap");
-    /*
     fan.toggle(1, 3);
     switch (fan.level)
     {
@@ -519,21 +545,25 @@ void touchInputHandler()
     case 3:
       beeper.playFanSpeedUp();
       break;
-    }*/
+    }
   }
 
-  if (touchRight.longTap()) //! AUDIO CONTROL
+  if (touchRight.longTap() && !touchLeft.getDigital()) //! AUDIO CONTROL
   {
-    Serial.println("right long tap");
-    /*
     audio.toggle();
 
     if (audio.state)
       beeper.playVisorUp();
     else
-      beeper.playVisorDown();*/
+      beeper.playVisorDown();
+  }
+
+  if (multiTouch())
+  {
+    fan.setLevel(0);
   }
 }
+
 void main_serviceMode()
 {
   if (triggerServiceMode() || mode == 0)
@@ -562,51 +592,8 @@ void main_handleClient(unsigned long _loopTime)
     timeSince = millis();
   }
 }
-Timer loopTimer(1000);
+
 void loop()
 {
-  if (loopTimer.timeElapsedMillis())
-  {
-    Serial.println("LOOP");
-    Serial.println(touchLeft.getAnalog());
-  }
   touchInputHandler();
-  return;
-  if (touchLeft.singleTap())
-  {
-    Serial.println("Left single tap");
-  }
-
-  if (touchLeft.longTap())
-  {
-    Serial.println("Left long tap");
-  }
-
-  if (touchRight.singleTap())
-  {
-    Serial.println("Right single tap");
-  }
-
-  if (touchRight.longTap())
-  {
-    Serial.println("Right long tap");
-  }
-
-  //* HANDLE SENSOR CONNECTION
 }
-
-/*
-old loop:
-  main_touchInput();
-  //main_handleClient(100);
-  main_serviceMode();
-
-  if (fan.level == 3)
-    main_updateTachometer(1000);
-
-  //main_mode();
- // main_sensorConnection(4000);
- // main_readSensorData(1000);
-  //main_battery(5000);
-
-*/
