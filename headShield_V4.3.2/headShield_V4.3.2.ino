@@ -274,7 +274,6 @@ void handleDebugPage()
 {
   server.send_P(200, "text/html", DEBUG_PAGE);
 }
-
 void handleDebugDataRequest()
 {
   StaticJsonDocument<200> doc;
@@ -316,27 +315,6 @@ bool multiTouch()
   }
 
   return returnValue;
-}
-
-//* SERVICE MODE
-bool triggerServiceMode()
-{
-  if (multiTouch())
-  {
-    while (multiTouch())
-    {
-      if (serviceModeTimer.timeElapsedMillis())
-      {
-        return true;
-      }
-    }
-  }
-  else
-  {
-    serviceModeTimer.preTime = millis();
-    return false;
-  }
-  return false;
 }
 
 //* SENSOR DATA
@@ -457,65 +435,6 @@ void main_readSensorData(unsigned long _loopTime)
   }
 }
 
-//* MODE
-int scanMode()
-{
-  bool IRState = IR.scan();
-  bool visorState = visor.scan();
-
-  if (IRState && visorState) //* IR: ON, visor: ON
-    return 1;
-  else if (IRState && !visorState) //* IR: ON, visor: OFF
-    return 2;
-  else if (!IRState && visorState) //* IR: OFF, visor: ON
-    return 3;
-  else if (!IRState && !visorState) //* IR: OFF, visor: OFF
-    return 4;
-}
-void main_mode()
-{
-  int newMode = scanMode();
-
-  if (newMode != mode)
-  {
-    mode = newMode;
-    switch (mode)
-    {
-    case 1: //? NORMAL
-      beeper.playVisorDown();
-
-      fan.setLevel(fan.level);
-      lamp.setLevel(lamp.level);
-      audio.turn(audio.state);
-      break;
-
-    case 2: //? VISOR OFF
-      beeper.playVisorUp();
-
-      lamp.setLevel(lamp.level);
-      fan.suspend();
-      audio.suspend();
-      break;
-
-    case 3: //? IR OFF
-      beeper.playVisorUp();
-
-      fan.suspend();
-      lamp.suspend();
-      audio.suspend();
-      break;
-
-    case 4: //? ALL OFF
-      beeper.playVisorUp();
-
-      fan.suspend();
-      lamp.suspend();
-      audio.suspend();
-      break;
-    }
-  }
-}
-
 //* TOUCH INPUT
 void touchInputHandler()
 {
@@ -564,17 +483,6 @@ void touchInputHandler()
   }
 }
 
-void main_serviceMode()
-{
-  if (triggerServiceMode() || mode == 0)
-  {
-    while (true)
-    {
-      beeper.playError();
-      //* service mode stuff
-    }
-  }
-}
 void main_updateTachometer(unsigned long _loopTime)
 {
   static unsigned long timeSince = millis();
@@ -593,7 +501,122 @@ void main_handleClient(unsigned long _loopTime)
   }
 }
 
+bool visorStateChange()
+{
+  const unsigned int minimumDuration = 400;
+
+  static unsigned long timeWhenStart = 0;
+  static bool timeStart = false;
+
+  bool newVisorState = visor.scan();
+
+  static bool prevVisorState = !newVisorState;
+
+  if (newVisorState != prevVisorState)
+  {
+    if (!timeStart)
+    {
+      timeWhenStart = millis();
+      timeStart = true;
+    }
+    if (millis() - timeWhenStart > minimumDuration)
+    {
+      prevVisorState = newVisorState;
+      timeStart = false;
+      timeWhenStart = 0;
+      return true;
+    }
+  }
+  else
+  {
+    timeStart = false;
+    timeWhenStart = 0;
+  }
+
+  return false;
+}
+
+void visorStateHandler()
+{
+  if (visorStateChange())
+  {
+    switch (visor.state)
+    {
+    case 1: //* ACTIVE
+      fan.setIntensity(fan.percent);
+      Serial.println("back to active");
+      break;
+    case 0: //* INACTIVE
+      Serial.println("deactivating");
+      fan.suspend();
+      break;
+    }
+  }
+}
 void loop()
 {
   touchInputHandler();
+  visorStateHandler();
 }
+
+/*
+//* MODE
+int scanMode()
+{
+  bool IRState = IR.scan();
+  bool visorState = visor.scan();
+
+  if (IRState && visorState) //* IR: ON, visor: ON
+    return 1;
+  else if (IRState && !visorState) //* IR: ON, visor: OFF
+    return 2;
+  else if (!IRState && visorState) //* IR: OFF, visor: ON
+    return 3;
+  else if (!IRState && !visorState) //* IR: OFF, visor: OFF
+    return 4;
+}
+void deviceStateHandler()
+{
+  int newMode = scanMode();
+
+  if (newMode != mode)
+  {
+    mode = newMode;
+    switch (mode)
+    {
+    case 1: //? NORMAL
+      beeper.playVisorDown();
+
+      fan.setLevel(fan.level);
+      lamp.setLevel(lamp.level);
+      audio.turn(audio.state);
+      break;
+
+    case 2: //? VISOR OFF
+      beeper.playVisorUp();
+
+      lamp.setLevel(lamp.level);
+      fan.suspend();
+      audio.suspend();
+      break;
+
+    case 3: //? IR OFF
+      beeper.playVisorUp();
+
+      fan.suspend();
+      lamp.suspend();
+      audio.suspend();
+      break;
+
+    case 4: //? ALL OFF
+      beeper.playVisorUp();
+
+      fan.suspend();
+      lamp.suspend();
+      audio.suspend();
+      break;
+    }
+  }
+}
+
+*/

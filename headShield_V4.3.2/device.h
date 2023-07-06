@@ -40,7 +40,6 @@ public:
     }
     void suspend()
     {
-        percent = 0;
         analogWrite(pin, 0);
     }
 };
