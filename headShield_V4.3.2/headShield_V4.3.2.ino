@@ -555,10 +555,29 @@ void visorStateHandler()
   }
 }
 
-bool headSensorChange()
+float getHeadSensorAverage()
 {
-  bool newState = headSensor.scan();
+  static MovingAverage headSensorAverage;
+  headSensorAverage.add(headSensor.read());
+  return headSensorAverage.average();
+}
+
+bool getHeadSensorDigital()
+{
+  if (getHeadSensorAverage() != 4095)
+  {
+    return true;
+  }
+  return false;
+}
+
+bool headSensorChange(bool &_newState)
+{
+  bool newState = getHeadSensorDigital();
+  _newState = newState;
   static bool prevState = newState;
+  static MovingAverage headSensorAverage;
+
   if (newState != prevState)
   {
     prevState = newState;
@@ -571,13 +590,12 @@ bool headSensorStateChange()
 {
   const int minimumDuration = 400;
 
-  static MovingAverage headSensorAverage;
   static bool timeStarted = false;
   static unsigned long timeWhenStart = 0;
   static bool changedTo = false;
-  if (headSensorChange())
+  bool returnValue = false;
+  if (headSensorChange(changedTo))
   {
-    changedTo = headSensor.scan();
     if (!timeStarted)
     {
       timeStarted = true;
@@ -587,12 +605,12 @@ bool headSensorStateChange()
 
   if (timeStarted)
   {
-    if (changedTo == headSensor.scan())
+    if (changedTo == getHeadSensorDigital())
     {
       if (millis() - timeWhenStart > minimumDuration)
       {
         timeStarted = false;
-        return true;
+        returnValue = true; //* HERE IS WHEN RETURN VALUE IS TRUE
       }
     }
     else
@@ -601,7 +619,7 @@ bool headSensorStateChange()
     }
   }
 
-  return false;
+  return returnValue;
 }
 
 void headSensorStateHandler()
@@ -611,10 +629,10 @@ void headSensorStateHandler()
     switch (headSensor.state)
     {
     case 1:
-    Serial.println("head sensor ON");
+      Serial.println("head sensor ON");
       break;
     case 0:
-    Serial.println("head sensor OFF");
+      Serial.println("head sensor OFF");
       break;
     }
   }
