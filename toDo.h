@@ -1,7 +1,7 @@
 Problems in the code
-    // the sensor must be connected by pushing a button
-    // refacto the main functions
+    //* create a method to turn off the fans completely
     //* long touch input registers tap first
+    //* headSensor optimized
+    // the sensor must be connected by pushing a button
     // optimize the fan speed reading
-    // create a method to turn off the fans completely
     // do a touch calibration before every start
