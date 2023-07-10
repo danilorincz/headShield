@@ -66,8 +66,8 @@ infraredSensor headSensor(infraredPin);
 //? TOUCH INPUT
 const int touchRightPin = 33;
 const int touchLeftPin = 15;
-Touch touchRight(touchRightPin, 24);
-Touch touchLeft(touchLeftPin, 24);
+Touch touchRight(touchRightPin, 0, 24);
+Touch touchLeft(touchLeftPin, 15, 28);
 
 //? REED SWITCH
 const int reedSwitchPin = 18;
@@ -502,8 +502,11 @@ void batteryLevelHandling()
 void updateTachometer()
 {
   static MovingAverage tachoValueAverage;
-  tachoValueAverage.add(tacho.measureAverageDutyCycle(50, 5));
+  unsigned long valueToAdd = tacho.measureAverageDutyCycle(50, 90, interruptMeasure);
+  if (valueToAdd != 0)
+    tachoValueAverage.add(valueToAdd);
   tachoFinalValue = tachoValueAverage.average();
+
 }
 void updateTachoeterJustDutycycle()
 {
@@ -512,6 +515,8 @@ void updateTachoeterJustDutycycle()
     tachoValueAverage.add(tacho.dutyCycle);
   tachoFinalValue = tachoValueAverage.average();
 }
+
+
 
 //* SENSOR DATA
 bool BME280Connected()
@@ -617,15 +622,24 @@ void sensorReconnectingRequest()
   }
 }
 
+bool interruptMeasure()
+{
+  if (touchLeft.getDigital() || touchRight.getDigital())
+    return true;
+  else
+    return false;
+}
+
 void loop()
 {
   server.handleClient();
-
+  //Serial.println(touchLeft.getAnalog());
   if (fan.level == 3)
   {
     updateTachometer();
     Serial.println(tachoFinalValue);
   }
+ 
 
   //*__________________
 

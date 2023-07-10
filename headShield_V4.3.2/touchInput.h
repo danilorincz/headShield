@@ -4,13 +4,16 @@ class Touch
 {
 private:
     int pin;
-    int threshold;
+    int thresholdMin;
+    int thresholdMax;
 
 private: //* SINGLE TAP
     int singleTapTimeMax = 400;
-    int singleTapTimeMin = 30;
+    int singleTapTimeMin = 10;
     bool released;
     long int singleTouchStartTime;
+
+public:
     bool singleTouchInProgress = false;
 
 private: //* LONG TAP
@@ -19,7 +22,7 @@ private: //* LONG TAP
     unsigned long longTapTreshold = 1000;
 
 public:
-    Touch(int pin, int threshold) : pin(pin), threshold(threshold) {}
+    Touch(int pin, int thresholdMin, int thresholdMax) : pin(pin), thresholdMin(thresholdMin), thresholdMax(thresholdMax) {}
 
     int getAnalog()
     {
@@ -30,7 +33,7 @@ public:
     bool getDigital()
     {
         int value = getAnalog();
-        if (value < threshold)
+        if (value > thresholdMin && value < thresholdMax)
         {
             return true;
         }

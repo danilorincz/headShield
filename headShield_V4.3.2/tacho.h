@@ -5,7 +5,7 @@
 #include <numeric>
 #include <algorithm>
 #include <cmath>
-
+#include <deque>
 class Tachometer
 {
 private:
@@ -35,6 +35,7 @@ public:
         else
             return LOW;
     }
+
     bool update()
     {
         int measureCounter = 0;
@@ -62,65 +63,17 @@ public:
             if (measureCounter > maxMeasure)
                 break;*/
             dutyCycle = timeHigh + timeLow;
-        } while (abs(timeHigh - timeLow) > 0.10 * dutyCycle || dutyCycle < 3000); // change this value as needed
+        } while (abs(timeHigh - timeLow) > 0.10 * dutyCycle || dutyCycle < 3450); // change this value as needed
         return false;
     }
-    bool update_old()
-    {
-        bool stateAtBeginning = getDigital();
-        bool stateAfterChange;
-        unsigned long firstDurationStart = 0;
-        unsigned long firstDurationEnd = 0;
-        unsigned long secondDurationStart = 0;
-        unsigned long secondDurationEnd = 0;
 
-        while (true)
-        {
-            if (getDigital() != stateAtBeginning)
-            {
-                firstDurationStart = micros();
-                break;
-            }
-        }
-
-        while (true)
-        {
-
-            if (getDigital() == stateAtBeginning)
-            {
-                firstDurationEnd = micros();
-                break;
-            }
-        }
-
-        while (true)
-        {
-            if (getDigital() != stateAtBeginning)
-            {
-                secondDurationStart = micros();
-                break;
-            }
-        }
-        while (true)
-        {
-            if (getDigital() == stateAtBeginning)
-            {
-                secondDurationStart = micros();
-                break;
-            }
-        }
-        dutyCycle = secondDurationStart - firstDurationStart;
-        if (dutyCycle > 5300)
-            return true;
-        else
-            return false;
-    }
-
-    unsigned long measureAverageDutyCycle(int numMeasurements, double outlierThreshold)
+    unsigned long measureAverageDutyCycle_old(int numMeasurements, double outlierThreshold, bool (*getOut)())
     {
         std::vector<unsigned long> measurements;
         for (int i = 0; i < numMeasurements; i++)
         {
+            if (getOut())
+                return 0;
             update();
             measurements.push_back(dutyCycle);
         }
@@ -140,6 +93,46 @@ public:
 
         // Recalculate mean
         mean = std::accumulate(measurements.begin(), measurements.end(), 0.0) / measurements.size();
+
+        return static_cast<unsigned long>(mean);
+    }
+
+    unsigned long measureAverageDutyCycle(int numMeasurements, double outlierThreshold, bool (*getOut)())
+    {
+        auto start = millis();
+
+        unsigned long sum = 0;
+        unsigned long sumSq = 0;
+
+        std::deque<unsigned long> measurements;
+        for (int i = 0; i < numMeasurements; i++)
+        {
+            if (getOut())
+                return 0;
+            update();
+            measurements.push_back(dutyCycle);
+            sum += dutyCycle;
+            sumSq += dutyCycle * dutyCycle;
+        }
+
+        double mean = sum / static_cast<double>(measurements.size());
+        double sq_sum = sumSq;
+        double stdDev = std::sqrt(sq_sum / measurements.size() - mean * mean);
+
+        measurements.erase(std::remove_if(measurements.begin(), measurements.end(),
+                                          [mean, stdDev, outlierThreshold](unsigned long x)
+                                          {
+                                              return std::abs(x - mean) > outlierThreshold * stdDev;
+                                          }),
+                           measurements.end());
+
+        // Recalculate mean
+        mean = std::accumulate(measurements.begin(), measurements.end(), 0.0) / measurements.size();
+
+        auto end = millis();
+        Serial.print("Execution time: ");
+        Serial.print(end - start);
+        Serial.println(" ms");
 
         return static_cast<unsigned long>(mean);
     }

@@ -1,7 +1,7 @@
 class MovingAverage
 {
 private:
-    const static int size = 10; // size of the moving average
+    const static int size = 30; // size of the moving average
     int values[size];          // array to hold the measurements
     int index = 0;             // current index into the array
     int sum = 0;               // sum of the measurements
