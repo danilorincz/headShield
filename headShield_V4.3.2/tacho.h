@@ -5,6 +5,7 @@
 #include <numeric>
 #include <algorithm>
 #include <cmath>
+
 class Tachometer
 {
 private:
@@ -34,7 +35,7 @@ public:
         else
             return LOW;
     }
-    void update()
+    bool update()
     {
         int measureCounter = 0;
         do
@@ -56,13 +57,65 @@ public:
                 timeHigh = micros() - timeWhenHighStart;
             else
                 timeLow = micros() - timeWhenLowStart;
-           /* 
+            /* 
             measureCounter++;
             if (measureCounter > maxMeasure)
                 break;*/
             dutyCycle = timeHigh + timeLow;
         } while (abs(timeHigh - timeLow) > 0.10 * dutyCycle || dutyCycle < 3000); // change this value as needed
+        return false;
     }
+    bool update_old()
+    {
+        bool stateAtBeginning = getDigital();
+        bool stateAfterChange;
+        unsigned long firstDurationStart = 0;
+        unsigned long firstDurationEnd = 0;
+        unsigned long secondDurationStart = 0;
+        unsigned long secondDurationEnd = 0;
+
+        while (true)
+        {
+            if (getDigital() != stateAtBeginning)
+            {
+                firstDurationStart = micros();
+                break;
+            }
+        }
+
+        while (true)
+        {
+
+            if (getDigital() == stateAtBeginning)
+            {
+                firstDurationEnd = micros();
+                break;
+            }
+        }
+
+        while (true)
+        {
+            if (getDigital() != stateAtBeginning)
+            {
+                secondDurationStart = micros();
+                break;
+            }
+        }
+        while (true)
+        {
+            if (getDigital() == stateAtBeginning)
+            {
+                secondDurationStart = micros();
+                break;
+            }
+        }
+        dutyCycle = secondDurationStart - firstDurationStart;
+        if (dutyCycle > 5300)
+            return true;
+        else
+            return false;
+    }
+
     unsigned long measureAverageDutyCycle(int numMeasurements, double outlierThreshold)
     {
         std::vector<unsigned long> measurements;

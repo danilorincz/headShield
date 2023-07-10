@@ -502,9 +502,15 @@ void batteryLevelHandling()
 void updateTachometer()
 {
   static MovingAverage tachoValueAverage;
-  tachoValueAverage.add(tacho.measureAverageDutyCycle(200, 10));
+  tachoValueAverage.add(tacho.measureAverageDutyCycle(50, 5));
   tachoFinalValue = tachoValueAverage.average();
-  // do someting according to the new value
+}
+void updateTachoeterJustDutycycle()
+{
+  static MovingAverage tachoValueAverage;
+  if (tacho.update())
+    tachoValueAverage.add(tacho.dutyCycle);
+  tachoFinalValue = tachoValueAverage.average();
 }
 
 //* SENSOR DATA
