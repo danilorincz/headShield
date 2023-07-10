@@ -17,11 +17,10 @@ public:
     bool scan()
     {
         if (read() != 4095)
-        {
             state = true;
-            return true;
-        }
-        state = false;
-        return false;
+        else
+            state = false;
+
+        return state;
     }
 };

@@ -494,7 +494,7 @@ bool headSensorStateChange()
 }
 void headSensorStateHandler()
 {
-  if (headSensorStateChange())
+  if (isStableInput())
   {
     switch (headSensor.state)
     {
@@ -507,7 +507,25 @@ void headSensorStateHandler()
     }
   }
 }
+bool isStableInput(bool inputState, unsigned long stableTime)
+{
+    static bool outputState = false;
+    static bool prevState = false;
+    static unsigned long stableStartTime = 0;
 
+    if (inputState != prevState)
+    {                               // If input state changes
+        stableStartTime = millis(); // reset timer
+        prevState = inputState;
+    }
+
+    if (millis() - stableStartTime >= stableTime)
+    {
+        outputState = prevState; // set output to the stable state
+    }
+
+    return outputState;
+}
 //* BATTERY
 void batteryLevelHandling()
 {
@@ -608,3 +626,4 @@ void loop()
   // sensor reading
   //
 }
+
