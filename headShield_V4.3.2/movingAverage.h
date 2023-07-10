@@ -8,7 +8,6 @@ private:
     int count = 0;             // count of measurements taken
 
 public:
-MovingAverage(int )
     void add(int value)
     {
         if (count < size)

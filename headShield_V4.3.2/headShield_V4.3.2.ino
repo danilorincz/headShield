@@ -187,7 +187,7 @@ void setup()
 void doFunction(void (*function)(), unsigned long interval)
 {
   static Timer timer(interval);
-  if (interval.timeElapsedMillis())
+  if (timer.timeElapsedMillis())
     function();
 }
 
@@ -256,7 +256,7 @@ void handler_getSensorData()
 
   server.send(200, "application/json", jsonData);
 }
-void handleDebugDataRequest()
+void handler_getDebugData()
 {
   StaticJsonDocument<200> doc;
   doc["dummy1"] = touchRight.getAnalog();
@@ -340,6 +340,7 @@ void touchInputHandler()
 
   if (touchLeft.longTap() && !touchRight.getDigital()) //? LEFT LONG -> SENSOR CONNECTION
   {
+    
   }
 
   if (touchRight.singleTap() && !touchLeft.getDigital()) //? RIGHT SINGLE -> FAN CONTROL
@@ -409,8 +410,6 @@ bool visorStateChange()
   return false;
 }
 void visorStateHandler()
-//* MAIN FUNCTIONS
-
 {
   if (visorStateChange())
   {
@@ -435,29 +434,6 @@ float getHeadSensorAverage()
   headSensorAverage.add(headSensor.read());
   return headSensorAverage.average();
 }
-
-void headSensorStateHandler()
-{
-  static bool averageState;
-
-  if (getHeadSensorAverage() != 4095)
-    averageState = true;
-  else
-    averageState = false;
-
-  if (isStableInput(averageState, 1000))
-  {
-    switch (headSensor.state)
-    {
-    case 1:
-      Serial.println("head sensor ON");
-      break;
-    case 0:
-      Serial.println("head sensor OFF");
-      break;
-    }
-  }
-}
 bool isStableInput(bool actualState, unsigned long stableTime)
 {
   static bool prevState = false;
@@ -478,6 +454,43 @@ bool isStableInput(bool actualState, unsigned long stableTime)
     return false;
   }
 }
+void headSensorStateHandler()
+{
+  static bool averageState;
+
+  if (getHeadSensorAverage() != 4095)
+    averageState = true;
+  else
+    averageState = false;
+
+  static bool onDone = false;
+  static bool offDone = false;
+
+  if (isStableInput(averageState, 1000))
+  {
+
+    switch (averageState)
+    {
+    case 1:
+      if (!onDone)
+      {
+        Serial.println("head sensor ON");
+        onDone = true;
+        offDone = false;
+      }
+      break;
+    case 0:
+      if (!offDone)
+      {
+        Serial.println("head sensor OFF");
+        offDone = true;
+        onDone = false;
+      }
+      break;
+    }
+  }
+}
+
 //* BATTERY
 void batteryLevelHandling()
 {
@@ -562,7 +575,6 @@ void main_readSensorData(unsigned long _loopTime)
   perkData.TVOC = ENS160.getTVOC();
   perkData.ECO2 = ENS160.getECO2();
 }
-}
 
 void loop()
 {
@@ -572,9 +584,9 @@ void loop()
   headSensorStateHandler();
 
   //* TIME INTERVALL READINGS
+  /*
   doFunction(server.handleClient(), 200);
   doFunction(batteryLevelHandling, 4000);
   doFunction(updateTachometer, 50);
-  // sensor reading
-  //
+*/
 }
