@@ -435,66 +435,17 @@ float getHeadSensorAverage()
   headSensorAverage.add(headSensor.read());
   return headSensorAverage.average();
 }
-bool getHeadSensorDigital()
-{
-  if (getHeadSensorAverage() != 4095)
-  {
-    return true;
-  }
-  return false;
-}
-bool headSensorChange(bool &_newState)
-{
-  bool newState = getHeadSensorDigital();
-  _newState = newState;
-  static bool prevState = newState;
-  static MovingAverage headSensorAverage;
 
-  if (newState != prevState)
-  {
-    prevState = newState;
-    return true;
-  }
-  return false;
-}
-bool headSensorStateChange()
-{
-  const int minimumDuration = 400;
-
-  static bool timeStarted = false;
-  static unsigned long timeWhenStart = 0;
-  static bool changedTo = false;
-  bool returnValue = false;
-  if (headSensorChange(changedTo))
-  {
-    if (!timeStarted)
-    {
-      timeStarted = true;
-      timeWhenStart = millis();
-    }
-  }
-
-  if (timeStarted)
-  {
-    if (changedTo == getHeadSensorDigital())
-    {
-      if (millis() - timeWhenStart > minimumDuration)
-      {
-        timeStarted = false;
-        returnValue = true; //* HERE IS WHEN RETURN VALUE IS TRUE
-      }
-    }
-    else
-    {
-      timeStarted = false;
-    }
-  }
-
-  return returnValue;
-}
 void headSensorStateHandler()
 {
-  if (isStableInput())
+  static bool averageState;
+
+  if (getHeadSensorAverage() != 4095)
+    averageState = true;
+  else
+    averageState = false;
+
+  if (isStableInput(averageState, 1000))
   {
     switch (headSensor.state)
     {
@@ -507,24 +458,25 @@ void headSensorStateHandler()
     }
   }
 }
-bool isStableInput(bool inputState, unsigned long stableTime)
+bool isStableInput(bool actualState, unsigned long stableTime)
 {
-    static bool outputState = false;
-    static bool prevState = false;
-    static unsigned long stableStartTime = 0;
+  static bool prevState = false;
+  static unsigned long stableStartTime = 0;
 
-    if (inputState != prevState)
-    {                               // If input state changes
-        stableStartTime = millis(); // reset timer
-        prevState = inputState;
-    }
+  if (actualState != prevState)
+  {                             // If input state changes
+    stableStartTime = millis(); // reset timer
+    prevState = actualState;
+  }
 
-    if (millis() - stableStartTime >= stableTime)
-    {
-        outputState = prevState; // set output to the stable state
-    }
-
-    return outputState;
+  if (millis() - stableStartTime >= stableTime)
+  {
+    return true;
+  }
+  else
+  {
+    return false;
+  }
 }
 //* BATTERY
 void batteryLevelHandling()
@@ -601,15 +553,15 @@ bool connectSensor()
 
 void main_readSensorData(unsigned long _loopTime)
 {
-    perkData.temp = BME280.getTemperature();
-    perkData.press = BME280.getPressure();
-    perkData.humi = BME280.getHumidity();
+  perkData.temp = BME280.getTemperature();
+  perkData.press = BME280.getPressure();
+  perkData.humi = BME280.getHumidity();
 
-    perkData.status = ENS160.getENS160Status();
-    perkData.AQI = ENS160.getAQI();
-    perkData.TVOC = ENS160.getTVOC();
-    perkData.ECO2 = ENS160.getECO2();
-  }
+  perkData.status = ENS160.getENS160Status();
+  perkData.AQI = ENS160.getAQI();
+  perkData.TVOC = ENS160.getTVOC();
+  perkData.ECO2 = ENS160.getECO2();
+}
 }
 
 void loop()
@@ -626,4 +578,3 @@ void loop()
   // sensor reading
   //
 }
-
