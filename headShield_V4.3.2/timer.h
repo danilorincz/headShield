@@ -1,7 +1,7 @@
 #pragma once
 struct Timer
 {
-    unsigned long int preTime;
+    unsigned long int preTime = 0;
     float duration;
 
     Timer(float duration)
@@ -36,5 +36,9 @@ struct Timer
         {
             return false;
         }
+    }
+    void reset()
+    {
+        this->preTime = 0;
     }
 };

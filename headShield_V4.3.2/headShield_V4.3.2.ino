@@ -29,9 +29,9 @@
 #include "sensor_data.h"
 #include "tacho.h"
 #include "movingAverage.h"
-
+#include "TimeManager.h"
 //? WIFI
-const char *ssid = "headShield";
+const char *ssid = "headShield_";
 const char *password = "123456789";
 IPAddress local_ip(192, 168, 1, 1);
 IPAddress gateway(192, 168, 1, 1);
@@ -43,6 +43,8 @@ SensorData perkData;
 #define SEA_LEVEL_PRESSURE 1015.0f
 DFRobot_ENS160_I2C ENS160(&Wire, 0x53);
 DFRobot_BME280_IIC BME280(&Wire, 0x76);
+bool connectCommand = false;
+bool sensorConnected = false;
 
 //? FAN
 const int fanPin = 5;
@@ -118,42 +120,29 @@ void setup()
   // ROOT HANDLERS
   server.on("/", handle_root);
   server.on("/helmetData", handler_helmetData);
-  server.on("/sensorData", handler_sensorData);
-  server.on("/control", handler_controlPage);
-  server.on("/debugData", handler_debugPage);
-  // GET GANDLERS
   server.on("/getHelmetData", handler_getHelmetData);
+
+  //server.on("/sensorData", handler_sensorData);
+  //server.on("/control", handler_controlPage);
+  //server.on("/debugData", handler_debugPage);
+  // GET GANDLERS
+  /*
   server.on("/getSensorData", handler_getSensorData);
   server.on("/debugdata", handler_getDebugData);
   // SET HANDLERS
   server.on("/setFanSpeed", handler_setFanSpeed);
   server.on("/setLampLevel", handler_setLampLevel);
-  server.on("/setAudioState", handler_setAudioState);
+  server.on("/setAudioState", handler_setAudioState);*/
   server.begin();
+  delay(100);
 
   //* BME280
   BME280.reset();
-  if (BME280.begin() != DFRobot_BME280_IIC::eStatusOK)
+  connectCommand = true;
+  while (!isTimePassed(3000))
   {
-    perkData.initializeBME280 = false;
-    Serial.println("BME280 faild");
-  }
-  else
-  {
-    perkData.initializeBME280 = true;
-    Serial.println("BME280 sucess");
-  }
-
-  //* ENS160
-  if (ENS160.begin() != NO_ERR)
-  {
-    perkData.initializeENS160 = false;
-    Serial.println("ENS160 failed");
-  }
-  else
-  {
-    perkData.initializeENS160 = true;
-    Serial.println("ENS160 sucess");
+    if (sensorConnectRequest())
+      break;
   }
 
   ENS160.setPWRMode(ENS160_STANDARD_MODE);
@@ -190,18 +179,19 @@ void doFunction(void (*function)(), unsigned long interval)
   if (timer.timeElapsedMillis())
     function();
 }
-
-//* HANDLERS
-
-// ROOT HANDLERS
 void handle_root()
 {
   server.send_P(200, "text/html", webpageCode);
 }
+//* HANDLERS
+// ROOT HANDLERS
+
 void handler_helmetData()
 {
   server.send_P(200, "text/html", helmetDataPage);
 }
+
+/*
 void handler_sensorData()
 {
   server.send_P(200, "text/html", sensorDataPage);
@@ -214,24 +204,34 @@ void handler_debugPage()
 {
   server.send_P(200, "text/html", DEBUG_PAGE);
 }
+*/
+
 // GET HANDLERS
+
 void handler_getHelmetData()
 {
-  StaticJsonDocument<200> doc;
+  static Timer intervalTimer(1000);
+  if (intervalTimer.timeElapsedMillis())
+  {
 
-  doc["visorState"] = visor.state;
-  doc["IRState"] = headSensor.state;
-  doc["fanLevel"] = fan.level;
-  doc["lampLevel"] = lamp.level;
-  doc["batteryLevel"] = battery.level;
-  doc["audioState"] = audio.state;
-  doc["fanRPM"] = tachoFinalValue;
+    StaticJsonDocument<200> doc;
 
-  String jsonData;
-  serializeJson(doc, jsonData);
+    doc["visorState"] = visor.state;
+    doc["IRState"] = headSensor.state;
+    doc["fanLevel"] = fan.level;
+    doc["lampLevel"] = lamp.level;
+    doc["batteryLevel"] = battery.level;
+    doc["audioState"] = audio.state;
+    doc["fanRPM"] = tachoFinalValue;
 
-  server.send(200, "application/json", jsonData);
+    String jsonData;
+    serializeJson(doc, jsonData);
+
+    server.send(200, "application/json", jsonData);
+  }
 }
+
+/*
 void handler_getSensorData()
 {
   StaticJsonDocument<200> doc;
@@ -295,7 +295,7 @@ void handler_setAudioState()
 
   server.send(200, "text/plain", "OK");
 }
-
+*/
 //* TOUCH
 bool multiTouch()
 {
@@ -340,7 +340,7 @@ void touchInputHandler()
 
   if (touchLeft.longTap() && !touchRight.getDigital()) //? LEFT LONG -> SENSOR CONNECTION
   {
-    
+    connectCommand = true;
   }
 
   if (touchRight.singleTap() && !touchLeft.getDigital()) //? RIGHT SINGLE -> FAN CONTROL
@@ -507,7 +507,7 @@ void updateTachometer()
   // do someting according to the new value
 }
 
-//* SENSOR
+//* SENSOR DATA
 bool BME280Connected()
 {
   if (BME280.begin() != DFRobot_BME280_IIC::eStatusOK)
@@ -522,71 +522,116 @@ bool ENS160Connected()
   else
     return true;
 }
-bool sensorConnected()
+
+void readSensorData()
 {
-  if (!BME280Connected() || !ENS160Connected())
-    return false;
-  else
-    return true;
-}
-bool connectSensor()
-{
-  BME280.reset();
-  if (BME280Connected())
+  static Timer readData(100);
+  if (readData.timeElapsedMillis())
   {
-    perkData.initializeBME280 = true;
-    Serial.println("BME280 sucess");
-  }
-  else
-  {
-    perkData.initializeBME280 = false;
-    Serial.println("BME280 failed");
-  }
+    perkData.temp = BME280.getTemperature();
+    perkData.press = BME280.getPressure();
+    perkData.humi = BME280.getHumidity();
 
-  //* ENS160
-  if (ENS160Connected())
-  {
-    perkData.initializeENS160 = true;
-    Serial.println("ENS160 sucess");
+    perkData.status = ENS160.getENS160Status();
+    perkData.AQI = ENS160.getAQI();
+    perkData.TVOC = ENS160.getTVOC();
+    perkData.ECO2 = ENS160.getECO2();
   }
-  else
-  {
-    perkData.initializeENS160 = false;
-    Serial.println("ENS160 failed");
-  }
-
-  ENS160.setPWRMode(ENS160_STANDARD_MODE);
-  ENS160.setTempAndHum(25.0, 50.0);
-
-  if (perkData.initializeENS160 && perkData.initializeBME280)
-    return true;
-  else
-    return false;
 }
 
-void main_readSensorData(unsigned long _loopTime)
+bool sensorConnectRequest()
 {
-  perkData.temp = BME280.getTemperature();
-  perkData.press = BME280.getPressure();
-  perkData.humi = BME280.getHumidity();
+  static Timer connectingSensorMax(3000);
+  if (connectCommand)
+  {
+    if (!connectingSensorMax.timeElapsedMillis()) // itt még nézi hogy van-e szenzor
+    {
+      static bool BME_ok = false;
+      static bool ENS_ok = false;
+      if (BME280Connected() && !BME_ok)
+        BME_ok = true;
+      if (ENS160Connected() && !ENS_ok)
+        ENS_ok = true;
 
-  perkData.status = ENS160.getENS160Status();
-  perkData.AQI = ENS160.getAQI();
-  perkData.TVOC = ENS160.getTVOC();
-  perkData.ECO2 = ENS160.getECO2();
+      if (BME_ok && ENS_ok)
+      {
+        sensorConnected = true;
+        connectCommand = false;
+        BME_ok = false;
+        ENS_ok = false;
+        beeper.playSuccess();
+        return true;
+      }
+    }
+    else // letelt az ido
+    {
+      connectCommand = false;
+    }
+  }
+  else
+  {
+    connectingSensorMax.preTime = millis();
+  }
+  return false;
+}
+bool isSensorDisconnecting()
+{
+  if (perkData.AQI == 0 && perkData.TVOC == 252 && perkData.ECO2 == 252)
+    return true;
+  else
+    return false;
+}
+void sensorDisconnectRequest()
+{
+  if (sensorConnected)
+  {
+    if (isStableInput(isSensorDisconnecting(), 1000))
+    {
+      sensorConnected = false;
+      beeper.playShutdown();
+    }
+  }
+}
+
+bool isSensorReconnecting()
+{
+  if (perkData.AQI == 0 && perkData.TVOC == 0 && perkData.ECO2 == 0)
+    return true;
+  else
+    return false;
+}
+void sensorReconnectingRequest()
+{
+  if (!sensorConnected)
+  {
+    if (isStableInput(isSensorReconnecting(), 1000))
+    {
+      connectCommand = true;
+    }
+  }
 }
 
 void loop()
 {
-  //* CONTIONUOS READING
+  server.handleClient();
+
+  if (fan.level == 3)
+  {
+    updateTachometer();
+    Serial.println(tachoFinalValue);
+  }
+
+  //*__________________
+
   touchInputHandler();
   visorStateHandler();
   headSensorStateHandler();
 
-  //* TIME INTERVALL READINGS
-  /*
-  doFunction(server.handleClient(), 200);
+  sensorConnectRequest();
+  sensorDisconnectRequest();
+  sensorReconnectingRequest();
+  //*__________________
+
+  doFunction(readSensorData, 200);
   doFunction(batteryLevelHandling, 4000);
-  doFunction(updateTachometer, 50);
-*/
 }

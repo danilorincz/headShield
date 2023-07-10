@@ -26,7 +26,7 @@ const char *webpageCode = R"rawliteral(
 </html>
 )rawliteral";
 
-const char helmetDataPage[] PROGMEM = R"rawliteral(
+const char *helmetDataPage = R"rawliteral(
 <!DOCTYPE html>
 <html lang="en">
 <head>

@@ -29,7 +29,10 @@ public:
 
     bool getDigital()
     {
-        return analogRead(analogPin) > 0;
+        if (analogRead(analogPin) > 10)
+            return HIGH;
+        else
+            return LOW;
     }
     void update()
     {
@@ -53,9 +56,9 @@ public:
                 timeHigh = micros() - timeWhenHighStart;
             else
                 timeLow = micros() - timeWhenLowStart;
-/*
+           /* 
             measureCounter++;
-            if (measureCounter >= maxMeasure)
+            if (measureCounter > maxMeasure)
                 break;*/
             dutyCycle = timeHigh + timeLow;
         } while (abs(timeHigh - timeLow) > 0.10 * dutyCycle || dutyCycle < 3000); // change this value as needed
