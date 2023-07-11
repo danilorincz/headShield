@@ -16,7 +16,7 @@ private:
     unsigned long timeLow = 0;
     bool rollingValue;
     int maxMeasure = 3;
-
+    bool lastMeasure[3]; // lastMeasure[0] -> oldest lastMeasure[1] -> previous
 public:
     unsigned long dutyCycle = 0;
     Tachometer(int analogPin)
@@ -27,18 +27,45 @@ public:
     {
         pinMode(analogPin, INPUT);
     }
-
+    bool fastMajority(bool a, bool b, bool c)
+    {
+        return (a & b) | (b & c) | (a & c);
+    }
     bool getDigital()
     {
-        if (analogRead(analogPin) > 10)
-            return HIGH;
+        static bool newValue = false;
+        if (analogRead(analogPin) > 0)
+        {
+            newValue = true;
+        }
         else
-            return LOW;
+        {
+            newValue = false;
+        }
+
+        lastMeasure[0] = lastMeasure[1];
+        lastMeasure[1] = lastMeasure[2];
+        lastMeasure[2] = newValue;
+
+        return fastMajority(lastMeasure[0], lastMeasure[1], lastMeasure[2]);
+    }
+
+    bool update_new()
+    {
+        if (getDigital())
+        {
+            while (getDigital())
+            {
+            }
+            // innentől tudjuk hogy egy új LOW kezdődött
+        }
+        else
+        {
+        }
     }
 
     bool update()
     {
-        int measureCounter = 0;
         do
         {
             bool lastState = getDigital();
@@ -58,10 +85,7 @@ public:
                 timeHigh = micros() - timeWhenHighStart;
             else
                 timeLow = micros() - timeWhenLowStart;
-            /* 
-            measureCounter++;
-            if (measureCounter > maxMeasure)
-                break;*/
+
             dutyCycle = timeHigh + timeLow;
         } while (abs(timeHigh - timeLow) > 0.10 * dutyCycle || dutyCycle < 3450); // change this value as needed
         return false;

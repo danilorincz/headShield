@@ -502,11 +502,10 @@ void batteryLevelHandling()
 void updateTachometer()
 {
   static MovingAverage tachoValueAverage;
-  unsigned long valueToAdd = tacho.measureAverageDutyCycle(50, 90, interruptMeasure);
+  unsigned long valueToAdd = tacho.measureAverageDutyCycle(30, 90, interruptMeasure);
   if (valueToAdd != 0)
     tachoValueAverage.add(valueToAdd);
   tachoFinalValue = tachoValueAverage.average();
-
 }
 void updateTachoeterJustDutycycle()
 {
@@ -515,8 +514,6 @@ void updateTachoeterJustDutycycle()
     tachoValueAverage.add(tacho.dutyCycle);
   tachoFinalValue = tachoValueAverage.average();
 }
-
-
 
 //* SENSOR DATA
 bool BME280Connected()
@@ -630,17 +627,27 @@ bool interruptMeasure()
     return false;
 }
 
+int valueChain[500];
 void loop()
 {
   server.handleClient();
-  //Serial.println(touchLeft.getAnalog());
+  
   if (fan.level == 3)
   {
     updateTachometer();
     Serial.println(tachoFinalValue);
   }
- 
-
+ /*
+  Serial.println(analogRead(tachometerPin));
+  for (int i = 0; i < 500; i++)
+  {
+    valueChain[i] = analogRead(tachometerPin);
+  }
+  Serial.println("Values: ");
+  for (int i = 0; i < 500; i++)
+  {
+    Serial.println(valueChain[i]);
+  }*/
   //*__________________
 
   touchInputHandler();
