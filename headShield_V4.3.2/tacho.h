@@ -50,24 +50,14 @@ public:
         return fastMajority(lastMeasure[0], lastMeasure[1], lastMeasure[2]);
     }
 
-    bool update_new()
-    {
-        if (getDigital())
-        {
-            while (getDigital())
-            {
-            }
-            // innentől tudjuk hogy egy új LOW kezdődött
-        }
-        else
-        {
-        }
-    }
-
     bool update()
     {
+        int loopCounter = 0;
         do
         {
+             if (loopCounter > 50)
+                return false;
+            loopCounter++;
             bool lastState = getDigital();
             rollingValue = lastState;
 
@@ -76,9 +66,8 @@ public:
             else
                 timeWhenLowStart = micros();
 
-            while (rollingValue == lastState)
+            while (getDigital() == lastState)
             {
-                rollingValue = getDigital();
             }
 
             if (lastState)
@@ -87,44 +76,13 @@ public:
                 timeLow = micros() - timeWhenLowStart;
 
             dutyCycle = timeHigh + timeLow;
-        } while (abs(timeHigh - timeLow) > 0.10 * dutyCycle || dutyCycle < 3450); // change this value as needed
-        return false;
-    }
 
-    unsigned long measureAverageDutyCycle_old(int numMeasurements, double outlierThreshold, bool (*getOut)())
-    {
-        std::vector<unsigned long> measurements;
-        for (int i = 0; i < numMeasurements; i++)
-        {
-            if (getOut())
-                return 0;
-            update();
-            measurements.push_back(dutyCycle);
-        }
-
-        // Calculate mean and standard deviation
-        double mean = std::accumulate(measurements.begin(), measurements.end(), 0.0) / numMeasurements;
-        double sq_sum = std::inner_product(measurements.begin(), measurements.end(), measurements.begin(), 0.0);
-        double stdDev = std::sqrt(sq_sum / numMeasurements - mean * mean);
-
-        // Remove outliers
-        measurements.erase(std::remove_if(measurements.begin(), measurements.end(),
-                                          [mean, stdDev, outlierThreshold](unsigned long x)
-                                          {
-                                              return std::abs(x - mean) > outlierThreshold * stdDev;
-                                          }),
-                           measurements.end());
-
-        // Recalculate mean
-        mean = std::accumulate(measurements.begin(), measurements.end(), 0.0) / measurements.size();
-
-        return static_cast<unsigned long>(mean);
+        } while (abs(timeHigh - timeLow) > 0.05 * dutyCycle || dutyCycle < 3500); // change this value as needed
+        return true;
     }
 
     unsigned long measureAverageDutyCycle(int numMeasurements, double outlierThreshold, bool (*getOut)())
     {
-        auto start = millis();
-
         unsigned long sum = 0;
         unsigned long sumSq = 0;
 
@@ -133,7 +91,8 @@ public:
         {
             if (getOut())
                 return 0;
-            update();
+            if (!update())
+                Serial.println("ERROR");
             measurements.push_back(dutyCycle);
             sum += dutyCycle;
             sumSq += dutyCycle * dutyCycle;
@@ -153,11 +112,58 @@ public:
         // Recalculate mean
         mean = std::accumulate(measurements.begin(), measurements.end(), 0.0) / measurements.size();
 
-        auto end = millis();
-        Serial.print("Execution time: ");
-        Serial.print(end - start);
-        Serial.println(" ms");
-
         return static_cast<unsigned long>(mean);
     }
 };
+
+/*
+    bool update_new()
+    {
+        unsigned long firstChangeStart = 0;
+        unsigned long secondChangeStart = 0;
+        unsigned long thirdChangeStart = 0;
+
+        bool initialState = getDigital();
+
+        while (true)
+        {
+            if (getDigital() != initialState)
+            {
+                firstChangeStart = micros();
+                break;
+            }
+        }
+
+        while (true)
+        {
+            if (getDigital() == initialState)
+            {
+                secondChangeStart = micros();
+                break;
+            }
+        }
+
+        while (true)
+        {
+            if (getDigital() != initialState)
+            {
+                thirdChangeStart = micros();
+                break;
+            }
+        }
+
+        unsigned long firstDuration = secondChangeStart - firstChangeStart;
+        unsigned long secondDuration = thirdChangeStart - secondChangeStart;
+
+        dutyCycle = thirdChangeStart - firstChangeStart;
+        if (abs(firstDuration - secondDuration) < 0.10 * dutyCycle && dutyCycle > 3600)
+        {
+            return true;
+        }
+        else
+        {
+            return false;
+        }
+    }
+
+*/
