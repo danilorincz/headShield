@@ -16,7 +16,7 @@ private:
     unsigned long timeLow = 0;
     bool rollingValue;
     int maxMeasure = 3;
-    bool lastMeasure[3]; // lastMeasure[0] -> oldest lastMeasure[1] -> previous
+    bool lastMeasure[4]; // lastMeasure[0] -> oldest lastMeasure[1] -> previous
 public:
     unsigned long dutyCycle = 0;
     Tachometer(int analogPin)
@@ -45,17 +45,20 @@ public:
 
         lastMeasure[0] = lastMeasure[1];
         lastMeasure[1] = lastMeasure[2];
-        lastMeasure[2] = newValue;
+        lastMeasure[2] = lastMeasure[3];
+        lastMeasure[3] = newValue;
+
+        int sum = lastMeasure[0] + lastMeasure[1] + lastMeasure[2] + lastMeasure[3];
 
         return fastMajority(lastMeasure[0], lastMeasure[1], lastMeasure[2]);
     }
 
-    bool update()
+    bool update_original()
     {
         int loopCounter = 0;
         do
         {
-             if (loopCounter > 50)
+            if (loopCounter > 50)
                 return false;
             loopCounter++;
             bool lastState = getDigital();
@@ -81,6 +84,33 @@ public:
         return true;
     }
 
+    bool update()
+    {
+        static bool lastState;
+        lastState = getDigital();
+
+        if (lastState)
+            timeWhenHighStart = micros();
+        else
+            timeWhenLowStart = micros();
+
+        while (getDigital() == lastState)
+        {
+        }
+
+        if (lastState)
+            timeHigh = micros() - timeWhenHighStart;
+        else
+            timeLow = micros() - timeWhenLowStart;
+
+        dutyCycle = timeHigh + timeLow;
+
+        if (abs(timeHigh - timeLow) < 0.02 * dutyCycle && dutyCycle > 580)
+            return true;
+        else
+            return true;
+    }
+
     unsigned long measureAverageDutyCycle(int numMeasurements, double outlierThreshold, bool (*getOut)())
     {
         unsigned long sum = 0;
@@ -91,9 +121,10 @@ public:
         {
             if (getOut())
                 return 0;
-            if (!update())
-                Serial.println("ERROR");
-            measurements.push_back(dutyCycle);
+            if (update())
+                measurements.push_back(dutyCycle);
+            else
+                Serial.println("error");
             sum += dutyCycle;
             sumSq += dutyCycle * dutyCycle;
         }

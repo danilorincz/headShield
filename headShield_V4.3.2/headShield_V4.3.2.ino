@@ -504,7 +504,7 @@ void updateTachometer()
   if (fan.level == 3)
   {
     static MovingAverage tachoValueAverage;
-    unsigned long valueToAdd = tacho.measureAverageDutyCycle(10, 60, interruptMeasure);
+    unsigned long valueToAdd = tacho.measureAverageDutyCycle(40, 80, interruptMeasure);
     if (valueToAdd != 0)
       tachoValueAverage.add(valueToAdd);
     tachoFinalValue = tachoValueAverage.average();
