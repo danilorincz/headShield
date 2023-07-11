@@ -16,7 +16,7 @@ private:
     unsigned long timeLow = 0;
     bool rollingValue;
     int maxMeasure = 3;
-    bool lastMeasure[4]; // lastMeasure[0] -> oldest lastMeasure[1] -> previous
+    bool lastMeasure[3]; // lastMeasure[0] -> oldest lastMeasure[1] -> previous
 public:
     unsigned long dutyCycle = 0;
     Tachometer(int analogPin)
@@ -45,22 +45,16 @@ public:
 
         lastMeasure[0] = lastMeasure[1];
         lastMeasure[1] = lastMeasure[2];
-        lastMeasure[2] = lastMeasure[3];
-        lastMeasure[3] = newValue;
-
-        int sum = lastMeasure[0] + lastMeasure[1] + lastMeasure[2] + lastMeasure[3];
+        lastMeasure[2] = newValue;
 
         return fastMajority(lastMeasure[0], lastMeasure[1], lastMeasure[2]);
     }
 
-    bool update_original()
+    bool update()
     {
-        int loopCounter = 0;
         do
         {
-            if (loopCounter > 50)
-                return false;
-            loopCounter++;
+
             bool lastState = getDigital();
             rollingValue = lastState;
 
@@ -80,35 +74,8 @@ public:
 
             dutyCycle = timeHigh + timeLow;
 
-        } while (abs(timeHigh - timeLow) > 0.05 * dutyCycle || dutyCycle < 3500); // change this value as needed
+        } while (abs(timeHigh - timeLow) > 0.15 * dutyCycle || dutyCycle < 3500); // change this value as needed
         return true;
-    }
-
-    bool update()
-    {
-        static bool lastState;
-        lastState = getDigital();
-
-        if (lastState)
-            timeWhenHighStart = micros();
-        else
-            timeWhenLowStart = micros();
-
-        while (getDigital() == lastState)
-        {
-        }
-
-        if (lastState)
-            timeHigh = micros() - timeWhenHighStart;
-        else
-            timeLow = micros() - timeWhenLowStart;
-
-        dutyCycle = timeHigh + timeLow;
-
-        if (abs(timeHigh - timeLow) < 0.02 * dutyCycle && dutyCycle > 580)
-            return true;
-        else
-            return true;
     }
 
     unsigned long measureAverageDutyCycle(int numMeasurements, double outlierThreshold, bool (*getOut)())
@@ -121,10 +88,9 @@ public:
         {
             if (getOut())
                 return 0;
-            if (update())
-                measurements.push_back(dutyCycle);
-            else
-                Serial.println("error");
+            update();
+            measurements.push_back(dutyCycle);
+
             sum += dutyCycle;
             sumSq += dutyCycle * dutyCycle;
         }
@@ -148,11 +114,10 @@ public:
 };
 
 /*
-    bool update_new()
+  bool update_new()
     {
         unsigned long firstChangeStart = 0;
         unsigned long secondChangeStart = 0;
-        unsigned long thirdChangeStart = 0;
 
         bool initialState = getDigital();
 
@@ -174,27 +139,13 @@ public:
             }
         }
 
-        while (true)
-        {
-            if (getDigital() != initialState)
-            {
-                thirdChangeStart = micros();
-                break;
-            }
-        }
-
-        unsigned long firstDuration = secondChangeStart - firstChangeStart;
-        unsigned long secondDuration = thirdChangeStart - secondChangeStart;
-
-        dutyCycle = thirdChangeStart - firstChangeStart;
-        if (abs(firstDuration - secondDuration) < 0.10 * dutyCycle && dutyCycle > 3600)
+        dutyCycle = secondChangeStart - firstChangeStart;
+        if (dutyCycle > 1460)
         {
             return true;
         }
         else
-        {
             return false;
-        }
     }
 
 */

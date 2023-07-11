@@ -58,6 +58,10 @@ public:
   {
     playTone(1000, 50);
   }
+  void playFanError()
+  {
+    playTone(400, 50);
+  }
 
   void playVisorUp()
   {

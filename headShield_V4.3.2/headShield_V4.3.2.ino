@@ -416,7 +416,7 @@ void visorStateHandler()
     switch (visor.state)
     {
     case 1: //* ACTIVE
-      fan.setIntensity(fan.percent);
+      fan.setLevel(fan.level);
       Serial.println("back to active");
       break;
     case 0: //* INACTIVE
@@ -501,13 +501,19 @@ void batteryLevelHandling()
 //* TACHOMETER
 void updateTachometer()
 {
-  if (fan.level == 3)
+  if (fan.level == 3 && !fan.suspended)
   {
     static MovingAverage tachoValueAverage;
-    unsigned long valueToAdd = tacho.measureAverageDutyCycle(40, 80, interruptMeasure);
+    static MovingAverage tachoValueSuperAverage;
+    static int tachoFinalValuePre;
+    unsigned long valueToAdd = tacho.measureAverageDutyCycle(5, 60, interruptMeasure);
     if (valueToAdd != 0)
       tachoValueAverage.add(valueToAdd);
-    tachoFinalValue = tachoValueAverage.average();
+    tachoFinalValuePre = tachoValueAverage.average();
+    tachoValueSuperAverage.add(tachoFinalValuePre);
+    tachoFinalValue = tachoValueSuperAverage.average();
+
+    checkFanError();
   }
 }
 
@@ -621,6 +627,17 @@ bool interruptMeasure()
     return true;
   else
     return false;
+}
+
+void checkFanError()
+{
+  if (tachoFinalValue < 3580)
+  {
+    if (isTimePassed(2000))
+    {
+      beeper.playFanError();
+    }
+  }
 }
 
 void loop()

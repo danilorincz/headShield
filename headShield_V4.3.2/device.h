@@ -6,6 +6,7 @@ public:
     int pin;
     int percent;
     int level;
+    bool suspended = false;
 
     Device(int pin) : pin(pin), level(0), percent(0) {}
 
@@ -28,6 +29,7 @@ public:
     {
         if (_percent != this->percent)
         {
+            suspended = false;
             int value = map(_percent, 0, 100, 0, 255);
             analogWrite(pin, value);
             percent = _percent;
@@ -41,5 +43,7 @@ public:
     void suspend()
     {
         analogWrite(pin, 0);
+        suspended = true;
+        this->percent = 0;
     }
 };
