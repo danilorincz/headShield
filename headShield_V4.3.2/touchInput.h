@@ -9,7 +9,7 @@ private:
 
 private: //* SINGLE TAP
     int singleTapTimeMax = 400;
-    int singleTapTimeMin = 120;
+    int singleTapTimeMin = 10;
     bool released;
     long int singleTouchStartTime;
 

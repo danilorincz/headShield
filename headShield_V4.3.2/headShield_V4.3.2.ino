@@ -67,7 +67,7 @@ infraredSensor headSensor(infraredPin);
 const int touchRightPin = 33;
 const int touchLeftPin = 15;
 Touch touchRight(touchRightPin, 0, 24);
-Touch touchLeft(touchLeftPin, 15, 28);
+Touch touchLeft(touchLeftPin, 18, 34);
 
 //? REED SWITCH
 const int reedSwitchPin = 18;
@@ -85,17 +85,6 @@ Battery battery(batteryPin);
 //? AUDIO
 const int audioEnPin = 16;
 Audio audio(audioEnPin);
-
-//? TIMERS
-Timer serviceModeTimer(3000);
-Timer checkBatteryTimer(5000);
-Timer refreshSensorDataTimer(1000);
-Timer connectSensorTimer(2000);
-int tresholdValue = 100;
-
-//? GLOBAL
-int mode = 1;
-bool newSensorConnection = false;
 
 void setup()
 {
@@ -160,6 +149,7 @@ void setup()
   //* SERVICE MODE
   while (touchLeft.getDigital() && touchRight.getDigital())
   {
+    static Timer serviceModeTimer(3000);
     if (serviceModeTimer.timeElapsedMillis())
     {
       while (true)
@@ -173,41 +163,13 @@ void setup()
     }
   }
 }
-void doFunction(void (*function)(), unsigned long interval)
-{
-  static Timer timer(interval);
-  if (timer.timeElapsedMillis())
-    function();
-}
-void handle_root()
-{
-  server.send_P(200, "text/html", webpageCode);
-}
+
 //* HANDLERS
 // ROOT HANDLERS
-
 void handler_helmetData()
 {
   server.send_P(200, "text/html", helmetDataPage);
 }
-
-/*
-void handler_sensorData()
-{
-  server.send_P(200, "text/html", sensorDataPage);
-}
-void handler_controlPage()
-{
-  server.send_P(200, "text/html", controlPage);
-}
-void handler_debugPage()
-{
-  server.send_P(200, "text/html", DEBUG_PAGE);
-}
-*/
-
-// GET HANDLERS
-
 void handler_getHelmetData()
 {
   static Timer intervalTimer(1000);
@@ -230,8 +192,27 @@ void handler_getHelmetData()
     server.send(200, "application/json", jsonData);
   }
 }
-
+void handle_root()
+{
+  server.send_P(200, "text/html", webpageCode);
+}
 /*
+void handler_sensorData()
+{
+  server.send_P(200, "text/html", sensorDataPage);
+}
+void handler_controlPage()
+{
+  server.send_P(200, "text/html", controlPage);
+}
+void handler_debugPage()
+{
+  server.send_P(200, "text/html", DEBUG_PAGE);
+}
+
+
+
+
 void handler_getSensorData()
 {
   StaticJsonDocument<200> doc;
@@ -296,6 +277,62 @@ void handler_setAudioState()
   server.send(200, "text/plain", "OK");
 }
 */
+
+//* BASIC
+void doFunction(void (*function)(), unsigned long interval)
+{
+  static Timer timer(interval);
+  if (timer.timeElapsedMillis())
+    function();
+}
+bool isStableInput(bool actualState, unsigned long stableTime)
+{
+  static bool prevState = false;
+  static unsigned long stableStartTime = 0;
+
+  if (actualState != prevState)
+  {                             // If input state changes
+    stableStartTime = millis(); // reset timer
+    prevState = actualState;
+  }
+
+  if (millis() - stableStartTime >= stableTime)
+  {
+    return true;
+  }
+  else
+  {
+    return false;
+  }
+}
+bool isStableInput_forHeadSensor(bool actualState, unsigned long stableTime)
+{
+  static bool prevState = false;
+  static unsigned long stableStartTime = 0;
+
+  if (actualState != prevState)
+  {                             // If input state changes
+    stableStartTime = millis(); // reset timer
+    prevState = actualState;
+  }
+
+  if (millis() - stableStartTime >= stableTime)
+  {
+    return true;
+  }
+  else
+  {
+    return false;
+  }
+}
+bool isAnyTouch()
+{
+  if (touchLeft.getDigital() || touchRight.getDigital())
+    return true;
+  else
+    return false;
+}
+
 //* TOUCH
 bool multiTouch()
 {
@@ -418,10 +455,12 @@ void visorStateHandler()
     case 1: //* ACTIVE
       fan.setLevel(fan.level);
       Serial.println("back to active");
+      beeper.playVisorFoldedDown();
       break;
     case 0: //* INACTIVE
       Serial.println("deactivating");
       fan.suspend();
+      beeper.playVisorFoldedUp();
       break;
     }
   }
@@ -433,26 +472,6 @@ float getHeadSensorAverage()
   static MovingAverage headSensorAverage;
   headSensorAverage.add(headSensor.read());
   return headSensorAverage.average();
-}
-bool isStableInput(bool actualState, unsigned long stableTime)
-{
-  static bool prevState = false;
-  static unsigned long stableStartTime = 0;
-
-  if (actualState != prevState)
-  {                             // If input state changes
-    stableStartTime = millis(); // reset timer
-    prevState = actualState;
-  }
-
-  if (millis() - stableStartTime >= stableTime)
-  {
-    return true;
-  }
-  else
-  {
-    return false;
-  }
 }
 void headSensorStateHandler()
 {
@@ -466,15 +485,15 @@ void headSensorStateHandler()
   static bool onDone = false;
   static bool offDone = false;
 
-  if (isStableInput(averageState, 1000))
+  if (isStableInput_forHeadSensor(averageState, 1000))
   {
-
     switch (averageState)
     {
     case 1:
       if (!onDone)
       {
-        Serial.println("head sensor ON");
+        beeper.playHelmetPutOn();
+        Serial.println("HELMET ON");
         onDone = true;
         offDone = false;
       }
@@ -482,7 +501,8 @@ void headSensorStateHandler()
     case 0:
       if (!offDone)
       {
-        Serial.println("head sensor OFF");
+        beeper.playHelmetTakenOff();
+        Serial.println("HELMET OFF");
         offDone = true;
         onDone = false;
       }
@@ -499,6 +519,16 @@ void batteryLevelHandling()
 }
 
 //* TACHOMETER
+void checkFanError()
+{
+  if (tachoFinalValue < 3575)
+  {
+    if (isTimePassed(2000))
+    {
+      beeper.playFanError();
+    }
+  }
+}
 void updateTachometer()
 {
   if (fan.level == 3 && !fan.suspended)
@@ -506,7 +536,7 @@ void updateTachometer()
     static MovingAverage tachoValueAverage;
     static MovingAverage tachoValueSuperAverage;
     static int tachoFinalValuePre;
-    unsigned long valueToAdd = tacho.measureAverageDutyCycle(5, 60, interruptMeasure);
+    unsigned long valueToAdd = tacho.measureAverageDutyCycle(5, 60, isAnyTouch);
     if (valueToAdd != 0)
       tachoValueAverage.add(valueToAdd);
     tachoFinalValuePre = tachoValueAverage.average();
@@ -532,7 +562,6 @@ bool ENS160Connected()
   else
     return true;
 }
-
 void readSensorData()
 {
   static Timer readData(100);
@@ -570,6 +599,7 @@ bool sensorConnectRequest()
         BME_ok = false;
         ENS_ok = false;
         beeper.playSuccess();
+        Serial.println("Sensor connected OK");
         return true;
       }
     }
@@ -584,6 +614,7 @@ bool sensorConnectRequest()
   }
   return false;
 }
+
 bool isSensorDisconnecting()
 {
   if (perkData.AQI == 0 && perkData.TVOC == 252 && perkData.ECO2 == 252)
@@ -595,14 +626,14 @@ void sensorDisconnectRequest()
 {
   if (sensorConnected)
   {
-    if (isStableInput(isSensorDisconnecting(), 1000))
+    if (isSensorDisconnecting())
     {
       sensorConnected = false;
       beeper.playShutdown();
+      Serial.println("disconnecting sensor");
     }
   }
 }
-
 bool isSensorReconnecting()
 {
   if (perkData.AQI == 0 && perkData.TVOC == 0 && perkData.ECO2 == 0)
@@ -614,28 +645,10 @@ void sensorReconnectingRequest()
 {
   if (!sensorConnected)
   {
-    if (isStableInput(isSensorReconnecting(), 1000))
+    if (isSensorReconnecting())
     {
       connectCommand = true;
-    }
-  }
-}
-
-bool interruptMeasure()
-{
-  if (touchLeft.getDigital() || touchRight.getDigital())
-    return true;
-  else
-    return false;
-}
-
-void checkFanError()
-{
-  if (tachoFinalValue < 3580)
-  {
-    if (isTimePassed(2000))
-    {
-      beeper.playFanError();
+      Serial.println("Reconnecting sensor");
     }
   }
 }
@@ -643,16 +656,16 @@ void checkFanError()
 void loop()
 {
   server.handleClient();
-
   updateTachometer();
   Serial.println(tachoFinalValue);
-
+  Serial.println(headSensor.read());
   touchInputHandler();
   visorStateHandler();
-  headSensorStateHandler();
 
+  headSensorStateHandler();
   sensorConnectRequest();
   sensorDisconnectRequest();
+
   sensorReconnectingRequest();
 
   doFunction(readSensorData, 200);
