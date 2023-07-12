@@ -325,7 +325,7 @@ bool isStableInput_forHeadSensor(bool actualState, unsigned long stableTime)
     return false;
   }
 }
-bool isAnyTouch()
+bool interruptMeasure()
 {
   if (touchLeft.getDigital() || touchRight.getDigital())
     return true;
@@ -529,19 +529,32 @@ void checkFanError()
     }
   }
 }
+
 void updateTachometer()
 {
   if (fan.level == 3 && !fan.suspended)
   {
-    static MovingAverage tachoValueAverage;
-    static MovingAverage tachoValueSuperAverage;
-    static int tachoFinalValuePre;
-    unsigned long valueToAdd = tacho.measureAverageDutyCycle(5, 60, isAnyTouch);
+    static int valueToAdd;
+    static MovingAverage smooth_1;
+    static MovingAverage smooth_2;
+    static MovingAverage smooth_3;
+    static int smooth_1_result;
+    static int smooth_2_result;
+
+    valueToAdd = tacho.measureAverageDutyCycle(5, 60, interruptMeasure);
+
     if (valueToAdd != 0)
-      tachoValueAverage.add(valueToAdd);
-    tachoFinalValuePre = tachoValueAverage.average();
-    tachoValueSuperAverage.add(tachoFinalValuePre);
-    tachoFinalValue = tachoValueSuperAverage.average();
+    {
+      smooth_1.add(valueToAdd);
+      smooth_1_result = smooth_1.average();
+
+      smooth_2.add(smooth_1_result);
+      smooth_2_result = smooth_2.average();
+
+      smooth_3.add(smooth_2_result);
+      tachoFinalValue = smooth_3.average();
+      analyzeTachometer();
+    }
 
     checkFanError();
   }
@@ -653,19 +666,81 @@ void sensorReconnectingRequest()
   }
 }
 
+void analyzeTachometer()
+{
+  if (fan.level != 3 || fan.suspended)
+    return;
+  static int tachoPrevValue;
+  static int monitorCounter = 0;
+  static const int measureQuantity = 150;
+  static int monitorSessionCounter = 0;
+  static unsigned long sessionDuration = 0;
+  static unsigned long sessionStartTime = 0;
+  static int lastSessionValues[150];
+
+  if (monitorCounter == 0)
+  {
+    sessionStartTime = millis();
+    Serial.println("________MONITORING STARTED_________");
+    Serial.print("Monitor session: ");
+    Serial.println(monitorSessionCounter);
+    Serial.println(" ");
+    Serial.println("Temp");
+    Serial.println(perkData.temp);
+    Serial.println("Press");
+    Serial.println(perkData.press);
+    Serial.println("Humi");
+    Serial.println(perkData.humi);
+    Serial.println("AQI");
+    Serial.println(perkData.AQI);
+    Serial.println("TVOC");
+    Serial.println(perkData.TVOC);
+    Serial.println("ECO2");
+    Serial.println(perkData.ECO2);
+    Serial.println("VALUES");
+
+    monitorSessionCounter++;
+  }
+  lastSessionValues[monitorCounter] = tachoFinalValue;
+  monitorCounter++;
+  Serial.println(tachoFinalValue);
+
+  if (monitorCounter == measureQuantity)
+  {
+
+    beeper.playStartup();
+    Serial.println("**********MONITORING ENDED**********");
+
+    monitorCounter = 0;
+    Serial.println(" ");
+    Serial.println(" ");
+    Serial.println(" ");
+    Serial.println(" ");
+    Serial.println(" ");
+    delay(2000);
+  }
+}
+int getAverage(int *arr, int size)
+{
+  int sum = 0;
+  for (int i = 0; i < size; i++)
+  {
+    sum += arr[i];
+  }
+  return sum / size;
+}
 void loop()
 {
   server.handleClient();
+
   updateTachometer();
-  Serial.println(tachoFinalValue);
-  Serial.println(headSensor.read());
+
   touchInputHandler();
   visorStateHandler();
 
   headSensorStateHandler();
   sensorConnectRequest();
   sensorDisconnectRequest();
-
   sensorReconnectingRequest();
 
   doFunction(readSensorData, 200);
