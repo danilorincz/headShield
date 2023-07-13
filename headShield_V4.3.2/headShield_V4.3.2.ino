@@ -67,7 +67,7 @@ infraredSensor headSensor(infraredPin);
 const int touchRightPin = 33;
 const int touchLeftPin = 15;
 Touch touchRight(touchRightPin, 0, 24);
-Touch touchLeft(touchLeftPin, 18, 34);
+Touch touchLeft(touchLeftPin, 10, 50);
 
 //? REED SWITCH
 const int reedSwitchPin = 18;
@@ -364,38 +364,31 @@ bool multiTouch()
 
   return returnValue;
 }
+
 void touchInputHandler()
 {
-  if (touchLeft.singleTap() && !touchRight.getDigital()) //? LEFT SINGLE -> LAMP CONTROL
+  Serial.print("Left value: ");
+  Serial.println(touchLeft.getAnalog());
+  if (touchLeft.longTap() && !touchRight.getDigital()) //? FAN TOGGLE
   {
-    lamp.toggle(0, 3);
+    Serial.println("Left long tap");
+    fan.toggleOnOff();
+    if (fan.level == 3)
+      beeper.playFanOn();
+    else
+      beeper.playFanOff();
+  }
+
+  if (touchRight.singleTap() && !touchLeft.getDigital()) //? LED CONTROL
+  {
+    lamp.toggleBetween(0, 3);
     if (lamp.level == 0)
       beeper.playLampOff();
     else
       beeper.playLampOn();
   }
 
-  if (touchLeft.longTap() && !touchRight.getDigital()) //? LEFT LONG -> SENSOR CONNECTION
-  {
-    connectCommand = true;
-  }
-
-  if (touchRight.singleTap() && !touchLeft.getDigital()) //? RIGHT SINGLE -> FAN CONTROL
-  {
-    fan.toggle(1, 3);
-    switch (fan.level)
-    {
-    case 1:
-      beeper.playFanSpeedDown();
-      break;
-    case 2:
-    case 3:
-      beeper.playFanSpeedUp();
-      break;
-    }
-  }
-
-  if (touchRight.longTap() && !touchLeft.getDigital()) //? RIGHT LONG -> AUDIO CONTROL
+  if (touchRight.longTap() && !touchLeft.getDigital()) //? AUDIO CONTROL
   {
     audio.toggle();
 
@@ -405,9 +398,11 @@ void touchInputHandler()
       beeper.playVisorDown();
   }
 
-  if (multiTouch()) //? MULTI TOUCH -> TURN OFF FANS
+  if (touchLeft.singleTap() && !touchRight.getDigital()) //? EMPTY
   {
-    fan.setLevel(0);
+  }
+  if (multiTouch()) //? EMPTY
+  {
   }
 }
 
@@ -421,7 +416,7 @@ bool visorStateChange()
 
   bool newVisorState = visor.scan();
 
-  static bool prevVisorState = !newVisorState;
+  static bool prevVisorState = LOW;
 
   if (newVisorState != prevVisorState)
   {
@@ -453,13 +448,16 @@ void visorStateHandler()
     switch (visor.state)
     {
     case 1: //* ACTIVE
-      fan.setLevel(fan.level);
+      if (headSensor.state)
+      {
+        fan.turnOn();
+      }
       Serial.println("back to active");
       beeper.playVisorFoldedDown();
       break;
     case 0: //* INACTIVE
       Serial.println("deactivating");
-      fan.suspend();
+      fan.turnOff();
       beeper.playVisorFoldedUp();
       break;
     }
@@ -467,33 +465,26 @@ void visorStateHandler()
 }
 
 //* HEAD SENSOR
-float getHeadSensorAverage()
-{
-  static MovingAverage headSensorAverage;
-  headSensorAverage.add(headSensor.read());
-  return headSensorAverage.average();
-}
+
 void headSensorStateHandler()
 {
-  static bool averageState;
-
-  if (getHeadSensorAverage() != 4095)
-    averageState = true;
-  else
-    averageState = false;
-
   static bool onDone = false;
   static bool offDone = false;
 
-  if (isStableInput_forHeadSensor(averageState, 1000))
+  headSensor.scan();
+  if (isStableInput_forHeadSensor(headSensor.state, 1000))
   {
-    switch (averageState)
+    switch (headSensor.state)
     {
     case 1:
       if (!onDone)
       {
         beeper.playHelmetPutOn();
         Serial.println("HELMET ON");
+        if (visor.state)
+        {
+          fan.turnOn();
+        }
         onDone = true;
         offDone = false;
       }
@@ -505,6 +496,10 @@ void headSensorStateHandler()
         Serial.println("HELMET OFF");
         offDone = true;
         onDone = false;
+        if (!visor.state)
+        {
+          fan.turnOff();
+        }
       }
       break;
     }
@@ -532,7 +527,7 @@ void checkFanError()
 
 void updateTachometer()
 {
-  if (fan.level == 3 && !fan.suspended)
+  if (fan.level == 3)
   {
     static int valueToAdd;
     static MovingAverage smooth_1;
@@ -553,7 +548,7 @@ void updateTachometer()
 
       smooth_3.add(smooth_2_result);
       tachoFinalValue = smooth_3.average();
-      analyzeTachometer();
+      //analyzeTachometer();
     }
 
     checkFanError();
@@ -668,7 +663,7 @@ void sensorReconnectingRequest()
 
 void analyzeTachometer()
 {
-  if (fan.level != 3 || fan.suspended)
+  if (fan.level != 3)
     return;
   static int tachoPrevValue;
   static int monitorCounter = 0;

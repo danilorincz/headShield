@@ -6,7 +6,7 @@ public:
     int pin;
     int percent;
     int level;
-    bool suspended = false;
+
 
     Device(int pin) : pin(pin), level(0), percent(0) {}
 
@@ -29,21 +29,32 @@ public:
     {
         if (_percent != this->percent)
         {
-            suspended = false;
             int value = map(_percent, 0, 100, 0, 255);
             analogWrite(pin, value);
             percent = _percent;
         }
     }
-    void toggle(int min, int max)
+    void toggleBetween(int min, int max)
     {
         increaseLevel(min, max);
         setLevel(level);
     }
-    void suspend()
+    void toggleOnOff()
     {
-        analogWrite(pin, 0);
-        suspended = true;
-        this->percent = 0;
+        if (level == 0)
+            turnOn();
+        else
+            turnOff();
+    }
+
+    void turnOn()
+    {
+        if (level != 3)
+            setLevel(3);
+    }
+    void turnOff()
+    {
+        if (level != 0)
+            setLevel(0);
     }
 };

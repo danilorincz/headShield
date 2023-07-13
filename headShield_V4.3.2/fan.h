@@ -28,4 +28,5 @@ public:
             Serial.println("SWITCH ERROR");
         }
     }
+
 };

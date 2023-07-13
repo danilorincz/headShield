@@ -6,6 +6,7 @@ class LED : public Device
 public:
     LED(int pin) : Device(pin) {}
 
+
     virtual void setLevel(int _level) override
     {
         level = _level;
