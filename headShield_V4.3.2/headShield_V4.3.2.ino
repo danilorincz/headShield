@@ -31,9 +31,9 @@
 #include "movingAverage.h"
 #include "TimeManager.h"
 //? WIFI
-const char *ssid = "headShield_233";
-const char *password = "123456788";
-IPAddress local_ip(192, 168, 1, 1);
+const char *ssid = "sisakk";
+const char *password = "123456789";
+IPAddress local_ip(192, 168, 1, 11);
 IPAddress gateway(192, 168, 1, 1);
 IPAddress subnet(255, 255, 255, 0);
 WebServer server(80);

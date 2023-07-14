@@ -1,107 +1,73 @@
 Problems in the code
-    //* create a method to turn off the fans completely
-    //* long touch input registers tap first
-    //* headSensor optimized
-    // the sensor must be connected automatically
-    // optimize the fan speed reading
-    // do a touch calibration before every start
-    // do a tachometer calibration
-    // battery reading
+//* create a method to turn off the fans completely
+//* long touch input registers tap first
+//* headSensor optimized
+// the sensor must be connected automatically
+// optimize the fan speed reading
+// do a touch calibration before every start
+// do a tachometer calibration
+// battery reading
 
+#include <WiFi.h>
+#include <WebServer.h>
 
+    //? WIFI
+    const char *ssid = "headShield_233";
+const char *password = "123456788";
+IPAddress local_ip(192, 168, 1, 1);
+IPAddress gateway(192, 168, 1, 1);
+IPAddress subnet(255, 255, 255, 0);
+WebServer server(80);
 
+void setup()
+{
+    //* BEGIN
+    Serial.begin(115200);
+
+    WiFi.softAP(ssid, password);
+    WiFi.softAPConfig(local_ip, gateway, subnet);
+    delay(100);
+    WiFi.setTxPower(WIFI_POWER_MINUS_1dBm);
+    //* HANDLERS
+    // ROOT HANDLERS
+    server.on("/", handle_root);
+
+    server.begin();
+    delay(100);
+}
+
+const char *webpageCode = R"rawliteral(
 <!DOCTYPE html>
-<html lang="en">
+<html>
 <head>
-    <meta charset="UTF-8">
-    <meta name="viewport" content="width=device-width, initial-scale=1.0">
-    <title>Helmet Data</title>
-    <style>
-        body {
-            font-family: Arial, sans-serif;
-            text-align: center;
-        }
-        a {
-            display: inline-block;
-            background-color: #4CAF50;
-            color: white;
-            padding: 15px 25px;
-            text-decoration: none;
-            margin: 10px;
-        }
-        #data {
-            margin-top: 20px;
-        }
-        .item {
-            margin-bottom: 10px;
-        }
-        .state-box {
-            display: inline-block;
-            padding: 5px;
-            text-align: center;
-            width: 150px;
-        }
-        .red {
-            background-color: red;
-        }
-        .green {
-            background-color: green;
-        }
-    </style>
-    <script>
-
-
-        function setFanRPMText(speed_rpm) {
-            var fanRPMElement = document.getElementById('fanRPM');
-            var statusText = "";
-            switch(speed_rpm) {
-                case 1: 
-                    statusText = "NORMAL";
-                    break;
-                case 2:
-                    statusText = "NO FILTER";
-                    break;
-                case 3:
-                    statusText = "FAN MALFUNCTION";
-                    break;
-                case 4:
-                    statusText = "NOT ENOUGH AIRFLOW OR FILTER IS CLOGGED";
-                    break;
-                case 5:
-                    statusText = "OBSTACLE IN THE OUTLET";
-                    break;
-                default:
-                    statusText = "Invalid speed";
-            }
-            fanRPMElement.innerHTML = statusText;
-        }
-
-        function refreshData() {
-            var xhr = new XMLHttpRequest();
-            xhr.onreadystatechange = function() {
-                if (xhr.readyState == 4 && xhr.status == 200) {
-                    var data = JSON.parse(xhr.responseText);
-
-                    setFanRPMText(data.fanRPM);
-                }
-            };
-            xhr.open("GET", "/getHelmetData", true);
-            xhr.send();
-        }
-
-    setInterval(refreshData, 1000); // Refresh data every 1000 milliseconds (1 second)
-    </script>
+<meta charset="utf-8">
+<meta name="viewport" content="width=device-width, initial-scale=1">
+<title>Helmet Interface</title>
+<style>
+  body {font-family: Arial, Helvetica, sans-serif;}
+  ul {list-style-type: none; margin: 0; padding: 0; overflow: hidden; background-color: #333;}
+  li {float: left;}
+  li a {display: block; color: white; text-align: center; padding: 14px 16px; text-decoration: none;}
+  li a:hover {background-color: #111;}
+</style>
 </head>
 <body>
-    <h1>Helmet Data</h1>
-    <div id="data">
-
-        <div class="item">Airflow: <span id="fanRPM"></span></div>
-        <script>
-        setFanRPMText(0); // Set initial fan RPM to 0
-        </script>
-
-    </div>
-    <a href="/">Back to Main</a>
+  <ul>
+    <li><a href="/helmetData">Helmet Data</a></li>
+    <li><a href="/sensorData">Sensor Data</a></li>
+    <li><a href="/control">Control</a></li>
+    <li><a href="/debugData">Debug Data</a></li>
+  </ul>
 </body>
 </html>
+)rawliteral";
+
+void handle_root()
+{
+    server.send_P(200, "text/html", webpageCode);
+}
+
+void loop()
+{
+    server.handleClient();
+}
