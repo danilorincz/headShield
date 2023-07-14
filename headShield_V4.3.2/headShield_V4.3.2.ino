@@ -31,8 +31,8 @@
 #include "movingAverage.h"
 #include "TimeManager.h"
 //? WIFI
-const char *ssid = "headShield_";
-const char *password = "123456789";
+const char *ssid = "headShield_233";
+const char *password = "123456788";
 IPAddress local_ip(192, 168, 1, 1);
 IPAddress gateway(192, 168, 1, 1);
 IPAddress subnet(255, 255, 255, 0);
@@ -54,7 +54,7 @@ Fan fan(fanPin);
 const int tachometerPin = 39;
 Tachometer tacho(tachometerPin);
 int tachoFinalValue = -1;
-
+int fanErrorNumber = 0;
 //? POWER LED
 const int LEDPin = 19;
 LED lamp(LEDPin);
@@ -67,7 +67,7 @@ infraredSensor headSensor(infraredPin);
 const int touchRightPin = 33;
 const int touchLeftPin = 15;
 Touch touchRight(touchRightPin, 0, 24);
-Touch touchLeft(touchLeftPin, 10, 50);
+Touch touchLeft(touchLeftPin, 0, 50);
 
 //? REED SWITCH
 const int reedSwitchPin = 18;
@@ -85,6 +85,30 @@ Battery battery(batteryPin);
 //? AUDIO
 const int audioEnPin = 16;
 Audio audio(audioEnPin);
+
+class FanCondition
+{
+public:
+  int upperLimit;
+  int lowerLimit;
+
+  FanCondition(int lowerLimit, int upperLimit)
+  {
+    this->upperLimit = upperLimit;
+    this->lowerLimit = lowerLimit;
+  }
+  bool inRange(int value)
+  {
+    if (lowerLimit <= value && value <= upperLimit)
+      return true;
+    return false;
+  }
+};
+
+FanCondition normal(3582, 3590);
+FanCondition noFilter(3546 - 5, 3558 + 5);
+FanCondition faultFan1(3531 - 5, 3538 + 5);
+FanCondition notEnoughAirflow(3591, 3617 + 100);
 
 void setup()
 {
@@ -164,12 +188,14 @@ void setup()
   }
 }
 
+
 //* HANDLERS
 // ROOT HANDLERS
 void handler_helmetData()
 {
   server.send_P(200, "text/html", helmetDataPage);
 }
+
 void handler_getHelmetData()
 {
   static Timer intervalTimer(1000);
@@ -184,7 +210,7 @@ void handler_getHelmetData()
     doc["lampLevel"] = lamp.level;
     doc["batteryLevel"] = battery.level;
     doc["audioState"] = audio.state;
-    doc["fanRPM"] = tachoFinalValue;
+    doc["fanRPM"] = fanErrorNumber;
 
     String jsonData;
     serializeJson(doc, jsonData);
@@ -367,8 +393,6 @@ bool multiTouch()
 
 void touchInputHandler()
 {
-  Serial.print("Left value: ");
-  Serial.println(touchLeft.getAnalog());
   if (touchLeft.longTap() && !touchRight.getDigital()) //? FAN TOGGLE
   {
     Serial.println("Left long tap");
@@ -514,15 +538,15 @@ void batteryLevelHandling()
 }
 
 //* TACHOMETER
-void checkFanError()
+
+int getAverage(int *arr, int size)
 {
-  if (tachoFinalValue < 3575)
+  int sum = 0;
+  for (int i = 0; i < size; i++)
   {
-    if (isTimePassed(2000))
-    {
-      beeper.playFanError();
-    }
+    sum += arr[i];
   }
+  return sum / size;
 }
 
 void updateTachometer()
@@ -550,8 +574,62 @@ void updateTachometer()
       tachoFinalValue = smooth_3.average();
       //analyzeTachometer();
     }
+    getAverageTachoValue();
+  }
+}
+int averageTacho;
+void getAverageTachoValue()
+{
+  if (fan.level != 3)
+    return;
 
-    checkFanError();
+  static int monitorCounter = 0;
+  static const int measureQuantity = 100;
+  static int monitorSessionCounter = 0;
+
+  static int lastSessionValues[measureQuantity];
+
+  if (monitorCounter == 0)
+  {
+    monitorSessionCounter++;
+  }
+
+  lastSessionValues[monitorCounter] = tachoFinalValue;
+  monitorCounter++;
+
+  if (monitorCounter == measureQuantity)
+  {
+    monitorCounter = 0;
+    averageTacho = getAverage(lastSessionValues, 100);
+  }
+}
+
+void logAirflowError()
+{
+  if (normal.inRange(averageTacho))
+  {
+    Serial.println("Normál működés, szűrők fent, ventillátorok jók");
+    fanErrorNumber = 1;
+  }
+  else if (noFilter.inRange(averageTacho))
+  {
+    Serial.println("Nincs felhelyezve szűrő!");
+    fanErrorNumber = 2;
+  }
+  else if (faultFan1.inRange(averageTacho))
+  {
+    Serial.println("Az egyik ventillátor leállt!");
+    fanErrorNumber = 3;
+  }
+  else if (notEnoughAirflow.inRange(averageTacho))
+  {
+    Serial.println("Nincs elég térfogatáram! Ellenőrizze a szűrők állapotát!");
+    fanErrorNumber = 4;
+  }
+  else
+  {
+    Serial.println("Lehetséges hogy valami akadályozza a levegő kiáramlását!");
+    fanErrorNumber = 5;
   }
 }
 
@@ -667,32 +745,25 @@ void analyzeTachometer()
     return;
   static int tachoPrevValue;
   static int monitorCounter = 0;
-  static const int measureQuantity = 150;
+  static const int measureQuantity = 500;
   static int monitorSessionCounter = 0;
   static unsigned long sessionDuration = 0;
   static unsigned long sessionStartTime = 0;
-  static int lastSessionValues[150];
+  static int lastSessionValues[measureQuantity];
 
   if (monitorCounter == 0)
   {
     sessionStartTime = millis();
     Serial.println("________MONITORING STARTED_________");
     Serial.print("Monitor session: ");
-    Serial.println(monitorSessionCounter);
-    Serial.println(" ");
-    Serial.println("Temp");
+    Serial.print(monitorSessionCounter);
+    Serial.println("VALUES START");
     Serial.println(perkData.temp);
-    Serial.println("Press");
     Serial.println(perkData.press);
-    Serial.println("Humi");
     Serial.println(perkData.humi);
-    Serial.println("AQI");
     Serial.println(perkData.AQI);
-    Serial.println("TVOC");
     Serial.println(perkData.TVOC);
-    Serial.println("ECO2");
     Serial.println(perkData.ECO2);
-    Serial.println("VALUES");
 
     monitorSessionCounter++;
   }
@@ -715,19 +786,12 @@ void analyzeTachometer()
     delay(2000);
   }
 }
-int getAverage(int *arr, int size)
-{
-  int sum = 0;
-  for (int i = 0; i < size; i++)
-  {
-    sum += arr[i];
-  }
-  return sum / size;
-}
+
+bool debuggingTurnOn = false;
 void loop()
 {
   server.handleClient();
-
+  
   updateTachometer();
 
   touchInputHandler();
@@ -740,4 +804,21 @@ void loop()
 
   doFunction(readSensorData, 200);
   doFunction(batteryLevelHandling, 4000);
+
+  if (isTimePassed(1000))
+  {
+    logAirflowError();
+  }
+
+  if (Serial.available() > 0)
+  {
+    Serial.read();
+    debuggingTurnOn = !debuggingTurnOn;
+  }
+  if (debuggingTurnOn)
+  {
+    Serial.println(averageTacho);
+    /* Serial.print("Left touch value: ");
+    Serial.println(touchLeft.getAnalog());*/
+  }
 }

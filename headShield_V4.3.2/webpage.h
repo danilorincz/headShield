@@ -166,7 +166,27 @@ function setBatteryLevelText(level) {
 
         function setFanRPMText(speed_rpm) {
             var fanRPMElement = document.getElementById('fanRPM');
-            fanRPMElement.innerHTML = speed_rpm + " RPM";
+            var statusText = "";
+            switch(speed_rpm) {
+                case 1: 
+                    statusText = "NORMAL";
+                    break;
+                case 2:
+                    statusText = "NO FILTER";
+                    break;
+                case 3:
+                    statusText = "FAN MALFUNCTION";
+                    break;
+                case 4:
+                    statusText = "NOT ENOUGH AIRFLOW OR FILTER IS CLOGGED";
+                    break;
+                case 5:
+                    statusText = "OBSTACLE IN THE OUTLET";
+                    break;
+                default:
+                    statusText = "Invalid speed";
+            }
+            fanRPMElement.innerHTML = statusText;
         }
 
 function refreshData() {
@@ -212,7 +232,7 @@ function refreshData() {
         <script>
         setBatteryLevelText(0); // Set initial battery level state to "OFF"
         </script>
-        <div class="item">Fan revolution: <span id="fanRPM"></span></div>
+        <div class="item">Airflow: <span id="fanRPM"></span></div>
         <script>
         setFanRPMText(0); // Set initial fan RPM to 0
         </script>
