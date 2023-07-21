@@ -4,57 +4,47 @@ class Device
 {
 public:
     int pin;
-    int percent;
-    int level;
+    bool state;
 
-
-    Device(int pin) : pin(pin), level(0), percent(0) {}
+    Device(int pin) : pin(pin) {}
 
     void begin()
     {
         pinMode(pin, OUTPUT);
     }
 
-    virtual void setLevel(int _level) = 0; // Pure virtual function for setting the level
-
-    int increaseLevel(int min, int max)
+    virtual bool on()
     {
-        if (level < max)
-            level++;
-        else
-            level = min;
-        return level;
-    }
-    void setIntensity(int _percent)
-    {
-        if (_percent != this->percent)
+        if (!state)
         {
-            int value = map(_percent, 0, 100, 0, 255);
-            analogWrite(pin, value);
-            percent = _percent;
+            state = HIGH;
+            digitalWrite(pin, state);
+            return true;
         }
+        return false;
     }
-    void toggleBetween(int min, int max)
+    virtual bool off()
     {
-        increaseLevel(min, max);
-        setLevel(level);
+        if (state)
+        {
+            state = LOW;
+            digitalWrite(pin, state);
+            return true;
+        }
+        return false;
     }
-    void toggleOnOff()
+    virtual bool toggle()
     {
-        if (level == 0)
-            turnOn();
-        else
-            turnOff();
+        state = !state;
+        digitalWrite(pin, state);
+        return state;
     }
-
-    void turnOn()
+    bool active()
     {
-        if (level != 3)
-            setLevel(3);
+        return state;
     }
-    void turnOff()
+    void suspend()
     {
-        if (level != 0)
-            setLevel(0);
+        digitalWrite(pin, LOW);
     }
 };

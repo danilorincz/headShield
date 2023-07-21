@@ -16,16 +16,18 @@
 #include <ArduinoJson.h>
 
 //? CUSTOM LIBRARIEs
-#include "webpage.h"
-#include "timer.h"
-#include "fan.h"
-#include "beeper.h"
-#include "battery.h"
+#include "Device.h"
+#include "Audio.h"
+#include "Fan.h"
+#include "Lamp.h"
+
+#include "Battery.h"
+#include "Piezo.h"
+#include "Webpage.h"
+#include "Timer.h"
 #include "reed.h"
-#include "LED.h"
 #include "touchInput.h"
 #include "infraredSensor.h"
-#include "audioEN.h"
 #include "sensor_data.h"
 #include "tacho.h"
 #include "movingAverage.h"
@@ -165,11 +167,6 @@ void setup()
   beeper.playStartup();
   delay(100);
 
-  //* INITIALIZE STARTING VALUES
-  lamp.level = 0;
-  fan.level = 0;
-  audio.state = LOW;
-
   //* SERVICE MODE
   while (touchLeft.getDigital() && touchRight.getDigital())
   {
@@ -188,7 +185,6 @@ void setup()
   }
 }
 
-
 //* HANDLERS
 // ROOT HANDLERS
 void handler_helmetData()
@@ -206,7 +202,7 @@ void handler_getHelmetData()
 
     doc["visorState"] = visor.state;
     doc["IRState"] = headSensor.state;
-    doc["fanLevel"] = fan.level;
+    doc["fanLevel"] = fan.state;
     doc["lampLevel"] = lamp.level;
     doc["batteryLevel"] = battery.level;
     doc["audioState"] = audio.state;
@@ -273,14 +269,7 @@ void handler_getDebugData()
   serializeJson(doc, jsonData);
   server.send(200, "application/json", jsonData);
 }
-// SET HANDLERS
-void handler_setFanSpeed()
-{
-  int newFanLevel = server.arg("value").toInt();
 
-  fan.setLevel(newFanLevel);
-  server.send(200, "text/plain", "OK");
-}
 void handler_setLampLevel()
 {
   int newLampLevel = server.arg("level").toInt();
@@ -390,14 +379,13 @@ bool multiTouch()
 
   return returnValue;
 }
-
 void touchInputHandler()
 {
   if (touchLeft.longTap() && !touchRight.getDigital()) //? FAN TOGGLE
   {
     Serial.println("Left long tap");
-    fan.toggleOnOff();
-    if (fan.level == 3)
+    fan.toggle();
+    if (fan.active())
       beeper.playFanOn();
     else
       beeper.playFanOff();
@@ -474,14 +462,14 @@ void visorStateHandler()
     case 1: //* ACTIVE
       if (headSensor.state)
       {
-        fan.turnOn();
+        fan.on();
       }
       Serial.println("back to active");
       beeper.playVisorFoldedDown();
       break;
     case 0: //* INACTIVE
       Serial.println("deactivating");
-      fan.turnOff();
+      fan.off();
       beeper.playVisorFoldedUp();
       break;
     }
@@ -489,7 +477,6 @@ void visorStateHandler()
 }
 
 //* HEAD SENSOR
-
 void headSensorStateHandler()
 {
   static bool onDone = false;
@@ -507,7 +494,7 @@ void headSensorStateHandler()
         Serial.println("HELMET ON");
         if (visor.state)
         {
-          fan.turnOn();
+          fan.on();
         }
         onDone = true;
         offDone = false;
@@ -522,7 +509,7 @@ void headSensorStateHandler()
         onDone = false;
         if (!visor.state)
         {
-          fan.turnOff();
+          fan.off();
         }
       }
       break;
@@ -538,7 +525,6 @@ void batteryLevelHandling()
 }
 
 //* TACHOMETER
-
 int getAverage(int *arr, int size)
 {
   int sum = 0;
@@ -551,7 +537,7 @@ int getAverage(int *arr, int size)
 
 void updateTachometer()
 {
-  if (fan.level == 3)
+  if (fan.active())
   {
     static int valueToAdd;
     static MovingAverage smooth_1;
@@ -580,7 +566,7 @@ void updateTachometer()
 int averageTacho;
 void getAverageTachoValue()
 {
-  if (fan.level != 3)
+  if (!fan.active())
     return;
 
   static int monitorCounter = 0;
@@ -741,11 +727,11 @@ void sensorReconnectingRequest()
 
 void analyzeTachometer()
 {
-  if (fan.level != 3)
+  if (!fan.active())
     return;
+  static const int measureQuantity = 500;
   static int tachoPrevValue;
   static int monitorCounter = 0;
-  static const int measureQuantity = 500;
   static int monitorSessionCounter = 0;
   static unsigned long sessionDuration = 0;
   static unsigned long sessionStartTime = 0;
@@ -791,7 +777,7 @@ bool debuggingTurnOn = false;
 void loop()
 {
   server.handleClient();
-  
+
   updateTachometer();
 
   touchInputHandler();
@@ -804,8 +790,8 @@ void loop()
 
   doFunction(readSensorData, 200);
   doFunction(batteryLevelHandling, 4000);
-
-  if (isTimePassed(1000))
+  static Timer logAirflowTimer(1000);
+  if (logAirflowTimer.timeElapsedMillis())
   {
     logAirflowError();
   }
