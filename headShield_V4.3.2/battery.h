@@ -1,41 +1,39 @@
 #pragma once
-
+#include "movingAverage.h"
 class Battery
 {
 public:
     int pin;
+
+    unsigned int rawValue;
+    unsigned int percent;
     unsigned int charge;
     int level;
-    int threshold_min = 3400;
-    int threshold_max = 3800;
+    MovingAverage smooth;
 
-    Battery(int pin)
+    Battery(int pin, int smoothSize)
+        : pin(pin),
+          smooth(smoothSize)
     {
-        this->pin = pin;
     }
     void begin()
     {
         pinMode(pin, INPUT);
     }
-    int getCharge()
-    {
-        int batChargeRaw = getRaw();
-        charge = map(batChargeRaw, 2925, 4096, 0, 100);
-        return charge;
-    }
-    int getLevel()
-    {
-        getCharge();
-        if (charge < threshold_min)
-            level = 1;
-        else if (charge < threshold_max)
-            level = 2;
-        else
-            level = 3;
-        return level;
-    }
     int getRaw()
     {
-        return analogRead(pin);
+        rawValue = analogRead(pin);
+        return rawValue;
+    }
+
+    int readAverage()
+    {
+        smooth.add(getRaw());
+        return smooth.average();
+    }
+    int getPercent()
+    {
+        percent = map(readAverage(), 1000, 4096, 0, 100);
+        return percent;
     }
 };

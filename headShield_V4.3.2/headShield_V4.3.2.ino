@@ -20,6 +20,7 @@
 #include "Audio.h"
 #include "Fan.h"
 #include "Lamp.h"
+#include "FanCondition.h"
 
 #include "Battery.h"
 #include "Piezo.h"
@@ -33,9 +34,9 @@
 #include "movingAverage.h"
 #include "TimeManager.h"
 //? WIFI
-const char *ssid = "sisakk";
+const char *ssid = "headShield";
 const char *password = "123456789";
-IPAddress local_ip(192, 168, 1, 11);
+IPAddress local_ip(192, 168, 23, 1);
 IPAddress gateway(192, 168, 1, 1);
 IPAddress subnet(255, 255, 255, 0);
 WebServer server(80);
@@ -52,19 +53,26 @@ bool sensorConnected = false;
 const int fanPin = 5;
 Fan fan(fanPin);
 
-//? TACHOMETER
-const int tachometerPin = 39;
-Tachometer tacho(tachometerPin);
-int tachoFinalValue = -1;
-int fanErrorNumber = 0;
-
 //? POWER LED
 const int LEDPin = 19;
 LED lamp(LEDPin);
 
+//? TACHOMETER
+const int tachometerPin = 39;
+Tachometer tacho(tachometerPin, 600);
+int fanErrorNumber = 0;
+
+//? BATTERY
+const int batteryPin = 32;
+Battery battery(batteryPin, 300);
+
 //? HEAD SENSOR
 const int infraredPin = 35;
-infraredSensor headSensor(infraredPin);
+InfraredSensor headSensor(infraredPin, 5);
+
+//? VISOR
+const int reedSwitchPin = 18;
+ReedSwitch visor(reedSwitchPin, 5);
 
 //? TOUCH INPUT
 const int touchRightPin = 33;
@@ -72,49 +80,23 @@ const int touchLeftPin = 15;
 Touch touchRight(touchRightPin, 0, 24);
 Touch touchLeft(touchLeftPin, 0, 50);
 
-//? REED SWITCH
-const int reedSwitchPin = 18;
-ReedSwitch visor(reedSwitchPin);
-
 //? PIEZO
 const int piezoPin = 23;
 const int piezoChannel = 8;
 Piezo piezo(piezoPin, piezoChannel);
 
-//? BATTERY
-const int batteryPin = 32;
-Battery battery(batteryPin);
-
 //? AUDIO
 const int audioEnPin = 16;
 Audio audio(audioEnPin);
 
-//? GLOBAL
-bool debuggingTurnOn = false;
-class FanCondition
-{
-public:
-  int upperLimit;
-  int lowerLimit;
-
-  FanCondition(int lowerLimit, int upperLimit)
-  {
-    this->upperLimit = upperLimit;
-    this->lowerLimit = lowerLimit;
-  }
-  bool inRange(int value)
-  {
-    if (lowerLimit <= value && value <= upperLimit)
-      return true;
-    return false;
-  }
-};
-
+//? FAN CONDITIONS
 FanCondition normal(3582, 3590);
 FanCondition noFilter(3546 - 5, 3558 + 5);
 FanCondition faultFan1(3531 - 5, 3538 + 5);
 FanCondition notEnoughAirflow(3591, 3617 + 100);
 
+//? GLOBAL
+bool serialEnabled = false;
 void setup()
 {
   //* BEGIN
@@ -171,7 +153,6 @@ void setup()
 }
 
 //* HANDLERS
-// ROOT HANDLERS
 void handler_helmetData()
 {
   server.send_P(200, "text/html", helmetDataPage);
@@ -279,58 +260,10 @@ void handler_setAudioState()
 */
 
 //* BASIC
-void doFunction(void (*function)(), unsigned long interval)
+void serailPrintIf(String inputText)
 {
-  static Timer timer(interval);
-  if (timer.timeElapsedMillis())
-    function();
-}
-bool isStableInput(bool actualState, unsigned long stableTime)
-{
-  static bool prevState = false;
-  static unsigned long stableStartTime = 0;
-
-  if (actualState != prevState)
-  {                             // If input state changes
-    stableStartTime = millis(); // reset timer
-    prevState = actualState;
-  }
-
-  if (millis() - stableStartTime >= stableTime)
-  {
-    return true;
-  }
-  else
-  {
-    return false;
-  }
-}
-bool isStableInput_forHeadSensor(bool actualState, unsigned long stableTime)
-{
-  static bool prevState = false;
-  static unsigned long stableStartTime = 0;
-
-  if (actualState != prevState)
-  {                             // If input state changes
-    stableStartTime = millis(); // reset timer
-    prevState = actualState;
-  }
-
-  if (millis() - stableStartTime >= stableTime)
-  {
-    return true;
-  }
-  else
-  {
-    return false;
-  }
-}
-bool interruptMeasure()
-{
-  if (touchLeft.getDigital() || touchRight.getDigital())
-    return true;
-  else
-    return false;
+  if (serialEnabled)
+    Serial.println(inputText);
 }
 
 //* TOUCH
@@ -368,7 +301,6 @@ void touchInputHandler()
 {
   if (touchLeft.longTap() && !touchRight.getDigital()) //? FAN TOGGLE
   {
-    Serial.println("Left long tap");
     fan.toggle();
     if (fan.active())
       piezo.playFanOn();
@@ -379,6 +311,7 @@ void touchInputHandler()
   if (touchRight.singleTap() && !touchLeft.getDigital()) //? LED CONTROL
   {
     lamp.toggleBetween(0, 3);
+
     if (lamp.level == 0)
       piezo.playLampOff();
     else
@@ -400,207 +333,6 @@ void touchInputHandler()
   }
   if (multiTouch()) //? EMPTY
   {
-  }
-}
-
-//* VISOR
-bool visorStateChange()
-{
-  const unsigned int minimumDuration = 400;
-
-  static unsigned long timeWhenStart = 0;
-  static bool timeStart = false;
-
-  bool newVisorState = visor.scan();
-
-  static bool prevVisorState = LOW;
-
-  if (newVisorState != prevVisorState)
-  {
-    if (!timeStart)
-    {
-      timeWhenStart = millis();
-      timeStart = true;
-    }
-    if (millis() - timeWhenStart > minimumDuration)
-    {
-      prevVisorState = newVisorState;
-      timeStart = false;
-      timeWhenStart = 0;
-      return true;
-    }
-  }
-  else
-  {
-    timeStart = false;
-    timeWhenStart = 0;
-  }
-
-  return false;
-}
-void visorStateHandler()
-{
-  if (visorStateChange())
-  {
-    switch (visor.state)
-    {
-    case 1: //* ACTIVE
-      if (headSensor.state)
-      {
-        fan.on();
-      }
-      Serial.println("back to active");
-      piezo.playVisorFoldedDown();
-      break;
-    case 0: //* INACTIVE
-      Serial.println("deactivating");
-      fan.off();
-      piezo.playVisorFoldedUp();
-      break;
-    }
-  }
-}
-
-//* HEAD SENSOR
-void headSensorStateHandler()
-{
-  static bool onDone = false;
-  static bool offDone = false;
-
-  headSensor.scan();
-  if (isStableInput_forHeadSensor(headSensor.state, 1000))
-  {
-    switch (headSensor.state)
-    {
-    case 1:
-      if (!onDone)
-      {
-        piezo.playHelmetPutOn();
-        Serial.println("HELMET ON");
-        if (visor.state)
-        {
-          fan.on();
-        }
-        onDone = true;
-        offDone = false;
-      }
-      break;
-    case 0:
-      if (!offDone)
-      {
-        piezo.playHelmetTakenOff();
-        Serial.println("HELMET OFF");
-        offDone = true;
-        onDone = false;
-        if (!visor.state)
-        {
-          fan.off();
-        }
-      }
-      break;
-    }
-  }
-}
-
-//* BATTERY
-void batteryLevelHandling()
-{
-  battery.getLevel();
-  // do someting according to the new value
-}
-
-//* TACHOMETER
-int getAverage(int *arr, int size)
-{
-  int sum = 0;
-  for (int i = 0; i < size; i++)
-  {
-    sum += arr[i];
-  }
-  return sum / size;
-}
-
-void updateTachometer()
-{
-  if (fan.active())
-  {
-    static int valueToAdd;
-    static MovingAverage smooth_1;
-    static MovingAverage smooth_2;
-    static MovingAverage smooth_3;
-    static int smooth_1_result;
-    static int smooth_2_result;
-
-    valueToAdd = tacho.measureAverageDutyCycle(5, 60, interruptMeasure);
-
-    if (valueToAdd != 0)
-    {
-      smooth_1.add(valueToAdd);
-      smooth_1_result = smooth_1.average();
-
-      smooth_2.add(smooth_1_result);
-      smooth_2_result = smooth_2.average();
-
-      smooth_3.add(smooth_2_result);
-      tachoFinalValue = smooth_3.average();
-      //analyzeTachometer();
-    }
-    getAverageTachoValue();
-  }
-}
-int averageTacho;
-void getAverageTachoValue()
-{
-  if (!fan.active())
-    return;
-
-  static int monitorCounter = 0;
-  static const int measureQuantity = 100;
-  static int monitorSessionCounter = 0;
-
-  static int lastSessionValues[measureQuantity];
-
-  if (monitorCounter == 0)
-  {
-    monitorSessionCounter++;
-  }
-
-  lastSessionValues[monitorCounter] = tachoFinalValue;
-  monitorCounter++;
-
-  if (monitorCounter == measureQuantity)
-  {
-    monitorCounter = 0;
-    averageTacho = getAverage(lastSessionValues, 100);
-  }
-}
-
-void logAirflowError()
-{
-  if (normal.inRange(averageTacho))
-  {
-    Serial.println("Normál működés, szűrők fent, ventillátorok jók");
-    fanErrorNumber = 1;
-  }
-  else if (noFilter.inRange(averageTacho))
-  {
-    Serial.println("Nincs felhelyezve szűrő!");
-    fanErrorNumber = 2;
-  }
-  else if (faultFan1.inRange(averageTacho))
-  {
-    Serial.println("Az egyik ventillátor leállt!");
-    fanErrorNumber = 3;
-  }
-  else if (notEnoughAirflow.inRange(averageTacho))
-  {
-    Serial.println("Nincs elég térfogatáram! Ellenőrizze a szűrők állapotát!");
-    fanErrorNumber = 4;
-  }
-  else
-  {
-    Serial.println("Lehetséges hogy valami akadályozza a levegő kiáramlását!");
-    fanErrorNumber = 5;
   }
 }
 
@@ -634,7 +366,6 @@ void readSensorData()
     perkData.ECO2 = ENS160.getECO2();
   }
 }
-
 bool sensorConnectRequest()
 {
   static Timer connectingSensorMax(3000);
@@ -656,7 +387,7 @@ bool sensorConnectRequest()
         BME_ok = false;
         ENS_ok = false;
         piezo.playSuccess();
-        Serial.println("Sensor connected OK");
+        serailPrintIf("Sensor connected OK");
         return true;
       }
     }
@@ -671,7 +402,6 @@ bool sensorConnectRequest()
   }
   return false;
 }
-
 bool isSensorDisconnecting()
 {
   if (perkData.AQI == 0 && perkData.TVOC == 252 && perkData.ECO2 == 252)
@@ -687,7 +417,7 @@ void sensorDisconnectRequest()
     {
       sensorConnected = false;
       piezo.playShutdown();
-      Serial.println("disconnecting sensor");
+      serailPrintIf("disconnecting sensor");
     }
   }
 }
@@ -705,12 +435,13 @@ void sensorReconnectingRequest()
     if (isSensorReconnecting())
     {
       connectCommand = true;
-      Serial.println("Reconnecting sensor");
+      serailPrintIf("Reconnecting sensor");
     }
   }
 }
 
-void analyzeTachometer()
+//* TACHOMETER
+void tacho_logMeasureProtocol()
 {
   if (!fan.active())
     return;
@@ -738,9 +469,9 @@ void analyzeTachometer()
 
     monitorSessionCounter++;
   }
-  lastSessionValues[monitorCounter] = tachoFinalValue;
+  lastSessionValues[monitorCounter] = tacho.finalValue;
   monitorCounter++;
-  Serial.println(tachoFinalValue);
+  Serial.println(tacho.finalValue);
 
   if (monitorCounter == measureQuantity)
   {
@@ -758,35 +489,195 @@ void analyzeTachometer()
   }
 }
 
+//! UPDATE -> PARSE -> DO ACTION
+
+//* TACHO
+void updateTacho()
+{
+  if (fan.active())
+  {
+    tacho.getAverage();
+  }
+}
+void parseAndAction_tacho() // working with: tacho.finalValue
+{
+  if (!fan.active())
+    return;
+  if (normal.inRange(tacho.finalValue))
+  {
+    serailPrintIf("Normál működés, szűrők fent, ventillátorok jók");
+    fanErrorNumber = 1;
+  }
+  else if (noFilter.inRange(tacho.finalValue))
+  {
+    serailPrintIf("Nincs felhelyezve szűrő!");
+    fanErrorNumber = 2;
+  }
+  else if (faultFan1.inRange(tacho.finalValue))
+  {
+    serailPrintIf("Az egyik ventillátor leállt!");
+    fanErrorNumber = 3;
+  }
+  else if (notEnoughAirflow.inRange(tacho.finalValue))
+  {
+    serailPrintIf("Nincs elég térfogatáram! Ellenőrizze a szűrők állapotát!");
+    fanErrorNumber = 4;
+  }
+  else
+  {
+    serailPrintIf("Lehetséges hogy valami akadályozza a levegő kiáramlását!");
+    fanErrorNumber = 5;
+  }
+}
+
+//* BATTERY
+void updateBattery()
+{
+  battery.getPercent();
+}
+void parseAndAction_battery() // working with: battery.percent
+{
+}
+
+//* HEAD SENSOR
+void updateHeadSensor()
+{
+  headSensor.scan();
+}
+void parseAndAction_headSensor() // working with: headSensor.state
+{
+  static bool onDone = false;
+  static bool offDone = false;
+
+  switch (headSensor.state)
+  {
+  case 1:
+    if (!onDone)
+    {
+      piezo.playHelmetPutOn();
+      serailPrintIf("HEAD SENSOR ON");
+      if (visor.state)
+        fan.on();
+      onDone = true;
+      offDone = false;
+    }
+    break;
+  case 0:
+    if (!offDone)
+    {
+      piezo.playHelmetTakenOff();
+      serailPrintIf("HEAD SENSOR OFF");
+      offDone = true;
+      onDone = false;
+      if (!visor.state)
+        fan.off();
+    }
+    break;
+  }
+}
+
+//* VISOR
+void updateVisor()
+{
+  visor.scan();
+}
+void parseAndAction_visor() // working with: visor.state
+{
+  static bool onDone = false;
+  static bool offDone = false;
+
+  switch (visor.state)
+  {
+  case 1:
+    if (!onDone)
+    {
+      if (headSensor.state)
+        fan.on();
+      piezo.playVisorFoldedDown();
+      serailPrintIf("VISOR ON");
+      onDone = true;
+      offDone = false;
+    }
+    break;
+  case 0:
+    if (!offDone)
+    {
+      piezo.playVisorFoldedUp();
+      fan.off();
+      serailPrintIf("VISOR OFF");
+      offDone = true;
+      onDone = false;
+    }
+    break;
+  }
+}
 
 void loop()
 {
   server.handleClient();
 
-  updateTachometer();
+  //! UPDATES
+  static Timer tachoTimer(1000);
+  updateTacho();
+  if (tachoTimer.timeElapsedMillis())
+    parseAndAction_tacho();
+
+  static Timer batteryTimer(3000);
+  updateBattery();
+  if (batteryTimer.timeElapsedMillis())
+    parseAndAction_battery();
+
+  static Timer visorTimer(100);
+  updateVisor();
+  if (visorTimer.timeElapsedMillis())
+    parseAndAction_visor();
+
+  static Timer headSensorTimer(100);
+  updateHeadSensor();
+  if (headSensorTimer.timeElapsedMillis())
+    parseAndAction_headSensor();
 
   touchInputHandler();
-  visorStateHandler();
 
-  headSensorStateHandler();
   sensorConnectRequest();
   sensorDisconnectRequest();
   sensorReconnectingRequest();
 
-  doFunction(readSensorData, 200);
-  doFunction(batteryLevelHandling, 4000);
-  doFunctions(logAirflowError, 1000);
+  static Timer sensorTimer(200);
+  if (sensorTimer.timeElapsedMillis())
+    readSensorData();
 
-
+  static char serialInput = 'X';
   if (Serial.available() > 0)
   {
-    Serial.read();
-    debuggingTurnOn = !debuggingTurnOn;
+    serialInput = (char)Serial.read(); // Cast the read byte to a character
+    for (int i = 0; i < 64; i++)
+    {
+      Serial.read();
+    }
   }
-  if (debuggingTurnOn)
+
+
+
+  switch (serialInput)
   {
-    Serial.println(averageTacho);
-    /* Serial.print("Left touch value: ");
-    Serial.println(touchLeft.getAnalog());*/
+  case 'T':
+    Serial.println(tacho.finalValue);
+    break;
+  case 'B':
+    Serial.println(battery.percent);
+    break;
+  case 'H':
+    Serial.println(headSensor.state);
+    break;
+  case 'V':
+    Serial.println(visor.state);
+    break;
+  case 'E':
+    serialEnabled = true;
+    break;
+  case 'X':
+    serialEnabled = false;
+    break;
   }
 }

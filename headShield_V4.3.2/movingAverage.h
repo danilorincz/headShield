@@ -1,20 +1,29 @@
 #pragma once
 
+#include <vector>
+
 class MovingAverage
 {
 private:
-    const static int size = 45; // size of the moving average
-    int values[size];          // array to hold the measurements
+    int size;                  // size of the moving average
+    std::vector<int> values;  // array to hold the measurements
     int index = 0;             // current index into the array
     int sum = 0;               // sum of the measurements
     int count = 0;             // count of measurements taken
 
 public:
+    MovingAverage(int size)
+        : size(size)
+    {
+        values.resize(size, 0);
+    }
+
     void add(int value)
     {
         if (count < size)
             count++;                // increase count until we have 'size' elements
-        sum -= values[index];       // subtract the old value from the sum
+        else
+            sum -= values[index];   // subtract the old value from the sum
         sum += value;               // add the new value to the sum
         values[index] = value;      // store the new value in the array
         index = (index + 1) % size; // move to the next position in the array

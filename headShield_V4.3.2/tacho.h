@@ -1,11 +1,7 @@
 #pragma once
 #include "Arduino.h"
 #include "Timer.h"
-#include <vector>
-#include <numeric>
-#include <algorithm>
-#include <cmath>
-#include <deque>
+#include "movingAverage.h"
 class Tachometer
 {
 private:
@@ -16,11 +12,15 @@ private:
     unsigned long timeLow = 0;
     bool rollingValue;
     int maxMeasure = 3;
-    bool lastMeasure[3]; // lastMeasure[0] -> oldest lastMeasure[1] -> previous
+    bool lastMeasure[3];
+    MovingAverage smooth;
+
 public:
+    int finalValue = -1;
     unsigned long dutyCycle = 0;
-    Tachometer(int analogPin)
-        : analogPin(analogPin)
+    Tachometer(int analogPin, int smoothSize)
+        : analogPin(analogPin),
+          smooth(smoothSize)
     {
     }
     void begin()
@@ -50,7 +50,7 @@ public:
         return fastMajority(lastMeasure[0], lastMeasure[1], lastMeasure[2]);
     }
 
-    bool update()
+    bool doMeasure()
     {
         do
         {
@@ -78,37 +78,11 @@ public:
         return true;
     }
 
-    unsigned long measureAverageDutyCycle(int numMeasurements, double outlierThreshold, bool (*getOut)())
+    int getAverage()
     {
-        unsigned long sum = 0;
-        unsigned long sumSq = 0;
-
-        std::deque<unsigned long> measurements;
-        for (int i = 0; i < numMeasurements; i++)
-        {
-            if (getOut())
-                return 0;
-            update();
-            measurements.push_back(dutyCycle);
-
-            sum += dutyCycle;
-            sumSq += dutyCycle * dutyCycle;
-        }
-
-        double mean = sum / static_cast<double>(measurements.size());
-        double sq_sum = sumSq;
-        double stdDev = std::sqrt(sq_sum / measurements.size() - mean * mean);
-
-        measurements.erase(std::remove_if(measurements.begin(), measurements.end(),
-                                          [mean, stdDev, outlierThreshold](unsigned long x)
-                                          {
-                                              return std::abs(x - mean) > outlierThreshold * stdDev;
-                                          }),
-                           measurements.end());
-
-        // Recalculate mean
-        mean = std::accumulate(measurements.begin(), measurements.end(), 0.0) / measurements.size();
-
-        return static_cast<unsigned long>(mean);
+        if (doMeasure())
+            smooth.add(dutyCycle);
+        finalValue = smooth.average();
+        return finalValue;
     }
 };

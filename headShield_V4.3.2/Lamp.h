@@ -42,8 +42,6 @@ public:
 
     void setLevel(int newLevel)
     {
-        if (newLevel == level)
-            return;
 
         switch (newLevel)
         {

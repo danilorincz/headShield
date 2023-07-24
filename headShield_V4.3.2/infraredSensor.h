@@ -1,17 +1,18 @@
 #pragma once
 #include "movingAverage.h"
 
-class infraredSensor : public MovingAverage
+class InfraredSensor
 {
 public:
     int pin;
     bool state;
-    bool prevState;
-    MovingAverage headSensorAverageAnalog;
+     MovingAverage smooth;
 
-    infraredSensor(int pin)
+
+    InfraredSensor(int pin, int smoothSize)
+        : pin(pin),
+          smooth(smoothSize) // initialize MovingAverage with a size of 45
     {
-        this->pin = pin;
     }
     int read()
     {
@@ -19,8 +20,8 @@ public:
     }
     int readAverage()
     {
-        headSensorAverageAnalog.add(read());
-        return headSensorAverageAnalog.average();
+        smooth.add(read());
+        return smooth.average();
     }
     bool scan()
     {

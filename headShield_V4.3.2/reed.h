@@ -1,21 +1,29 @@
 #pragma once
+#include "movingAverage.h"
 
 class ReedSwitch
 {
 public:
     int pin;
     bool state;
-    ReedSwitch(int pin)
+    MovingAverage smooth;
+    ReedSwitch(int pin, int smoothSize)
+        : pin(pin),
+          smooth(smoothSize)
     {
-        this->pin = pin;
     }
     void begin()
     {
         pinMode(pin, INPUT_PULLUP);
     }
+    bool readAverage()
+    {
+        smooth.add(digitalRead(pin));
+        return smooth.average();
+    }
     bool scan()
     {
-        if (digitalRead(pin))
+        if (readAverage())
             state = true;
         else
             state = false;
