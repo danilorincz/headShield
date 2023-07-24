@@ -57,6 +57,7 @@ const int tachometerPin = 39;
 Tachometer tacho(tachometerPin);
 int tachoFinalValue = -1;
 int fanErrorNumber = 0;
+
 //? POWER LED
 const int LEDPin = 19;
 LED lamp(LEDPin);
@@ -78,7 +79,7 @@ ReedSwitch visor(reedSwitchPin);
 //? PIEZO
 const int piezoPin = 23;
 const int piezoChannel = 8;
-Beeper beeper(piezoPin, piezoChannel);
+Piezo piezo(piezoPin, piezoChannel);
 
 //? BATTERY
 const int batteryPin = 32;
@@ -88,6 +89,8 @@ Battery battery(batteryPin);
 const int audioEnPin = 16;
 Audio audio(audioEnPin);
 
+//? GLOBAL
+bool debuggingTurnOn = false;
 class FanCondition
 {
 public:
@@ -119,7 +122,7 @@ void setup()
   fan.begin();
   lamp.begin();
   audio.begin();
-  beeper.begin(SOUND_ACTIVE);
+  piezo.begin(SOUND_ACTIVE);
   visor.begin();
   battery.begin();
   tacho.begin();
@@ -164,25 +167,7 @@ void setup()
   ENS160.setTempAndHum(25.0, 50.0);
 
   //* BOOT
-  beeper.playStartup();
-  delay(100);
-
-  //* SERVICE MODE
-  while (touchLeft.getDigital() && touchRight.getDigital())
-  {
-    static Timer serviceModeTimer(3000);
-    if (serviceModeTimer.timeElapsedMillis())
-    {
-      while (true)
-      {
-        static Timer serviceModePrint(1000);
-        if (serviceModePrint.timeElapsedMillis())
-        {
-          Serial.println("SERVICE MODE ENABLED");
-        }
-      }
-    }
-  }
+  piezo.playStartup();
 }
 
 //* HANDLERS
@@ -386,18 +371,18 @@ void touchInputHandler()
     Serial.println("Left long tap");
     fan.toggle();
     if (fan.active())
-      beeper.playFanOn();
+      piezo.playFanOn();
     else
-      beeper.playFanOff();
+      piezo.playFanOff();
   }
 
   if (touchRight.singleTap() && !touchLeft.getDigital()) //? LED CONTROL
   {
     lamp.toggleBetween(0, 3);
     if (lamp.level == 0)
-      beeper.playLampOff();
+      piezo.playLampOff();
     else
-      beeper.playLampOn();
+      piezo.playLampOn();
   }
 
   if (touchRight.longTap() && !touchLeft.getDigital()) //? AUDIO CONTROL
@@ -405,9 +390,9 @@ void touchInputHandler()
     audio.toggle();
 
     if (audio.state)
-      beeper.playVisorUp();
+      piezo.playVisorUp();
     else
-      beeper.playVisorDown();
+      piezo.playVisorDown();
   }
 
   if (touchLeft.singleTap() && !touchRight.getDigital()) //? EMPTY
@@ -465,12 +450,12 @@ void visorStateHandler()
         fan.on();
       }
       Serial.println("back to active");
-      beeper.playVisorFoldedDown();
+      piezo.playVisorFoldedDown();
       break;
     case 0: //* INACTIVE
       Serial.println("deactivating");
       fan.off();
-      beeper.playVisorFoldedUp();
+      piezo.playVisorFoldedUp();
       break;
     }
   }
@@ -490,7 +475,7 @@ void headSensorStateHandler()
     case 1:
       if (!onDone)
       {
-        beeper.playHelmetPutOn();
+        piezo.playHelmetPutOn();
         Serial.println("HELMET ON");
         if (visor.state)
         {
@@ -503,7 +488,7 @@ void headSensorStateHandler()
     case 0:
       if (!offDone)
       {
-        beeper.playHelmetTakenOff();
+        piezo.playHelmetTakenOff();
         Serial.println("HELMET OFF");
         offDone = true;
         onDone = false;
@@ -670,7 +655,7 @@ bool sensorConnectRequest()
         connectCommand = false;
         BME_ok = false;
         ENS_ok = false;
-        beeper.playSuccess();
+        piezo.playSuccess();
         Serial.println("Sensor connected OK");
         return true;
       }
@@ -701,7 +686,7 @@ void sensorDisconnectRequest()
     if (isSensorDisconnecting())
     {
       sensorConnected = false;
-      beeper.playShutdown();
+      piezo.playShutdown();
       Serial.println("disconnecting sensor");
     }
   }
@@ -760,7 +745,7 @@ void analyzeTachometer()
   if (monitorCounter == measureQuantity)
   {
 
-    beeper.playStartup();
+    piezo.playStartup();
     Serial.println("**********MONITORING ENDED**********");
 
     monitorCounter = 0;
@@ -773,7 +758,7 @@ void analyzeTachometer()
   }
 }
 
-bool debuggingTurnOn = false;
+
 void loop()
 {
   server.handleClient();
@@ -790,11 +775,8 @@ void loop()
 
   doFunction(readSensorData, 200);
   doFunction(batteryLevelHandling, 4000);
-  static Timer logAirflowTimer(1000);
-  if (logAirflowTimer.timeElapsedMillis())
-  {
-    logAirflowError();
-  }
+  doFunctions(logAirflowError, 1000);
+
 
   if (Serial.available() > 0)
   {

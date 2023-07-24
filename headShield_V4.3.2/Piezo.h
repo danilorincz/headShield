@@ -4,7 +4,7 @@
 #ifdef ESP32
 #include "analogWrite.h"
 #endif
-class Beeper
+class Piezo
 {
 private:
   int piezoPin;
@@ -16,7 +16,7 @@ private:
   int channel;
 #endif
 public:
-  Beeper(int piezoPin, int channel = 0)
+  Piezo(int piezoPin, int channel = 0)
   {
     this->piezoPin = piezoPin;
 #ifdef ESP32
