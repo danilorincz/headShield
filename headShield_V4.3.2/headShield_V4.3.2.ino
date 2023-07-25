@@ -1,8 +1,6 @@
-// HEADSHIELD_V4.3.1 PCB_V10
 //? SETTINGS
 #define SOUND_ACTIVE true
-// right not tocuhing: 37 / 22 -> 30
-// left not touching 65 / 37 -> 45
+
 //? DOWNLOADED LIBRARIEs
 #include <Arduino.h>
 #include <WiFi.h>
@@ -14,6 +12,7 @@
 #include "DFRobot_BME280.h"
 #include <DFRobot_ENS160.h>
 #include <ArduinoJson.h>
+#include <Preferences.h>
 
 //? CUSTOM LIBRARIEs
 #include "Device.h"
@@ -21,7 +20,7 @@
 #include "Fan.h"
 #include "Lamp.h"
 #include "FanCondition.h"
-
+#include "StatData.h"
 #include "Battery.h"
 #include "Piezo.h"
 #include "Webpage.h"
@@ -33,6 +32,10 @@
 #include "tacho.h"
 #include "movingAverage.h"
 #include "TimeManager.h"
+
+//? DATA STORAGE
+Preferences data;
+
 //? WIFI
 const char *ssid = "headShield";
 const char *password = "123456789";
@@ -90,10 +93,13 @@ const int audioEnPin = 16;
 Audio audio(audioEnPin);
 
 //? FAN CONDITIONS
-FanCondition normal(3582, 3590);
-FanCondition noFilter(3546 - 5, 3558 + 5);
-FanCondition faultFan1(3531 - 5, 3538 + 5);
-FanCondition notEnoughAirflow(3591, 3617 + 100);
+FanCondition normal(3582, 3590);    // N
+FanCondition noFilter(3541, 3562);  // I
+FanCondition faultFan1(3526, 3543); // Q
+FanCondition notEnoughAirflow(3591, 3700);
+
+Statistics tachoStat(1000);
+StatData latestTachoStat;
 
 //? GLOBAL
 bool serialEnabled = false;
@@ -108,6 +114,30 @@ void setup()
   visor.begin();
   battery.begin();
   tacho.begin();
+
+  //* RETRIEVE DATA
+  data.begin("normalLimits", false);
+  int normalMax = data.getInt("max", -1);
+  int mormalMin = data.getInt("min", -1);
+
+  normal.setLimit(mormalMin, normalMax);
+  notEnoughAirflow.setLimit(normalMax + 1, 4000);
+  data.end();
+  delay(10);
+
+  data.begin("noFilterLimits", false);
+  int noFilterMax = data.getInt("max", -1);
+  int noFilterMin = data.getInt("min", -1);
+  noFilter.setLimit(noFilterMin, noFilterMax);
+  data.end();
+  delay(10);
+
+  data.begin("faultFan1Limits", false);
+  int faultFanMax = data.getInt("max", -1);
+  int faultFanMin = data.getInt("min", -1);
+  faultFan1.setLimit(faultFanMin, faultFanMax);
+  data.end();
+  delay(10);
 
   adcAttachPin(infraredPin);
   //* WIFI
@@ -498,8 +528,11 @@ void updateTacho()
   {
     tacho.getAverage();
   }
+  /*
+  tachoStat.addValue(tacho.finalValue);
+  latestTachoStat = tachoStat.getStats();*/
 }
-void parseAndAction_tacho() // working with: tacho.finalValue
+void parseAndAction_tacho() // working with: latestTachoStat.average
 {
   if (!fan.active())
     return;
@@ -612,6 +645,71 @@ void parseAndAction_visor() // working with: visor.state
   }
 }
 
+void performTachoAnalysis(int condition)
+{
+  fan.on();
+  int counter = 0;
+  int allTimeMax = 0;
+  int allTimeMin = 9999;
+  Serial.println("PERFORM TACHO ANALYSIS STARTED!");
+  while (true)
+  {
+    tacho.getAverage();
+
+    if (tachoStat.addValue(tacho.finalValue))
+    {
+      Serial.println("new set of value added");
+      counter++;
+      latestTachoStat = tachoStat.getStats();
+      if (counter > 3)
+      {
+        if (latestTachoStat.min < allTimeMin)
+          allTimeMin = latestTachoStat.min;
+        if (latestTachoStat.max > allTimeMax)
+          allTimeMax = latestTachoStat.max;
+      }
+    }
+    if (counter > 40)
+    {
+      break;
+    }
+  }
+  latestTachoStat.max = allTimeMax + 5;
+  latestTachoStat.min = allTimeMin - 2;
+
+  Serial.println("PERFORM TACHO ANALYSIS ENDED!");
+  Serial.print("Max limit: ");
+  Serial.println(latestTachoStat.max);
+  Serial.print("Min limit: ");
+  Serial.println(latestTachoStat.min);
+
+  switch (condition)
+  {
+  case 1: // normal
+    data.begin("normalLimits", false);
+    data.putInt("max", latestTachoStat.max);
+    data.putInt("min", latestTachoStat.min);
+    data.end();
+    normal.setLimit(latestTachoStat.min, latestTachoStat.max);
+    break;
+  case 2: // noFilter
+    data.begin("noFilterLimits", false);
+    data.putInt("max", latestTachoStat.max);
+    data.putInt("min", latestTachoStat.min);
+    data.end();
+    noFilter.setLimit(latestTachoStat.min, latestTachoStat.max);
+    break;
+  case 3: // faultFan1
+    data.begin("faultFan1Limits", false);
+    data.putInt("max", latestTachoStat.max);
+    data.putInt("min", latestTachoStat.min);
+    data.end();
+    faultFan1.setLimit(latestTachoStat.min, latestTachoStat.max);
+    break;
+  }
+
+  fan.off();
+}
 void loop()
 {
   server.handleClient();
@@ -657,12 +755,35 @@ void loop()
     }
   }
 
-
-
   switch (serialInput)
   {
-  case 'T':
+  case 'O':
     Serial.println(tacho.finalValue);
+    break;
+  case 'T':
+    static int prevAverage;
+    static int prevMax;
+    static int prevMin;
+    static int counter;
+
+    if (latestTachoStat.average != prevAverage || latestTachoStat.min != prevMin || latestTachoStat.max != prevMax)
+    {
+      prevAverage = latestTachoStat.average;
+      prevMax = latestTachoStat.max;
+      prevMin = latestTachoStat.min;
+      //Serial.print("MEASUREMENT NUMBER: ");
+      //Serial.println(counter);
+      //Serial.print("Ave: ");
+      //Serial.println(latestTachoStat.average);
+      //Serial.print("Max: ");
+      Serial.println(latestTachoStat.max);
+      //Serial.print("Min: ");
+      Serial.println(latestTachoStat.min);
+      //Serial.print("Range size: ");
+      //Serial.println(latestTachoStat.max - latestTachoStat.min);
+
+      counter++;
+    }
     break;
   case 'B':
     Serial.println(battery.percent);
@@ -676,6 +797,50 @@ void loop()
   case 'E':
     serialEnabled = true;
     break;
+
+  case 'A':
+    performTachoAnalysis(5); // Not put any value in the flash memory
+    serialInput = 'X';
+    break;
+  case 'N':
+    performTachoAnalysis(1); // Use measurements for normal
+    serialInput = 'X';
+    break;
+  case 'I':
+    performTachoAnalysis(2); // Use measurements for noFilter
+    serialInput = 'X';
+    break;
+  case 'Q':
+    performTachoAnalysis(3); // Use measurements for faultFan1
+    serialInput = 'X';
+    break;
+  case 'W':
+    Serial.println("Normal");
+    Serial.print("MAX: ");
+    Serial.println(normal.getMax());
+    Serial.print("MIN: ");
+    Serial.println(normal.getMin());
+
+    Serial.println("noFilter");
+    Serial.print("MAX: ");
+    Serial.println(noFilter.getMax());
+    Serial.print("MIN: ");
+    Serial.println(noFilter.getMin());
+
+    Serial.println("faultFan1");
+    Serial.print("MAX: ");
+    Serial.println(faultFan1.getMax());
+    Serial.print("MIN: ");
+    Serial.println(faultFan1.getMin());
+
+    Serial.println("notEnoughAirflow");
+    Serial.print("MAX: ");
+    Serial.println(notEnoughAirflow.getMax());
+    Serial.print("MIN: ");
+    Serial.println(notEnoughAirflow.getMin());
+    serialInput = 'X';
+    break;
+
   case 'X':
     serialEnabled = false;
     break;

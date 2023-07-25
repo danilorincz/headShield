@@ -6,10 +6,22 @@ public:
     int pin;
 
     unsigned int rawValue;
+    unsigned int rawValueAverage;
     unsigned int percent;
-    unsigned int charge;
+    float voltage;
     int level;
     MovingAverage smooth;
+
+    // defining the two known points
+    float voltage1 = 6;
+    int analog1 = 2461;
+
+    float voltage2 = 8.3;
+    int analog2 = 3814;
+
+    // calculating the slope and intercept
+    float slope = (voltage2 - voltage1) / (float)(analog2 - analog1);
+    float intercept = voltage1 - slope * analog1;
 
     Battery(int pin, int smoothSize)
         : pin(pin),
@@ -29,11 +41,19 @@ public:
     int readAverage()
     {
         smooth.add(getRaw());
-        return smooth.average();
+        rawValueAverage = smooth.average();
+        return rawValueAverage;
     }
+
+    float getVoltage()
+    {
+        voltage = slope * readAverage() + intercept;
+        return voltage;
+    }
+
     int getPercent()
     {
-        percent = map(readAverage(), 1000, 4096, 0, 100);
+        percent = map(getVoltage(), 6, 8.4, 0, 100);
         return percent;
     }
 };
