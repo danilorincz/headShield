@@ -1,30 +1,44 @@
 #pragma once
 
+#include "StatData.h"
+
 class FanCondition
 {
 public:
-  int max;
-  int min;
+  StatData limits;
 
   FanCondition()
   {
   }
-  void setLimit(int min, int max)
+  void setLimit(StatData setData)
   {
-    this->max = max;
-    this->min = min;
+    this->limits.max = setData.max;
+    this->limits.min = setData.min;
+  }
+  void setMax(int newMax)
+  {
+    this->limits.max = newMax;
+  }
+  void setMin(int newMin)
+  {
+    this->limits.min = newMin;
   }
   int getMax()
   {
-    return this->max;
+    return limits.max;
   }
   int getMin()
   {
-    return this->min;
+    return limits.min;
   }
-  bool inRange(int value)
+  StatData getStatData()
   {
-    if (min <= value && value <= max)
+    return limits;
+  }
+  bool inRange(int value, int offset)
+  {
+ 
+    if (limits.min - offset <= value && value <= limits.max + offset)
       return true;
     return false;
   }

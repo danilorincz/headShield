@@ -13,7 +13,7 @@
 #include <DFRobot_ENS160.h>
 #include <ArduinoJson.h>
 #include <Preferences.h>
-
+#include <nvs_flash.h>
 //? CUSTOM LIBRARIEs
 #include "Device.h"
 #include "Audio.h"
@@ -94,16 +94,22 @@ const int audioEnPin = 16;
 Audio audio(audioEnPin);
 
 //? FAN CONDITIONS
-FanCondition notEnoughAirflow;
+FanCondition noAir;
 FanCondition normal;    // N
 FanCondition noFilter;  // I
 FanCondition faultFan1; // Q
 
-Statistics tachoStat(1000);
-StatData latestTachoStat;
-
 //? GLOBAL
 bool serialEnabled = false;
+
+void putData(StatData putThis, Preferences &here, String mapName)
+{
+  here.begin(mapName.c_str(), false);
+  here.putInt("max", putThis.max);
+  here.putInt("min", putThis.min);
+  here.end();
+}
+
 void setup()
 {
   //* BEGIN
@@ -118,27 +124,38 @@ void setup()
 
   //* RETRIEVE DATA
   data.begin("normalLimits", false);
-  int normalMax = data.getInt("max", -1);
-  int mormalMin = data.getInt("min", -1);
 
-  normal.setLimit(mormalMin, normalMax);
-  notEnoughAirflow.setLimit(normalMax + 1, 4000);
+  StatData loadedNormal;
+  loadedNormal.max = data.getInt("max", -1);
+  loadedNormal.min = data.getInt("min", -1);
+  normal.setLimit(loadedNormal);
+
   data.end();
-  delay(10);
+
+  data.begin("noAirLimits");
+
+  StatData loaded_noAir;
+  loaded_noAir.max = data.getInt("max", -1);
+  loaded_noAir.min = data.getInt("min", -1);
+  noAir.setLimit(loaded_noAir);
+  data.end();
 
   data.begin("noFilterLimits", false);
-  int noFilterMax = data.getInt("max", -1);
-  int noFilterMin = data.getInt("min", -1);
-  noFilter.setLimit(noFilterMin, noFilterMax);
+
+  StatData loadedNoFilter;
+  loadedNoFilter.max = data.getInt("max", -1);
+  loadedNoFilter.min = data.getInt("min", -1);
+
+  noFilter.setLimit(loadedNoFilter);
   data.end();
-  delay(10);
 
   data.begin("faultFan1Limits", false);
-  int faultFanMax = data.getInt("max", -1);
-  int faultFanMin = data.getInt("min", -1);
-  faultFan1.setLimit(faultFanMin, faultFanMax);
+  StatData loadedFaultFan1;
+  loadedFaultFan1.max = data.getInt("max", -1);
+  loadedFaultFan1.min = data.getInt("min", -1);
+
+  faultFan1.setLimit(loadedFaultFan1);
   data.end();
-  delay(10);
 
   adcAttachPin(infraredPin);
   //* WIFI
@@ -527,39 +544,39 @@ void updateTacho()
   {
     tacho.getAverage();
   }
-  /*
-  tachoStat.addValue(tacho.finalValue);
-  latestTachoStat = tachoStat.getStats();*/
 }
 void parseAndAction_tacho() // working with: latestTachoStat.average
 {
+
   if (!fan.active())
     return;
-  if (normal.inRange(tacho.finalValue))
+
+  if (normal.inRange(tacho.finalValue, 3))
   {
     serailPrintIf("Normál működés, szűrők fent, ventillátorok jók");
     fanErrorNumber = 1;
   }
-  else if (noFilter.inRange(tacho.finalValue))
+  else if (noAir.inRange(tacho.finalValue, 5))
+  {
+    serailPrintIf("Nincs elég térfogatáram! Ellenőrizze a szűrők állapotát!");
+    fanErrorNumber = 0;
+  }
+  else if (noFilter.inRange(tacho.finalValue, 5))
   {
     serailPrintIf("Nincs felhelyezve szűrő!");
     fanErrorNumber = 2;
   }
-  else if (faultFan1.inRange(tacho.finalValue))
+  else if (faultFan1.inRange(tacho.finalValue, 5))
   {
     serailPrintIf("Az egyik ventillátor leállt!");
     fanErrorNumber = 3;
   }
-  else if (notEnoughAirflow.inRange(tacho.finalValue))
-  {
-    serailPrintIf("Nincs elég térfogatáram! Ellenőrizze a szűrők állapotát!");
-    fanErrorNumber = 4;
-  }
   else
   {
     serailPrintIf("Lehetséges hogy valami akadályozza a levegő kiáramlását!");
-    fanErrorNumber = 5;
+    fanErrorNumber = 4;
   }
+
 }
 
 //* BATTERY
@@ -644,6 +661,7 @@ void parseAndAction_visor() // working with: visor.state
   }
 }
 
+//* INTERPRETER
 void printPeriferial_inter()
 {
   Serial.print("Left touch raw: ");
@@ -658,19 +676,17 @@ void printPeriferial_inter()
   Serial.print("Head sensor: ");
   Serial.println(headSensor.state);
 }
-
 void printTacho_inter()
 {
   Serial.println(tacho.finalValue);
 }
-
 void printLimits_inter()
 {
-  Serial.println("notEnoughAirflow");
+  Serial.println("noAir");
   Serial.print("  MAX: ");
-  Serial.println(notEnoughAirflow.getMax());
+  Serial.println(noAir.getMax());
   Serial.print("  MIN: ");
-  Serial.println(notEnoughAirflow.getMin());
+  Serial.println(noAir.getMin());
 
   Serial.println("Normal");
   Serial.print("  MAX: ");
@@ -691,82 +707,285 @@ void printLimits_inter()
   Serial.println(faultFan1.getMin());
 }
 
-void performTachoAnalysis(int condition)
+StatData tachoAnalysis(int numberOfMeasurements, int measurementsMultiplier)
 {
   fan.on();
   int counter = 0;
   int allTimeMax = 0;
   int allTimeMin = 9999;
-  Serial.println("PERFORM TACHO ANALYSIS STARTED!");
+  StatData dataNow;
+  Statistics statisticsNow(numberOfMeasurements);
+
   while (true)
   {
     tacho.getAverage();
 
-    if (tachoStat.addValue(tacho.finalValue))
+    if (statisticsNow.addValue(tacho.finalValue))
     {
-      Serial.println("new set of value added");
+      Serial.print("new set of value added_");
+      Serial.println(counter);
       counter++;
-      latestTachoStat = tachoStat.getStats();
-      if (counter > 3)
+      dataNow = statisticsNow.getStats();
+      if (counter > 5) // skip the first three
       {
-        if (latestTachoStat.min < allTimeMin)
-          allTimeMin = latestTachoStat.min;
-        if (latestTachoStat.max > allTimeMax)
-          allTimeMax = latestTachoStat.max;
+        if (dataNow.min < allTimeMin)
+          allTimeMin = dataNow.min;
+        if (dataNow.max > allTimeMax)
+          allTimeMax = dataNow.max;
       }
     }
-    if (counter > 40)
+    if (counter > measurementsMultiplier)
     {
       break;
     }
   }
-  latestTachoStat.max = allTimeMax + 5;
-  latestTachoStat.min = allTimeMin - 2;
+  fan.off();
+  return dataNow;
+}
 
-  Serial.println("PERFORM TACHO ANALYSIS ENDED!");
-  Serial.print("Max limit: ");
-  Serial.println(latestTachoStat.max);
-  Serial.print("Min limit: ");
-  Serial.println(latestTachoStat.min);
+void refreshLimits(int condition) // {0 -> no air flow} {1 -> normal}  {2 -> no filter} {3 -> fan fault}
+{
+  StatData newLimits = tachoAnalysis(300, 15);
+
+  bool writeToFlash = false;
+  StatData oldLimitsClone;
 
   switch (condition)
   {
-  case 1: // normal
-    data.begin("normalLimits", false);
-    data.putInt("max", latestTachoStat.max);
-    data.putInt("min", latestTachoStat.min);
-    data.end();
-    normal.setLimit(latestTachoStat.min, latestTachoStat.max);
+  case 0:
+    oldLimitsClone = noAir.getStatData();
     break;
-  case 2: // noFilter
-    data.begin("noFilterLimits", false);
-    data.putInt("max", latestTachoStat.max);
-    data.putInt("min", latestTachoStat.min);
-    data.end();
-    noFilter.setLimit(latestTachoStat.min, latestTachoStat.max);
+  case 1:
+    oldLimitsClone = normal.getStatData();
     break;
-  case 3: // faultFan1
-    data.begin("faultFan1Limits", false);
-    data.putInt("max", latestTachoStat.max);
-    data.putInt("min", latestTachoStat.min);
-    data.end();
-    faultFan1.setLimit(latestTachoStat.min, latestTachoStat.max);
+  case 2:
+    oldLimitsClone = noFilter.getStatData();
+    break;
+  case 3:
+    oldLimitsClone = faultFan1.getStatData();
     break;
   }
 
-  fan.off();
+  StatData movingLimits = oldLimitsClone;
+  if (newLimits.max > movingLimits.max)
+  {
+    writeToFlash = true;
+    movingLimits.max = newLimits.max;
+  }
+  if (newLimits.min < movingLimits.min)
+  {
+    writeToFlash = true;
+    movingLimits.min = newLimits.min;
+  }
+
+  if (writeToFlash)
+  {
+    switch (condition)
+    {
+    case 0:
+      newLimits.max += 100;
+      noAir.setLimit(newLimits);
+      putData(newLimits, data, "noAirLimits");
+      break;
+    case 1:
+      newLimits.max += 5;
+      newLimits.min -= 5;
+      normal.setLimit(newLimits);
+      putData(newLimits, data, "normalLimits");
+      break;
+    case 2:
+      newLimits.max += 5;
+      newLimits.min -= 5;
+      noFilter.setLimit(newLimits);
+      putData(newLimits, data, "noFilterLimits");
+      break;
+    case 3:
+      newLimits.max += 5;
+      newLimits.min -= 5;
+      faultFan1.setLimit(newLimits);
+      putData(newLimits, data, "faultFan1Limits");
+      break;
+    }
+  }
+
+  if (writeToFlash)
+  {
+    Serial.println("Values changed! (min and max)");
+
+    Serial.print("Prev limits: ");
+    Serial.print("   ");
+    Serial.println(oldLimitsClone.max);
+    Serial.print("   ");
+    Serial.println(oldLimitsClone.min);
+
+    Serial.print("New limits: ");
+    Serial.print("   ");
+    Serial.println(newLimits.max);
+    Serial.print("   ");
+    Serial.println(newLimits.min);
+  }
+  else
+  {
+    Serial.println("Old limits NOT changed to new limits!");
+
+    Serial.print("Old limits: ");
+    Serial.print("   ");
+    Serial.println(oldLimitsClone.max);
+    Serial.print("   ");
+    Serial.println(oldLimitsClone.min);
+
+    Serial.print("Results: ");
+    Serial.print("   ");
+    Serial.println(newLimits.max);
+    Serial.print("   ");
+    Serial.println(newLimits.min);
+  }
+}
+void refreshNoAirLimit()
+{
+  refreshLimits(0);
+}
+void refreshNormalLimit()
+{
+  refreshLimits(1);
+}
+void refreshNoFilterLimits()
+{
+  refreshLimits(2);
+}
+void refreshFaultFan1Limits()
+{
+  refreshLimits(3);
 }
 
+void clearAllData()
+{
+  nvs_flash_erase();
+  nvs_flash_init();
+  /*
+  data.begin("normalLimits", false);
+  data.clear();
+  data.end();
+  data.begin("noAirLimits", false);
+  data.clear();
+  data.end();
+  data.begin("noFilterLimits", false);
+  data.clear();
+  data.end();
+  data.begin("faultFan1Limits", false);
+  data.clear();
+  data.end();*/
+  Serial.println("All data cleared!");
+}
+void toggleSerialEnable()
+{
+  serialEnabled = !serialEnabled;
+}
+void recalculateFromNormal()
+{
+  int base;
+  int A = 27;
+  int B = 39;
+  int C = 56;
+  int D = 69;
+  StatData newLimits = tachoAnalysis(1000, 20);
+  newLimits.max += 5;
+  newLimits.min -= 5;
+  normal.setLimit(newLimits);
+  putData(newLimits, data, "normalLimits");
+  base = newLimits.min;
+
+  noAir.setMin(normal.getMax() + 1);
+  noAir.setMax(normal.getMax() + 50);
+  noFilter.setMax(base - A);
+  noFilter.setMin(base - B);
+  faultFan1.setMax(base - C);
+  faultFan1.setMin(base - D);
+
+  putData(noAir.getStatData(), data, "noAirLimits");
+  putData(normal.getStatData(), data, "normalLimits");
+  putData(noFilter.getStatData(), data, "noFilterLimits");
+  putData(faultFan1.getStatData(), data, "faultFan1Limits");
+
+  Serial.println("_______________");
+  Serial.println("No air: ");
+  Serial.print("   ");
+  Serial.println(noAir.getMax());
+  Serial.print("   ");
+  Serial.println(noAir.getMin());
+
+  Serial.println("Normal: ");
+  Serial.print("   ");
+  Serial.println(normal.getMax());
+  Serial.print("   ");
+  Serial.println(normal.getMin());
+
+  Serial.println("No filter: ");
+  Serial.print("   ");
+  Serial.println(noFilter.getMax());
+  Serial.print("   ");
+  Serial.println(noFilter.getMin());
+
+  Serial.println("Fault fan1: ");
+  Serial.print("   ");
+  Serial.println(faultFan1.getMax());
+  Serial.print("   ");
+  Serial.println(faultFan1.getMin());
+
+  Serial.println(" ");
+  Serial.println(" ");
+  Serial.println(" ");
+}
+void cleanUpLimits()
+{
+  if (intersect(noAir.limits, normal.limits))
+  {
+    Serial.println("No air and normal intersecting!");
+    int intersectionSize = normal.getMax() - noAir.getMin();
+    Serial.print("Interseciton size: ");
+    Serial.println(intersectionSize);
+    noAir.setMin(normal.getMax() + intersectionSize);
+  }
+  else
+  {
+    Serial.println("No intersection between noAir and normal");
+    int difference = noAir.getMin() - normal.getMax();
+    normal.setMax(normal.getMax() + difference - 1);
+    Serial.print("Difference: ");
+    Serial.println(difference);
+  }
+}
 FunctionRunner tachoRunner(parseAndAction_tacho, 3000);
 FunctionRunner batteryRunner(parseAndAction_battery, 4000);
 FunctionRunner visorRunner(parseAndAction_visor, 100);
 FunctionRunner headSensorRunner(parseAndAction_headSensor, 200);
 FunctionRunner readSensorRunner(readSensorData, 200);
 
-Interpreter printTachoValue("print tacho", printTacho_inter);
-Interpreter printPeriferial("print periferial", printPeriferial_inter);
-Interpreter printLimits("print limit", printLimits_inter);
-//Interpreter analyseNormal("analyse normal", analyseTacho_inter);
+Interpreter printTachoValue("tacho", printTacho_inter);
+Interpreter printPeriferial("periferial", printPeriferial_inter);
+Interpreter printLimits("limit", printLimits_inter);
+
+Interpreter analyseNoAir("analyse noAir", refreshNoAirLimit);
+Interpreter analyseNormal("analyse normal", refreshNormalLimit);
+Interpreter analysenoFilter("analyse noFilter", refreshNoFilterLimits);
+Interpreter analysefaultFan1("analyse faultFan1", refreshFaultFan1Limits);
+Interpreter clearLimits("clear", clearAllData);
+Interpreter toggleSerial("enable", toggleSerialEnable);
+Interpreter cleanNoAirMin("clean noAir", cleanUpLimits);
+Interpreter doRecalculation("recalc", recalculateFromNormal);
+
+bool intersect(StatData range_1, StatData range_2)
+{
+
+  if (range_1.max < range_2.min || range_2.max < range_1.min)
+  {
+    return false;
+  }
+  else
+  {
+    return true;
+  }
+}
 
 void loop()
 {
@@ -778,6 +997,15 @@ void loop()
   printTachoValue.refresh(interpreter::command);
   printPeriferial.refresh(interpreter::command);
   printLimits.refresh(interpreter::command);
+
+  analyseNoAir.refresh(interpreter::command);
+  analyseNormal.refresh(interpreter::command);
+  analysenoFilter.refresh(interpreter::command);
+  analysefaultFan1.refresh(interpreter::command);
+  clearLimits.refresh(interpreter::command);
+  toggleSerial.refresh(interpreter::command);
+  cleanNoAirMin.refresh(interpreter::command);
+  doRecalculation.refresh(interpreter::command);
   //! HANDLE CLIENT
   server.handleClient();
 
