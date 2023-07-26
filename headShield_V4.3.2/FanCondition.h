@@ -3,28 +3,28 @@
 class FanCondition
 {
 public:
-  int upperLimit;
-  int lowerLimit;
+  int max;
+  int min;
 
-  FanCondition(int lowerLimit, int upperLimit)
+  FanCondition()
   {
   }
-  void setLimit(int lowerLimit, int upperLimit)
+  void setLimit(int min, int max)
   {
-    this->upperLimit = upperLimit;
-    this->lowerLimit = lowerLimit;
+    this->max = max;
+    this->min = min;
   }
   int getMax()
   {
-    return this->upperLimit;
+    return this->max;
   }
   int getMin()
   {
-    return this->lowerLimit;
+    return this->min;
   }
   bool inRange(int value)
   {
-    if (lowerLimit <= value && value <= upperLimit)
+    if (min <= value && value <= max)
       return true;
     return false;
   }

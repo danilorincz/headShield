@@ -32,7 +32,8 @@
 #include "tacho.h"
 #include "movingAverage.h"
 #include "TimeManager.h"
-
+#include "Interpreter.h"
+#include "FunctionRunner.h"
 //? DATA STORAGE
 Preferences data;
 
@@ -93,10 +94,10 @@ const int audioEnPin = 16;
 Audio audio(audioEnPin);
 
 //? FAN CONDITIONS
-FanCondition normal(3582, 3590);    // N
-FanCondition noFilter(3541, 3562);  // I
-FanCondition faultFan1(3526, 3543); // Q
-FanCondition notEnoughAirflow(3591, 3700);
+FanCondition notEnoughAirflow;
+FanCondition normal;    // N
+FanCondition noFilter;  // I
+FanCondition faultFan1; // Q
 
 Statistics tachoStat(1000);
 StatData latestTachoStat;
@@ -470,7 +471,7 @@ void sensorReconnectingRequest()
   }
 }
 
-//* TACHOMETER
+//* MEASURE PROTOCOL
 void tacho_logMeasureProtocol()
 {
   if (!fan.active())
@@ -518,8 +519,6 @@ void tacho_logMeasureProtocol()
     delay(2000);
   }
 }
-
-//! UPDATE -> PARSE -> DO ACTION
 
 //* TACHO
 void updateTacho()
@@ -645,6 +644,53 @@ void parseAndAction_visor() // working with: visor.state
   }
 }
 
+void printPeriferial_inter()
+{
+  Serial.print("Left touch raw: ");
+  Serial.println(touchLeft.getAnalog());
+
+  Serial.print("Right touch raw: ");
+  Serial.println(touchRight.getAnalog());
+
+  Serial.print("Visor: ");
+  Serial.println(visor.state);
+
+  Serial.print("Head sensor: ");
+  Serial.println(headSensor.state);
+}
+
+void printTacho_inter()
+{
+  Serial.println(tacho.finalValue);
+}
+
+void printLimits_inter()
+{
+  Serial.println("notEnoughAirflow");
+  Serial.print("  MAX: ");
+  Serial.println(notEnoughAirflow.getMax());
+  Serial.print("  MIN: ");
+  Serial.println(notEnoughAirflow.getMin());
+
+  Serial.println("Normal");
+  Serial.print("  MAX: ");
+  Serial.println(normal.getMax());
+  Serial.print("  MIN: ");
+  Serial.println(normal.getMin());
+
+  Serial.println("noFilter");
+  Serial.print("  MAX: ");
+  Serial.println(noFilter.getMax());
+  Serial.print("  MIN: ");
+  Serial.println(noFilter.getMin());
+
+  Serial.println("faultFan1");
+  Serial.print("  MAX: ");
+  Serial.println(faultFan1.getMax());
+  Serial.print("  MIN: ");
+  Serial.println(faultFan1.getMin());
+}
+
 void performTachoAnalysis(int condition)
 {
   fan.on();
@@ -710,139 +756,48 @@ void performTachoAnalysis(int condition)
 
   fan.off();
 }
+
+FunctionRunner tachoRunner(parseAndAction_tacho, 3000);
+FunctionRunner batteryRunner(parseAndAction_battery, 4000);
+FunctionRunner visorRunner(parseAndAction_visor, 100);
+FunctionRunner headSensorRunner(parseAndAction_headSensor, 200);
+FunctionRunner readSensorRunner(readSensorData, 200);
+
+Interpreter printTachoValue("print tacho", printTacho_inter);
+Interpreter printPeriferial("print periferial", printPeriferial_inter);
+Interpreter printLimits("print limit", printLimits_inter);
+//Interpreter analyseNormal("analyse normal", analyseTacho_inter);
+
 void loop()
 {
+  if (Serial.available())
+  {
+    interpreter::command = interpreter::getCommand();
+  }
+
+  printTachoValue.refresh(interpreter::command);
+  printPeriferial.refresh(interpreter::command);
+  printLimits.refresh(interpreter::command);
+  //! HANDLE CLIENT
   server.handleClient();
 
-  //! UPDATES
-  static Timer tachoTimer(1000);
-  updateTacho();
-  if (tachoTimer.timeElapsedMillis())
-    parseAndAction_tacho();
-
-  static Timer batteryTimer(3000);
-  updateBattery();
-  if (batteryTimer.timeElapsedMillis())
-    parseAndAction_battery();
-
-  static Timer visorTimer(100);
-  updateVisor();
-  if (visorTimer.timeElapsedMillis())
-    parseAndAction_visor();
-
-  static Timer headSensorTimer(100);
-  updateHeadSensor();
-  if (headSensorTimer.timeElapsedMillis())
-    parseAndAction_headSensor();
-
+  //! TOUCH INPUT
   touchInputHandler();
+
+  //! UPDATES
+  updateTacho();
+  updateBattery();
+  updateHeadSensor();
+  updateVisor();
+
+  //! ACTION ACCORDING TO UPDATED VALUES
+  tachoRunner.takeAction();
+  batteryRunner.takeAction();
+  visorRunner.takeAction();
+  headSensorRunner.takeAction();
 
   sensorConnectRequest();
   sensorDisconnectRequest();
   sensorReconnectingRequest();
-
-  static Timer sensorTimer(200);
-  if (sensorTimer.timeElapsedMillis())
-    readSensorData();
-
-  static char serialInput = 'X';
-  if (Serial.available() > 0)
-  {
-    serialInput = (char)Serial.read(); // Cast the read byte to a character
-    for (int i = 0; i < 64; i++)
-    {
-      Serial.read();
-    }
-  }
-
-  switch (serialInput)
-  {
-  case 'O':
-    Serial.println(tacho.finalValue);
-    break;
-  case 'T':
-    static int prevAverage;
-    static int prevMax;
-    static int prevMin;
-    static int counter;
-
-    if (latestTachoStat.average != prevAverage || latestTachoStat.min != prevMin || latestTachoStat.max != prevMax)
-    {
-      prevAverage = latestTachoStat.average;
-      prevMax = latestTachoStat.max;
-      prevMin = latestTachoStat.min;
-      //Serial.print("MEASUREMENT NUMBER: ");
-      //Serial.println(counter);
-      //Serial.print("Ave: ");
-      //Serial.println(latestTachoStat.average);
-      //Serial.print("Max: ");
-      Serial.println(latestTachoStat.max);
-      //Serial.print("Min: ");
-      Serial.println(latestTachoStat.min);
-      //Serial.print("Range size: ");
-      //Serial.println(latestTachoStat.max - latestTachoStat.min);
-
-      counter++;
-    }
-    break;
-  case 'B':
-    Serial.println(battery.percent);
-    break;
-  case 'H':
-    Serial.println(headSensor.state);
-    break;
-  case 'V':
-    Serial.println(visor.state);
-    break;
-  case 'E':
-    serialEnabled = true;
-    break;
-
-  case 'A':
-    performTachoAnalysis(5); // Not put any value in the flash memory
-    serialInput = 'X';
-    break;
-  case 'N':
-    performTachoAnalysis(1); // Use measurements for normal
-    serialInput = 'X';
-    break;
-  case 'I':
-    performTachoAnalysis(2); // Use measurements for noFilter
-    serialInput = 'X';
-    break;
-  case 'Q':
-    performTachoAnalysis(3); // Use measurements for faultFan1
-    serialInput = 'X';
-    break;
-  case 'W':
-    Serial.println("Normal");
-    Serial.print("MAX: ");
-    Serial.println(normal.getMax());
-    Serial.print("MIN: ");
-    Serial.println(normal.getMin());
-
-    Serial.println("noFilter");
-    Serial.print("MAX: ");
-    Serial.println(noFilter.getMax());
-    Serial.print("MIN: ");
-    Serial.println(noFilter.getMin());
-
-    Serial.println("faultFan1");
-    Serial.print("MAX: ");
-    Serial.println(faultFan1.getMax());
-    Serial.print("MIN: ");
-    Serial.println(faultFan1.getMin());
-
-    Serial.println("notEnoughAirflow");
-    Serial.print("MAX: ");
-    Serial.println(notEnoughAirflow.getMax());
-    Serial.print("MIN: ");
-    Serial.println(notEnoughAirflow.getMin());
-    serialInput = 'X';
-    break;
-
-  case 'X':
-    serialEnabled = false;
-    break;
-  }
+  readSensorRunner.takeAction();
 }
