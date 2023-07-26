@@ -1,5 +1,6 @@
 #pragma once
 
+
 const char *webpageCode = R"rawliteral(
 <!DOCTYPE html>
 <html>
@@ -600,3 +601,4 @@ const char DEBUG_PAGE[] = R"rawliteral(
     </body>
 </html>
 )rawliteral";
+

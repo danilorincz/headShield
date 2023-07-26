@@ -1,7 +1,7 @@
 #pragma once
 #include "Arduino.h"
-#include "Timer.h"
-#include "movingAverage.h"
+#include "..\Timer.h"
+#include "..\movingAverage.h"
 class Tachometer
 {
 private:

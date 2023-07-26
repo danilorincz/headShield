@@ -1,5 +1,5 @@
 #pragma once
-#include "movingAverage.h"
+#include "..\movingAverage.h"
 
 class InfraredSensor
 {
