@@ -53,7 +53,8 @@ public:
 
     int getPercent()
     {
-        percent = map(getVoltage(), 6, 8.4, 0, 100);
+        float voltage = getVoltage();
+        percent = map(voltage * 100, 6 * 100, 8.4 * 100, 0, 100);
         return percent;
     }
 };

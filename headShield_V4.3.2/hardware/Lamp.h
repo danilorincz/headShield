@@ -8,6 +8,10 @@ private:
     {
         int value = map(percent, 0, 100, 0, 255);
         analogWrite(pin, value);
+        if (percent == 0)
+            Device::state = false;
+        else
+            Device::state = true;
     }
 
 public:
@@ -39,6 +43,15 @@ public:
             level = 0;
         return state;
     }
+
+    void signal()
+    {
+        digitalWrite(pin, HIGH);
+        delay(40);
+        digitalWrite(pin, LOW);
+        delay(40);
+    }
+ 
 
     void setLevel(int newLevel)
     {

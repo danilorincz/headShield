@@ -169,6 +169,9 @@ function setBatteryLevelText(level) {
             var fanRPMElement = document.getElementById('fanRPM');
             var statusText = "";
             switch(speed_rpm) {
+                case 0:
+                    statusText = "NOT ENOUGH FLOW";
+                    break;
                 case 1: 
                     statusText = "NORMAL";
                     break;
@@ -179,9 +182,6 @@ function setBatteryLevelText(level) {
                     statusText = "FAN MALFUNCTION";
                     break;
                 case 4:
-                    statusText = "NOT ENOUGH AIRFLOW OR FILTER IS CLOGGED";
-                    break;
-                case 5:
                     statusText = "OBSTACLE IN THE OUTLET";
                     break;
                 default:

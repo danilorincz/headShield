@@ -20,6 +20,7 @@ public:
     {
         this->limits.max = setData.max;
         this->limits.min = setData.min;
+        this->limits.average = setData.average;
     }
     void setMax(int newMax)
     {
@@ -37,14 +38,23 @@ public:
     {
         return limits.min;
     }
+    int getAverage()
+    {
+        return limits.average;
+    }
+    void clear()
+    {
+        limits.min = -1;
+        limits.max = -1;
+    }
     StatData getStatData()
     {
         return limits;
     }
-    bool inRange(int value, int offset)
+    bool inRange(int value, int offsetMin, int offsetMax)
     {
 
-        if (limits.min - offset <= value && value <= limits.max + offset)
+        if (limits.min - offsetMin <= value && value <= limits.max + offsetMax)
             return true;
         return false;
     }

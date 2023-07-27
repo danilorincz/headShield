@@ -43,7 +43,7 @@ Preferences data;
 //? WIFI
 const char *ssid = "headShield";
 const char *password = "123456789";
-IPAddress local_ip(192, 168, 23, 1);
+IPAddress local_ip(192, 168, 1, 1);
 IPAddress gateway(192, 168, 1, 1);
 IPAddress subnet(255, 255, 255, 0);
 WebServer server(80);
@@ -124,9 +124,13 @@ void setup()
   restore(faultFan1, data, "faultFan1Limits");
 
   //* WIFI
+  /*
+  WiFi.disconnect();
+  WiFi.mode(WIFI_OFF);*/
+  WiFi.mode(WIFI_AP);
+  WiFi.softAPConfig(local_ip, local_ip, subnet);
   WiFi.softAP(ssid, password);
-  WiFi.softAPConfig(local_ip, gateway, subnet);
-  WiFi.setTxPower(WIFI_POWER_MINUS_1dBm);
+
   serverOn();
   server.begin();
 
@@ -212,6 +216,13 @@ void touchInputHandler()
   }
   if (multiTouch()) //? EMPTY
   {
+    fan.off();
+    delay(1000);
+    piezo.playStartup();
+    piezo.playStartup();
+    piezo.playStartup();
+    delay(1000);
+    interpretCommand::recalculateFromNormal();
   }
 }
 
@@ -225,12 +236,33 @@ void updateSensor()
   perkData.TVOC = ENS160.getTVOC();
   perkData.ECO2 = ENS160.getECO2();
 }
+
+bool fanTurnedOnLongEnough()
+{
+}
+
 void updateTacho()
 {
   if (fan.active())
   {
+
     tacho.getAverage();
   }
+
+  accountBattery(tacho.finalValue);
+}
+void accountBattery(int &modifyThis)
+{ /*
+  Serial.print("Before change: ");
+  Serial.print("   ");
+  Serial.println(modifyThis);
+*/
+  int offset = map(battery.percent, 100, 0, 0, 10);
+  modifyThis -= offset;
+  /*
+  Serial.println("After change: ");
+  Serial.print("   ");
+  Serial.println(modifyThis);*/
 }
 void updateBattery()
 {
@@ -247,25 +279,26 @@ void updateVisor()
 
 void parseAndAction_tacho()
 {
+
   if (!fan.active())
     return;
 
-  if (normal.inRange(tacho.finalValue, 3))
+  if (normal.inRange(tacho.finalValue, 4, 1))
   {
     serialPrintIf("Normál működés, szűrők fent, ventillátorok jók");
     fanErrorNumber = 1;
   }
-  else if (noAir.inRange(tacho.finalValue, 5))
+  else if (noAir.inRange(tacho.finalValue, 5, 5))
   {
     serialPrintIf("Nincs elég térfogatáram! Ellenőrizze a szűrők állapotát!");
     fanErrorNumber = 0;
   }
-  else if (noFilter.inRange(tacho.finalValue, 5))
+  else if (noFilter.inRange(tacho.finalValue, 5,5 ))
   {
     serialPrintIf("Nincs felhelyezve szűrő!");
     fanErrorNumber = 2;
   }
-  else if (faultFan1.inRange(tacho.finalValue, 5))
+  else if (faultFan1.inRange(tacho.finalValue, 5,5 ))
   {
     serialPrintIf("Az egyik ventillátor leállt!");
     fanErrorNumber = 3;
@@ -275,7 +308,48 @@ void parseAndAction_tacho()
     serialPrintIf("Lehetséges hogy valami akadályozza a levegő kiáramlását!");
     fanErrorNumber = 4;
   }
+  int majority = getMajority(fanErrorNumber);
+  if (majority != 1 && majority != -1 && fanErrorNumber != 1)
+  {
+    piezo.playError();
+    for (int i = 0; i < 2; i++)
+    {
+
+      digitalWrite(19, HIGH);
+      delay(40);
+      digitalWrite(19, LOW);
+      delay(40);
+    }
+  }
 }
+
+std::vector<int> values;
+
+int getMajority(int newValue)
+{
+  // Store the new value in the vector
+  values.push_back(newValue);
+
+  // Limit the size of the vector to the last 5 values
+  if (values.size() > 4)
+  {
+    values.erase(values.begin());
+  }
+
+  // Check if all values are the same
+  for (int i = 1; i < values.size(); i++)
+  {
+    if (values[i] != values[0])
+    {
+      // If any of the values are different, we return -1
+      return -1;
+    }
+  }
+
+  // If we reached this point, it means all values are the same
+  return values[0];
+}
+
 void parseAndAction_battery()
 {
 }
@@ -345,6 +419,7 @@ FunctionRunner batteryRunner(parseAndAction_battery, 4000);
 FunctionRunner visorRunner(parseAndAction_visor, 100);
 FunctionRunner headSensorRunner(parseAndAction_headSensor, 200);
 FunctionRunner readSensorRunner(updateSensor, 200);
+
 void loop()
 {
   server.handleClient();
@@ -361,22 +436,22 @@ void loop()
 
   touchInputHandler();
 
+  using namespace interpreter;
+
   if (Serial.available())
-  {
-    interpreter::command = interpreter::getCommand();
-  }
-
-  printTachoValue.refresh(interpreter::command);
-  printPeriferial.refresh(interpreter::command);
-  printLimits.refresh(interpreter::command);
-
-  analyseNoAir.refresh(interpreter::command);
-  analyseNormal.refresh(interpreter::command);
-  analysenoFilter.refresh(interpreter::command);
-  analysefaultFan1.refresh(interpreter::command);
-  clearLimits.refresh(interpreter::command);
-  toggleSerial.refresh(interpreter::command);
-  doRecalculation.refresh(interpreter::command);
+    command = interpreter::getCommand();
+  toggleSerial.refresh(command);
+  printTachoValue.refresh(command);
+  printPeriferial.refresh(command);
+  printLimits.refresh(command);
+  printBareLimits.refresh(command);
+  printBattery.refresh(command);
+  analyseNoAir.refresh(command);
+  analyseNormal.refresh(command);
+  analysenoFilter.refresh(command);
+  analysefaultFan1.refresh(command);
+  clearLimits.refresh(command);
+  doRecalculation.refresh(command);
 
   sensorConnectRequest();
   sensorDisconnectRequest();

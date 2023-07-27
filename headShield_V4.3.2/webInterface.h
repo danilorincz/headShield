@@ -1,5 +1,9 @@
 
 
+void handle_root()
+{
+    server.send_P(200, "text/html", webpageCode);
+}
 void handler_helmetData()
 {
     server.send_P(200, "text/html", helmetDataPage);
@@ -27,10 +31,7 @@ void handler_getHelmetData()
         server.send(200, "application/json", jsonData);
     }
 }
-void handle_root()
-{
-    server.send_P(200, "text/html", webpageCode);
-}
+/*
 
 void handler_sensorData()
 {
@@ -102,22 +103,21 @@ void handler_setAudioState()
     server.send(200, "text/plain", "OK");
 }
 
+*/
+
 void serverOn()
 {
     server.on("/", handle_root);
     server.on("/helmetData", handler_helmetData);
     server.on("/getHelmetData", handler_getHelmetData);
-
-    // ROOT HADNLER
+/*
     server.on("/sensorData", handler_sensorData);
     server.on("/control", handler_controlPage);
     server.on("/debugData", handler_debugPage);
-    // GET GANDLERS
 
     server.on("/getSensorData", handler_getSensorData);
     server.on("/debugdata", handler_getDebugData);
-    // SET HANDLERS
-    //server.on("/setFanSpeed", handler_setFanSpeed);
+
     server.on("/setLampLevel", handler_setLampLevel);
-    server.on("/setAudioState", handler_setAudioState);
+    server.on("/setAudioState", handler_setAudioState);*/
 }
