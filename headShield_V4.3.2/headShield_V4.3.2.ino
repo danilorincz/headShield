@@ -60,7 +60,11 @@ bool sensorConnected = false;
 const int fanPin = 5;
 Fan fan(fanPin);
 FanCondition noAir;
+FanCondition noAirSingle;
+
 FanCondition normal;
+
+FanCondition noFilterSingle;
 FanCondition noFilter;
 FanCondition faultFan1;
 
@@ -71,7 +75,7 @@ LED lamp(LEDPin);
 //? TACHOMETER
 const int tachometerPin = 39;
 Tachometer tacho(tachometerPin, 600);
-int fanErrorNumber = 0;
+cond::conditionNumber fanErrorNumber;
 
 //? BATTERY
 const int batteryPin = 32;
@@ -118,10 +122,14 @@ void setup()
   tacho.begin();
 
   //* RETRIEVE DATA
-  restore(normal, data, "normalLimits");
-  restore(noAir, data, "noAirLimits");
-  restore(noFilter, data, "noFilterLimits");
-  restore(faultFan1, data, "faultFan1Limits");
+  restore(noAir, data, "noAir");
+  restore(noAirSingle, data, "noAirSingle");
+
+  restore(normal, data, "normal");
+
+  restore(noFilter, data, "noFilter");
+  restore(noFilterSingle, data, "noFilterSingle");
+  restore(faultFan1, data, "faultFan1");
 
   //* WIFI
   /*
@@ -283,33 +291,48 @@ void parseAndAction_tacho()
   if (!fan.active())
     return;
 
-  if (normal.inRange(tacho.finalValue, 4, 1))
+  if (normal.inRange(tacho.finalValue, 15, 3))
   {
     serialPrintIf("Normál működés, szűrők fent, ventillátorok jók");
-    fanErrorNumber = 1;
+
+    fanErrorNumber = cond::normal;
   }
-  else if (noAir.inRange(tacho.finalValue, 5, 5))
+  else if (noAirSingle.inRange(tacho.finalValue, 10, 3))
+  {
+    serialPrintIf("Egyik szűrőtől nem jön levegő");
+    fanErrorNumber = cond::noAirSingle;
+  }
+  else if (noAir.inRange(tacho.finalValue, 10, 60))
   {
     serialPrintIf("Nincs elég térfogatáram! Ellenőrizze a szűrők állapotát!");
-    fanErrorNumber = 0;
+    fanErrorNumber = cond::noAir;
   }
-  else if (noFilter.inRange(tacho.finalValue, 5,5 ))
+
+  else if (noFilter.inRange(tacho.finalValue, 5, 10))
   {
     serialPrintIf("Nincs felhelyezve szűrő!");
-    fanErrorNumber = 2;
+    fanErrorNumber = cond::noFilter;
   }
-  else if (faultFan1.inRange(tacho.finalValue, 5,5 ))
+  else if (noFilterSingle.inRange(tacho.finalValue, 8, 3))
+  {
+    serialPrintIf("Egyik oldal befogva, másikon szűrő!");
+    fanErrorNumber = cond::noFilterSingle;
+  }
+
+  else if (faultFan1.inRange(tacho.finalValue, 8, 8))
   {
     serialPrintIf("Az egyik ventillátor leállt!");
-    fanErrorNumber = 3;
+    fanErrorNumber = cond::faultFan1;
   }
   else
   {
     serialPrintIf("Lehetséges hogy valami akadályozza a levegő kiáramlását!");
-    fanErrorNumber = 4;
+    fanErrorNumber = cond::other;
   }
+  Serial.print("Tacho final: ");
+  Serial.println(tacho.finalValue);
   int majority = getMajority(fanErrorNumber);
-  if (majority != 1 && majority != -1 && fanErrorNumber != 1)
+  if (majority != cond::normal && majority != -1 && fanErrorNumber != cond::normal)
   {
     piezo.playError();
     for (int i = 0; i < 2; i++)
@@ -331,7 +354,7 @@ int getMajority(int newValue)
   values.push_back(newValue);
 
   // Limit the size of the vector to the last 5 values
-  if (values.size() > 4)
+  if (values.size() > 2)
   {
     values.erase(values.begin());
   }
@@ -446,10 +469,16 @@ void loop()
   printLimits.refresh(command);
   printBareLimits.refresh(command);
   printBattery.refresh(command);
-  analyseNoAir.refresh(command);
-  analyseNormal.refresh(command);
-  analysenoFilter.refresh(command);
-  analysefaultFan1.refresh(command);
+
+  analyse_noAir.refresh(command);
+  analyse_noAirSingle.refresh(command);
+
+  analyse_normal.refresh(command);
+
+  analyse_noFilterSingle.refresh(command);
+  analyse_noFilter.refresh(command);
+  analyse_faultFan1.refresh(command);
+
   clearLimits.refresh(command);
   doRecalculation.refresh(command);
 

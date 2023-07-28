@@ -46,6 +46,7 @@ public:
     {
         limits.min = -1;
         limits.max = -1;
+        limits.average = -1;
     }
     StatData getStatData()
     {
@@ -59,3 +60,20 @@ public:
         return false;
     }
 };
+
+namespace cond
+{
+
+    enum conditionNumber
+    {
+        noAir,
+        noAirSingle,
+
+        normal,
+
+        noFilterSingle,
+        noFilter,
+        faultFan1,
+        other
+    };
+}

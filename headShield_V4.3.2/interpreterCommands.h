@@ -25,10 +25,10 @@ StatData tachoAnalysis(int numberOfMeasurements, int measurementsMultiplier)
                 dataNow = statisticsNow.getStats();
                 Serial.print("new set of value added: ");
                 Serial.println(dataNow.average);
-                if (dataNow.min < allTimeMin)
-                    allTimeMin = dataNow.min;
-                if (dataNow.max > allTimeMax)
-                    allTimeMax = dataNow.max;
+                if (dataNow.average < allTimeMin)
+                    allTimeMin = dataNow.average;
+                if (dataNow.average > allTimeMax)
+                    allTimeMax = dataNow.average;
             }
         }
     }
@@ -45,17 +45,23 @@ void refreshLimits(int condition) // {0 -> no air flow} {1 -> normal}  {2 -> no 
 
     switch (condition)
     {
-    case 0:
+    case cond::noAir:
         oldLimitsClone = noAir.getStatData();
         break;
-    case 1:
+    case cond::normal:
         oldLimitsClone = normal.getStatData();
         break;
-    case 2:
+    case cond::noFilter:
         oldLimitsClone = noFilter.getStatData();
         break;
-    case 3:
+    case cond::faultFan1:
         oldLimitsClone = faultFan1.getStatData();
+        break;
+    case cond::noAirSingle:
+        oldLimitsClone = noAirSingle.getStatData();
+        break;
+    case cond::noFilterSingle:
+        oldLimitsClone = noFilterSingle.getStatData();
         break;
     }
 
@@ -68,20 +74,29 @@ void refreshLimits(int condition) // {0 -> no air flow} {1 -> normal}  {2 -> no 
     {
         switch (condition)
         {
-        case 0:
-            putData(newLimits, data, "noAirLimits");
+        case cond::noAir:
+            putData(newLimits, data, "noAir");
+            noAir.setLimit(newLimits);
             break;
-        case 1:
+        case cond::normal:
+            putData(newLimits, data, "normal");
             normal.setLimit(newLimits);
-            putData(newLimits, data, "normalLimits");
             break;
-        case 2:
+        case cond::noFilter:
+            putData(newLimits, data, "noFilter");
             noFilter.setLimit(newLimits);
-            putData(newLimits, data, "noFilterLimits");
             break;
-        case 3:
+        case cond::faultFan1:
+            putData(newLimits, data, "faultFan1");
             faultFan1.setLimit(newLimits);
-            putData(newLimits, data, "faultFan1Limits");
+            break;
+        case cond::noAirSingle:
+            putData(newLimits, data, "noAirSingle");
+            noAirSingle.setLimit(newLimits);
+            break;
+        case cond::noFilterSingle:
+            putData(newLimits, data, "noFilterSingle");
+            noFilterSingle.setLimit(newLimits);
             break;
         }
     }
@@ -141,6 +156,14 @@ namespace interpretCommand
             Serial.print("  AVE: ");
             Serial.println(noAir.getAverage());
 
+            Serial.println("noAirSingle");
+            Serial.print("  MAX: ");
+            Serial.println(noAirSingle.getMax());
+            Serial.print("  MIN: ");
+            Serial.println(noAirSingle.getMin());
+            Serial.print("  AVE: ");
+            Serial.println(noAirSingle.getAverage());
+
             Serial.println("Normal");
             Serial.print("  MAX: ");
             Serial.println(normal.getMax());
@@ -148,6 +171,14 @@ namespace interpretCommand
             Serial.println(normal.getMin());
             Serial.print("  AVE: ");
             Serial.println(normal.getAverage());
+
+            Serial.println("noFilterSingle");
+            Serial.print("  MAX: ");
+            Serial.println(noFilterSingle.getMax());
+            Serial.print("  MIN: ");
+            Serial.println(noFilterSingle.getMin());
+            Serial.print("  AVE: ");
+            Serial.println(noFilterSingle.getAverage());
 
             Serial.println("noFilter");
             Serial.print("  MAX: ");
@@ -165,50 +196,68 @@ namespace interpretCommand
             Serial.print("  AVE: ");
             Serial.println(faultFan1.getAverage());
         }
-        void bareLimitValue()
+        void printNakedLimits()
         {
+            Serial.println("Bare limit values (NORMAL, NO_AIR_SINGLE, NO_FILTER, ");
 
-            Serial.println("Bare limit values");
-
+            Serial.println(noAir.getAverage());
+            Serial.println(noAirSingle.getAverage());
             Serial.println(normal.getAverage());
-            Serial.println(normal.getMax());
-            Serial.println(normal.getMin());
+            Serial.println(noFilterSingle.getAverage());
+            Serial.println(noFilter.getAverage());
+            Serial.println(faultFan1.getAverage());
+            Serial.println("");
 
+            Serial.println(noAir.getMax());
+            Serial.println(noAir.getMin());
+            Serial.println(noAirSingle.getMax());
+            Serial.println(noAirSingle.getMin());
+            Serial.println(normal.getMax());
+            Serial.println(normal.getAverage());
+            Serial.println(normal.getMin());
+            Serial.println(noFilterSingle.getMax());
+            Serial.println(noFilterSingle.getMin());
             Serial.println(noFilter.getMax());
             Serial.println(noFilter.getMin());
-
             Serial.println(faultFan1.getMax());
             Serial.println(faultFan1.getMin());
-
-            Serial.println(battery.percent);
-            Serial.println(visor.state);
-            Serial.println(" ");
         }
     }
-    void refreshNoAirLimit()
+    void refresh_noAir()
     {
-        refreshLimits(0);
+        refreshLimits(cond::noAir);
     }
-    void refreshNormalLimit()
+    void refresh_normal()
     {
-        refreshLimits(1);
+        refreshLimits(cond::normal);
     }
-    void refreshNoFilterLimits()
+    void refresh_noFilter()
     {
-        refreshLimits(2);
+        refreshLimits(cond::noFilter);
     }
-    void refreshFaultFan1Limits()
+    void refresh_faultFan1()
     {
-        refreshLimits(3);
+        refreshLimits(cond::faultFan1);
+    }
+    void refresh_noAirSingle()
+    {
+        refreshLimits(cond::noAirSingle);
+    }
+    void refresh_noFilterSingle()
+    {
+        refreshLimits(cond::noFilterSingle);
     }
     void clearAllData()
     {
         nvs_flash_erase();
         nvs_flash_init();
         noAir.clear();
+        noAirSingle.clear();
         normal.clear();
+        noFilterSingle.clear();
         noFilter.clear();
         faultFan1.clear();
+
         Serial.println("All data cleared!");
     }
     void toggleSerialEnable()
@@ -217,29 +266,46 @@ namespace interpretCommand
     }
     void recalculateFromNormal()
     {
+        int P_4 = 39;
+        int P_3 = 29;
+        int P_2 = 26;
+        int P_1 = 18;
+
         int base;
-        int A = 41;
-        int B = 46;
-        int C = 60;
-        int D = 66;
-        StatData newLimits = tachoAnalysis(1000, 20);
-        newLimits.max += 5;
-        newLimits.min -= 5;
-        normal.setLimit(newLimits);
-        putData(newLimits, data, "normalLimits");
+
+        int N_1 = 30;
+        int N_2 = 38;
+        int N_3 = 65;
+        int N_4 = 69;
+        int N_5 = 93;
+        int N_6 = 95;
+
+        StatData newLimits = tachoAnalysis(400, 20);
+
         base = newLimits.average;
 
-        noAir.setMin(normal.getMax() + 1);
-        noAir.setMax(normal.getMax() + 50);
-        noFilter.setMax(base - A);
-        noFilter.setMin(base - B);
-        faultFan1.setMax(base - C);
-        faultFan1.setMin(base - D);
+        noAir.setMax(base + P_4);
+        noAir.setMin(base + P_3);
+        noAirSingle.setMax(base + P_2);
+        noAirSingle.setMin(base + P_1);
 
-        putData(noAir.getStatData(), data, "noAirLimits");
-        putData(normal.getStatData(), data, "normalLimits");
-        putData(noFilter.getStatData(), data, "noFilterLimits");
-        putData(faultFan1.getStatData(), data, "faultFan1Limits");
+        normal.setLimit(newLimits);
+
+        noFilterSingle.setMax(base - N_1);
+        noFilterSingle.setMin(base - N_2);
+        noFilter.setMax(base - N_3);
+        noFilter.setMin(base - N_4);
+        faultFan1.setMax(base - N_5);
+        faultFan1.setMin(base - N_6);
+
+        putData(noAir.getStatData(), data, "noAir");
+        putData(noAirSingle.getStatData(), data, "noAirSingle");
+
+        putData(normal.getStatData(), data, "normal");
+
+        putData(noFilterSingle.getStatData(), data, "noFilterSingle");
+        putData(noFilter.getStatData(), data, "noFilter");
+        putData(faultFan1.getStatData(), data, "faultFan1");
 
         Serial.println("_______________");
         print::limitValue();
@@ -255,13 +321,18 @@ Interpreter printTachoValue("tacho", tachoValue);
 Interpreter printBattery("battery", batteryValue);
 Interpreter printPeriferial("periferial", periferialValue);
 Interpreter printLimits("print limit", limitValue);
-Interpreter printBareLimits("limit", bareLimitValue);
+Interpreter printBareLimits("limit", printNakedLimits);
 
 using namespace interpretCommand;
-Interpreter analyseNoAir("noAir", refreshNoAirLimit);
-Interpreter analyseNormal("normal", refreshNormalLimit);
-Interpreter analysenoFilter("noFilter", refreshNoFilterLimits);
-Interpreter analysefaultFan1("faultFan1", refreshFaultFan1Limits);
+Interpreter analyse_noAir("noAir", refresh_noAir);
+Interpreter analyse_noAirSingle("noAirSingle", refresh_noAirSingle);
+
+Interpreter analyse_normal("normal", refresh_normal);
+
+Interpreter analyse_noFilterSingle("noFilterSingle", refresh_noFilterSingle);
+Interpreter analyse_noFilter("noFilter", refresh_noFilter);
+Interpreter analyse_faultFan1("faultFan1", refresh_faultFan1);
+
 Interpreter clearLimits("clear", clearAllData);
 Interpreter toggleSerial("enable", toggleSerialEnable);
 Interpreter doRecalculation("recalc", recalculateFromNormal);
