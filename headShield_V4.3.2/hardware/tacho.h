@@ -2,6 +2,7 @@
 #include "Arduino.h"
 #include "..\Timer.h"
 #include "..\movingAverage.h"
+
 class Tachometer
 {
 private:
@@ -14,6 +15,7 @@ private:
     int maxMeasure = 3;
     bool lastMeasure[3];
     MovingAverage smooth;
+    int threshold = 0;
 
 public:
     int finalValue = -1;
@@ -31,10 +33,39 @@ public:
     {
         return (a & b) | (b & c) | (a & c);
     }
+    int getAnalog()
+    {
+        return analogRead(analogPin);
+    }
+    void updateThreshold()
+    {
+        int value;
+        int min = 4095;
+        int max = 0;
+
+        int threshold;
+        for (int i = 0; i < 20; i++)
+        {
+            value = getAnalog();
+            if (value > max)
+                max = value;
+            else if (value < min)
+                min = value;
+        }
+        Serial.print("Max: ");
+        Serial.println(max);
+        Serial.print("Min: ");
+        Serial.println(min);
+
+        threshold = (max + min) / 2;
+
+        Serial.print("Threshold: ");
+        Serial.println(threshold);
+    }
     bool getDigital()
     {
         static bool newValue = false;
-        if (analogRead(analogPin) > 0)
+        if (getAnalog() > threshold)
         {
             newValue = true;
         }
@@ -52,9 +83,13 @@ public:
 
     bool doMeasure()
     {
-        do
-        {
+        //int counter_doWhile = 0;
 
+        do
+        {/*
+            counter_doWhile++;
+            if (counter_doWhile > 20)
+                break;*/
             bool lastState = getDigital();
             rollingValue = lastState;
 
@@ -62,9 +97,16 @@ public:
                 timeWhenHighStart = micros();
             else
                 timeWhenLowStart = micros();
-
+            //int counter_while = 0;
             while (getDigital() == lastState)
-            {
+            {/*
+                counter_while++;
+
+                if (counter_while > 300)
+                {
+                    Serial.println("BREAK");
+                    break;
+                }*/
             }
 
             if (lastState)

@@ -198,6 +198,11 @@ void setup()
       break;
   }
 
+  fan.on();
+  delay(1000);
+  tacho.updateThreshold();
+  fan.off();
+
   ENS160.setPWRMode(ENS160_STANDARD_MODE);
   ENS160.setTempAndHum(25.0, 50.0);
 
@@ -310,7 +315,6 @@ void updateTacho()
 {
   if (fan.active())
   {
-
     tacho.getAverage();
   }
 
@@ -556,6 +560,7 @@ void loop()
 {
   //Serial.println("LOOP");
   server.handleClient();
+  //Serial.println(analogRead(tachometerPin));
 
   updateTacho();
   updateBattery();
