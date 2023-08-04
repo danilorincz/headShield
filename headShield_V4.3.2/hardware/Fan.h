@@ -6,6 +6,7 @@ class Fan : public Device
 {
 public:
     Fan(int pin) : Device(pin) {}
+
 };
 
 class FanCondition
@@ -58,6 +59,10 @@ public:
         if (limits.min - offsetMin <= value && value <= limits.max + offsetMax)
             return true;
         return false;
+    }
+    int getRangeSize()
+    {
+        return limits.max - limits.min;
     }
 };
 

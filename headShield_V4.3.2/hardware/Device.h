@@ -5,6 +5,7 @@ class Device
 public:
     int pin;
     bool state;
+    unsigned long timeWhenOn = 0;
 
     Device(int pin) : pin(pin) {}
 
@@ -12,13 +13,27 @@ public:
     {
         pinMode(pin, OUTPUT);
     }
-
+    void turnOn()
+    {
+        digitalWrite(pin, HIGH);
+        timeWhenOn = millis();
+        state = HIGH;
+    }
+    void turnOff()
+    {
+        digitalWrite(pin, LOW);
+        timeWhenOn = -1;
+        state = LOW;
+    }
+    unsigned long getOnTime()
+    {
+        return millis() - timeWhenOn;
+    }
     virtual bool on()
     {
         if (!state)
         {
-            state = HIGH;
-            digitalWrite(pin, state);
+            turnOn();
             return true;
         }
         return false;
@@ -27,16 +42,17 @@ public:
     {
         if (state)
         {
-            state = LOW;
-            digitalWrite(pin, state);
+            turnOff();
             return true;
         }
         return false;
     }
     virtual bool toggle()
     {
-        state = !state;
-        digitalWrite(pin, state);
+        if (state)
+            turnOff();
+        else
+            turnOn();
         return state;
     }
     bool active()
@@ -46,5 +62,6 @@ public:
     void suspend()
     {
         digitalWrite(pin, LOW);
+        timeWhenOn = -1;
     }
 };

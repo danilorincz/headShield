@@ -19,9 +19,9 @@ void handler_getHelmetData()
 
         doc["visorState"] = visor.state;
         doc["IRState"] = headSensor.state;
-        doc["fanLevel"] = fan.state;
+        doc["fanState"] = fan.state;
         doc["lampLevel"] = lamp.level;
-        doc["batteryLevel"] = battery.level;
+        doc["batteryLevel"] = battery.percent;
         doc["audioState"] = audio.state;
         doc["fanRPM"] = fanErrorNumber;
 
@@ -31,12 +31,13 @@ void handler_getHelmetData()
         server.send(200, "application/json", jsonData);
     }
 }
-/*
+
 
 void handler_sensorData()
 {
     server.send_P(200, "text/html", sensorDataPage);
 }
+/*
 void handler_controlPage()
 {
     server.send_P(200, "text/html", controlPage);
@@ -45,7 +46,7 @@ void handler_debugPage()
 {
     server.send_P(200, "text/html", DEBUG_PAGE);
 }
-
+*/
 void handler_getSensorData()
 {
     StaticJsonDocument<200> doc;
@@ -70,6 +71,8 @@ void handler_getSensorData()
 
     server.send(200, "application/json", jsonData);
 }
+
+/*
 void handler_getDebugData()
 {
     StaticJsonDocument<200> doc;
@@ -110,12 +113,13 @@ void serverOn()
     server.on("/", handle_root);
     server.on("/helmetData", handler_helmetData);
     server.on("/getHelmetData", handler_getHelmetData);
-/*
+
     server.on("/sensorData", handler_sensorData);
+    server.on("/getSensorData", handler_getSensorData);
+    /*
     server.on("/control", handler_controlPage);
     server.on("/debugData", handler_debugPage);
 
-    server.on("/getSensorData", handler_getSensorData);
     server.on("/debugdata", handler_getDebugData);
 
     server.on("/setLampLevel", handler_setLampLevel);

@@ -3,7 +3,6 @@
 
 StatData tachoAnalysis(int numberOfMeasurements, int measurementsMultiplier)
 {
-    fan.on();
     int counter = 0;
     int allTimeMax = 0;
     int allTimeMin = 9999;
@@ -20,7 +19,7 @@ StatData tachoAnalysis(int numberOfMeasurements, int measurementsMultiplier)
             if (counter > measurementsMultiplier)
                 break;
 
-            if (counter > 7) // skip the first seven
+            if (counter > 2) // skip the first two
             {
                 dataNow = statisticsNow.getStats();
                 Serial.print("new set of value added: ");
@@ -34,7 +33,6 @@ StatData tachoAnalysis(int numberOfMeasurements, int measurementsMultiplier)
     }
     dataNow.min = allTimeMin;
     dataNow.max = allTimeMax;
-    fan.off();
     return dataNow;
 }
 void refreshLimits(int condition) // {0 -> no air flow} {1 -> normal}  {2 -> no filter} {3 -> fan fault}
@@ -280,7 +278,7 @@ namespace interpretCommand
         int N_5 = 93;
         int N_6 = 95;
 
-        StatData newLimits = tachoAnalysis(400, 20);
+        StatData newLimits = tachoAnalysis(200, 15);
 
         base = newLimits.average;
 

@@ -1,3 +1,43 @@
+/* jól működő:
+Normal
+  MAX: 3621
+  MIN: 3617
+  AVE: 3617
+
+        int P_4 = 39;
+        int P_3 = 29;
+        int P_2 = 26;
+        int P_1 = 18;
+
+        int base;
+
+        int N_1 = 30;
+        int N_2 = 38;
+        int N_3 = 65;
+        int N_4 = 69;
+        int N_5 = 93;
+        int N_6 = 95;
+
+        StatData newLimits = tachoAnalysis(400, 20);
+
+        base = newLimits.average;
+
+        noAir.setMax(base + P_4);
+        noAir.setMin(base + P_3);
+        noAirSingle.setMax(base + P_2);
+        noAirSingle.setMin(base + P_1);
+
+        normal.setLimit(newLimits);
+
+        noFilterSingle.setMax(base - N_1);
+        noFilterSingle.setMin(base - N_2);
+        noFilter.setMax(base - N_3);
+        noFilter.setMin(base - N_4);
+        faultFan1.setMax(base - N_5);
+        faultFan1.setMin(base - N_6);
+
+*/
+
 //? SETTINGS
 bool serialEnabled = false;
 bool soundEnabled = true;
@@ -34,7 +74,7 @@ bool soundEnabled = true;
 #include "FunctionRunner.h"
 #include "stat_data_struct.h"
 #include "sensor_data_struct.h"
-
+#include <algorithm>
 #include "Webpage.h"
 
 //? DATA STORAGE
@@ -59,14 +99,6 @@ bool sensorConnected = false;
 //? FAN
 const int fanPin = 5;
 Fan fan(fanPin);
-FanCondition noAir;
-FanCondition noAirSingle;
-
-FanCondition normal;
-
-FanCondition noFilterSingle;
-FanCondition noFilter;
-FanCondition faultFan1;
 
 //? POWER LED
 const int LEDPin = 19;
@@ -74,8 +106,7 @@ LED lamp(LEDPin);
 
 //? TACHOMETER
 const int tachometerPin = 39;
-Tachometer tacho(tachometerPin, 600);
-cond::conditionNumber fanErrorNumber;
+Tachometer tacho(tachometerPin, 400);
 
 //? BATTERY
 const int batteryPin = 32;
@@ -104,6 +135,21 @@ Piezo piezo(piezoPin, piezoChannel);
 const int audioEnPin = 16;
 Audio audio(audioEnPin);
 
+//? GLOBAL
+std::vector<int> values;
+cond::conditionNumber fanErrorNumber;
+
+FanCondition noAir;
+FanCondition noAirSingle;
+
+FanCondition normal;
+
+FanCondition noFilterSingle;
+FanCondition noFilter;
+FanCondition faultFan1;
+
+bool calibrateCommand = false;
+
 #include "basic.h"
 #include "webInterface.h"
 #include "interpreterCommands.h"
@@ -120,7 +166,7 @@ void setup()
   visor.begin();
   battery.begin();
   tacho.begin();
-
+  Serial.println("SHIT");
   //* RETRIEVE DATA
   restore(noAir, data, "noAir");
   restore(noAirSingle, data, "noAirSingle");
@@ -222,18 +268,29 @@ void touchInputHandler()
   if (touchLeft.singleTap() && !touchRight.getDigital()) //? EMPTY
   {
   }
-  if (multiTouch()) //? EMPTY
+  if (multiTouch()) //? CALIBRATE
   {
-    fan.off();
-    delay(1000);
+    calibrateCommand = true;
     piezo.playStartup();
-    piezo.playStartup();
-    piezo.playStartup();
-    delay(1000);
-    interpretCommand::recalculateFromNormal();
   }
 }
+bool calibrate()
+{
+  if (!fan.state)
+    fan.on();
 
+  if (fan.getOnTime() > 4000)
+  {
+    piezo.playStartup();
+    interpretCommand::recalculateFromNormal();
+    calibrateCommand = false;
+    return true;
+  }
+  else
+  {
+    return false;
+  }
+}
 void updateSensor()
 {
   perkData.temp = BME280.getTemperature();
@@ -260,17 +317,9 @@ void updateTacho()
   accountBattery(tacho.finalValue);
 }
 void accountBattery(int &modifyThis)
-{ /*
-  Serial.print("Before change: ");
-  Serial.print("   ");
-  Serial.println(modifyThis);
-*/
+{
   int offset = map(battery.percent, 100, 0, 0, 10);
   modifyThis -= offset;
-  /*
-  Serial.println("After change: ");
-  Serial.print("   ");
-  Serial.println(modifyThis);*/
 }
 void updateBattery()
 {
@@ -289,64 +338,110 @@ void parseAndAction_tacho()
 {
 
   if (!fan.active())
+  {
+    values.clear();
     return;
+  }
 
-  if (normal.inRange(tacho.finalValue, 15, 3))
+  int value = tacho.finalValue;
+
+  FanCondition copy_noAir = noAir;
+  FanCondition copy_noAirSingle = noAirSingle;
+  FanCondition copy_normal = normal;
+  FanCondition copy_noFilterSingle = noFilterSingle;
+  FanCondition copy_noFilter = noFilter;
+  FanCondition copy_faultFan1 = faultFan1;
+
+  copy_faultFan1.setMax(copy_faultFan1.getMax() + 8);
+  copy_faultFan1.setMin(copy_faultFan1.getMin() - 10);
+
+  copy_noFilterSingle.setMax(copy_noFilterSingle.getMax() + 12);
+  copy_noFilterSingle.setMin(copy_noFilterSingle.getMin() - 10);
+
+  copy_noFilter.setMax(copy_noFilter.getMax() + 15);
+  copy_noFilter.setMin(copy_noFilter.getMin() - 10);
+
+  copy_noAir.setMax(copy_noAir.getMax() + 8);
+  copy_noAir.setMin(copy_noAir.getMin() - 5);
+
+  copy_normal.setMin(copy_normal.getMin() - 15);
+  copy_normal.setMax(copy_normal.getMax() + 8);
+
+  copy_noAirSingle.setMin(copy_normal.getMax() + 1);
+  copy_noAirSingle.setMax(copy_noAirSingle.getMin() + copy_noAirSingle.getRangeSize());
+
+  copy_noAir.setMin(copy_noAirSingle.getMax() + 1);
+  copy_noAir.setMax(copy_noAir.getMin() + 80);
+
+  if (copy_normal.inRange(value, 0, 0)) //* NORMAL
   {
     serialPrintIf("Normál működés, szűrők fent, ventillátorok jók");
-
     fanErrorNumber = cond::normal;
   }
-  else if (noAirSingle.inRange(tacho.finalValue, 10, 3))
+
+  else if (copy_noAirSingle.inRange(value, 0, 0)) //* NO AIR SINGLE
   {
-    serialPrintIf("Egyik szűrőtől nem jön levegő");
+    serialPrintIf("Az egyik szűrőtől nem jön levegő, ezért nincs elég térfogatáram!");
     fanErrorNumber = cond::noAirSingle;
   }
-  else if (noAir.inRange(tacho.finalValue, 10, 60))
+
+  else if (copy_noAir.inRange(value, 0, 0)) //* NO AIR
   {
-    serialPrintIf("Nincs elég térfogatáram! Ellenőrizze a szűrők állapotát!");
+    serialPrintIf("Nem jön levegő a szűrőktől, ezért nincs elég térfogatáram!");
     fanErrorNumber = cond::noAir;
   }
 
-  else if (noFilter.inRange(tacho.finalValue, 5, 10))
+  else if (copy_noFilter.inRange(value, 0, 0)) //* NO FILTER
   {
-    serialPrintIf("Nincs felhelyezve szűrő!");
+    serialPrintIf("Nincs felhelyezve szűrő, vagy valami akadályozza a levegő kiáramlását!");
     fanErrorNumber = cond::noFilter;
   }
-  else if (noFilterSingle.inRange(tacho.finalValue, 8, 3))
+  else if (copy_noFilterSingle.inRange(value, 0, 0)) //* NO FILTER SINGLE
   {
-    serialPrintIf("Egyik oldal befogva, másikon szűrő!");
+    serialPrintIf("Az egyik szűrő nincs felhelyezve, vagy valami akadályozza a levegő kiáramlását!");
     fanErrorNumber = cond::noFilterSingle;
   }
 
-  else if (faultFan1.inRange(tacho.finalValue, 8, 8))
+  else if (copy_faultFan1.inRange(value, 0, 0)) //* FAULT FAN 1
   {
     serialPrintIf("Az egyik ventillátor leállt!");
     fanErrorNumber = cond::faultFan1;
   }
-  else
+  else if (copy_faultFan1.getMin() - 100 < value || value < copy_noAir.getMax() + 100)
   {
     serialPrintIf("Lehetséges hogy valami akadályozza a levegő kiáramlását!");
     fanErrorNumber = cond::other;
   }
-  Serial.print("Tacho final: ");
-  Serial.println(tacho.finalValue);
-  int majority = getMajority(fanErrorNumber);
-  if (majority != cond::normal && majority != -1 && fanErrorNumber != cond::normal)
+  else
   {
-    piezo.playError();
-    for (int i = 0; i < 2; i++)
-    {
+    serialPrintIf("Nincs elég mérés, vagy a térfogatárammérő meghibásodott!");
+  }
 
-      digitalWrite(19, HIGH);
-      delay(40);
-      digitalWrite(19, LOW);
-      delay(40);
+  Serial.print("Tacho final: ");
+  Serial.println(value);
+
+  int majority = getMajority(fanErrorNumber);
+
+  if (majority == -1)
+    return;
+
+  static Timer signalingTimer(3000);
+  if (!isInValues(cond::normal) && fanErrorNumber != cond::normal)
+  {
+    if (signalingTimer.timeElapsedMillis())
+    {
+      piezo.playError();
+      for (int i = 0; i < 2; i++)
+      {
+
+        digitalWrite(19, HIGH);
+        delay(40);
+        digitalWrite(19, LOW);
+        delay(40);
+      }
     }
   }
 }
-
-std::vector<int> values;
 
 int getMajority(int newValue)
 {
@@ -354,9 +449,13 @@ int getMajority(int newValue)
   values.push_back(newValue);
 
   // Limit the size of the vector to the last 5 values
-  if (values.size() > 2)
+  if (values.size() > 4)
   {
     values.erase(values.begin());
+  }
+  else
+  {
+    return -1;
   }
 
   // Check if all values are the same
@@ -371,6 +470,16 @@ int getMajority(int newValue)
 
   // If we reached this point, it means all values are the same
   return values[0];
+}
+
+bool isInValues(int input)
+{
+  // Use std::find to search for the input value in the vector
+  auto it = std::find(values.begin(), values.end(), input);
+
+  // If the iterator returned by std::find is not equal to the end of the vector,
+  // it means the value was found in the vector
+  return it != values.end();
 }
 
 void parseAndAction_battery()
@@ -437,7 +546,7 @@ void parseAndAction_visor()
     break;
   }
 }
-FunctionRunner tachoRunner(parseAndAction_tacho, 3000);
+FunctionRunner tachoRunner(parseAndAction_tacho, 1000);
 FunctionRunner batteryRunner(parseAndAction_battery, 4000);
 FunctionRunner visorRunner(parseAndAction_visor, 100);
 FunctionRunner headSensorRunner(parseAndAction_headSensor, 200);
@@ -445,16 +554,23 @@ FunctionRunner readSensorRunner(updateSensor, 200);
 
 void loop()
 {
+  //Serial.println("LOOP");
   server.handleClient();
 
   updateTacho();
   updateBattery();
   updateHeadSensor();
   updateVisor();
+
+  //Serial.println("1");
   tachoRunner.takeAction();
+  //Serial.println("2");
   batteryRunner.takeAction();
+  //Serial.println("3");
   visorRunner.takeAction();
+  //Serial.println("4");
   headSensorRunner.takeAction();
+  //Serial.println("5");
   readSensorRunner.takeAction();
 
   touchInputHandler();
@@ -485,4 +601,16 @@ void loop()
   sensorConnectRequest();
   sensorDisconnectRequest();
   sensorReconnectingRequest();
+
+  if (calibrateCommand)
+  {
+    if (calibrate())
+    {
+      Serial.println("Sikeres kalibrálás");
+    }
+    else
+    {
+      Serial.println("Még nem megy elég ideje a ventillátor");
+    }
+  }
 }

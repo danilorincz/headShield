@@ -1,6 +1,5 @@
 #pragma once
 
-
 const char *webpageCode = R"rawliteral(
 <!DOCTYPE html>
 <html>
@@ -88,26 +87,21 @@ function setVisorStateText(state) {
   }
 }
 
-    function setFanSpeedText(speed) {
+function setFanSpeedText(speed) 
+{
   var fanSpeedElement = document.getElementById('fanSpeed');
-  switch (speed) {
-    case 0:
+    if (speed==0)
+    {
       fanSpeedElement.innerHTML = "OFF";
       fanSpeedElement.style.backgroundColor = "red";
-      break;
-    case 1:
-      fanSpeedElement.innerHTML = "low";
-      fanSpeedElement.style.backgroundColor = "yellow";
-      break;
-    case 2:
-      fanSpeedElement.innerHTML = "medium";
-      fanSpeedElement.style.backgroundColor = "#FFD700"; // brighter yellow
-      break;
-    case 3:
-      fanSpeedElement.innerHTML = "high";
+    }
+    else
+    {
+      fanSpeedElement.innerHTML = "ON";
       fanSpeedElement.style.backgroundColor = "green";
-      break;
-  }
+    }
+  
+  
 }
 
 function setLampLevelText(level) {
@@ -145,24 +139,18 @@ function setLampLevelText(level) {
 
 function setBatteryLevelText(level) {
             var batteryLevelElement = document.getElementById('batteryLevel');
-            switch (level) {
-                case 0:
-                    batteryLevelElement.innerHTML = "OFF";
+    
+                batteryLevelElement.innerHTML = level + " %";
+                if (level<20)
                     batteryLevelElement.style.backgroundColor = "red";
-                    break;
-                case 1:
-                    batteryLevelElement.innerHTML = "LOW";
+                else if (level<50)
                     batteryLevelElement.style.backgroundColor = "yellow";
-                    break;
-                case 2:
-                    batteryLevelElement.innerHTML = "MEDIUM";
-                    batteryLevelElement.style.backgroundColor = "#FFD700"; // brighter yellow
-                    break;
-                case 3:
-                    batteryLevelElement.innerHTML = "HIGH";
+                else if (level<80)
+                    batteryLevelElement.style.backgroundColor = "#FFD700";
+                else
                     batteryLevelElement.style.backgroundColor = "green";
-                    break;
-            }
+  
+            
         }
 
         function setFanRPMText(speed_rpm) {
@@ -173,16 +161,22 @@ function setBatteryLevelText(level) {
                     statusText = "NOT ENOUGH FLOW";
                     break;
                 case 1: 
-                    statusText = "NORMAL";
+                    statusText = "ON FILTER CLOGGED";
                     break;
                 case 2:
-                    statusText = "NO FILTER";
+                    statusText = "NORMAL";
                     break;
                 case 3:
-                    statusText = "FAN MALFUNCTION";
+                    statusText = "ONE FILTER MISSING";
                     break;
                 case 4:
-                    statusText = "OBSTACLE IN THE OUTLET";
+                    statusText = "BOTH FILTER MISSING";
+                    break;
+                case 5:
+                    statusText = "FAULT FAN";
+                    break;
+                case 6:
+                    statusText = "AIR FLOW ERROR";
                     break;
                 default:
                     statusText = "Invalid speed";
@@ -198,7 +192,7 @@ function refreshData() {
 
             setVisorStateText(data.visorState);
             setIRStateText(data.IRState);
-            setFanSpeedText(data.fanLevel);
+            setFanSpeedText(data.fanState);
             setLampLevelText(data.lampLevel);
             setAudioStateText(data.audioState);
             setBatteryLevelText(data.batteryLevel);
@@ -574,7 +568,6 @@ const char controlPage[] PROGMEM = R"rawliteral(
 </html>
 )rawliteral";
 
-
 const char DEBUG_PAGE[] = R"rawliteral(
 <!DOCTYPE html>
 <html>
@@ -601,4 +594,3 @@ const char DEBUG_PAGE[] = R"rawliteral(
     </body>
 </html>
 )rawliteral";
-
