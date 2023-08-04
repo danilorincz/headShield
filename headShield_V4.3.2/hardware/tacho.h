@@ -27,7 +27,7 @@ public:
     }
     void begin()
     {
-        pinMode(analogPin, INPUT);
+        pinMode(analogPin, INPUT_PULLDOWN);
     }
     bool fastMajority(bool a, bool b, bool c)
     {
@@ -43,7 +43,7 @@ public:
         int min = 4095;
         int max = 0;
 
-        int threshold;
+        //int threshold;
         for (int i = 0; i < 20; i++)
         {
             value = getAnalog();
@@ -65,7 +65,7 @@ public:
     bool getDigital()
     {
         static bool newValue = false;
-        if (getAnalog() > threshold)
+        if (getAnalog() > 0)
         {
             newValue = true;
         }
