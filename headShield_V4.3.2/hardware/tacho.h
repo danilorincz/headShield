@@ -76,6 +76,8 @@ public:
             while (getDigital() == lastState)
             {
                 counter_while++;
+                if (counter_while >= 200)
+                    break;
             }
 
             if (lastState)
@@ -90,17 +92,12 @@ public:
                 returnValue = true;
                 break;
             }
-            if (counter_doWhile > 100)
+            if (counter_doWhile >= 8 || counter_while >= 200)
             {
                 returnValue = false;
                 break;
             }
         }
-
-        Serial.print("Do while: ");
-        Serial.println(counter_doWhile);
-        Serial.print("While: ");
-        Serial.println(counter_while);
 
         return returnValue;
     }

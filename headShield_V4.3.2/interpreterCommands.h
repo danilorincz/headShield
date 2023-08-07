@@ -9,35 +9,35 @@ StatData tachoAnalysis(int numberOfMeasurements, int measurementsMultiplier)
     StatData dataNow;
     Statistics statisticsNow(numberOfMeasurements);
 
-    const unsigned long spinUpTime = 3000;
-    unsigned long spinStart = millis();
+    const unsigned long spinUpTime = 5000;
+
     while (true)
     {
-        if (millis() - spinStart > spinUpTime)
-        {
-            tacho.getAverage();
-        }
+        int newValue = tacho.getAverage();
 
-        if (statisticsNow.addValue(tacho.finalValue))
+        if (fan.getOnTime() > spinUpTime)
         {
-            counter++;
-            if (counter > measurementsMultiplier)
-                break;
+            if (statisticsNow.addValue(newValue))
+            {
+                counter++;
+                if (counter > measurementsMultiplier)
+                    break;
 
-            dataNow = statisticsNow.getStats();
-            Serial.print("new set of value added: ");
-            Serial.println(dataNow.average);
-            if (dataNow.average < allTimeMin)
-                allTimeMin = dataNow.average;
-            if (dataNow.average > allTimeMax)
-                allTimeMax = dataNow.average;
+                dataNow = statisticsNow.getStats();
+                Serial.print("new set of value added: ");
+                Serial.println(dataNow.average);
+                if (dataNow.average < allTimeMin)
+                    allTimeMin = dataNow.average;
+                if (dataNow.average > allTimeMax)
+                    allTimeMax = dataNow.average;
+            }
         }
     }
     dataNow.min = allTimeMin;
     dataNow.max = allTimeMax;
     return dataNow;
 }
-void refreshLimits() // {0 -> no air flow} {1 -> normal}  {2 -> no filter} {3 -> fan fault}
+void refreshNormal()
 {
     StatData oldLimitsClone = normal.getStatData();
     StatData newLimits = tachoAnalysis(400, 20);
@@ -52,10 +52,8 @@ void refreshLimits() // {0 -> no air flow} {1 -> normal}  {2 -> no filter} {3 ->
     {
         putData(newLimits, data, "normal");
         normal.setLimit(newLimits);
-    }
-
-    if (writeToFlash)
         Serial.println("Values changed! (min and max)");
+    }
     else
         Serial.println("Old limits NOT changed to new limits!");
 }
@@ -64,19 +62,11 @@ namespace interpretCommand
 {
     namespace print
     {
-        void printSensorData()
+        void sensorValues()
         {
             perkData.log();
         }
-        void batteryValue()
-        {
-            Serial.print("Percent: ");
-            Serial.println(battery.percent);
-            Serial.print("Voltage: ");
-            Serial.print(battery.voltage);
-            Serial.println(" Volt");
-        }
-        void periferialValue()
+        void inputValues()
         {
             Serial.print("Left touch raw: ");
             Serial.println(touchLeft.getAnalog());
@@ -86,12 +76,17 @@ namespace interpretCommand
             Serial.println(visor.state);
             Serial.print("Head sensor: ");
             Serial.println(headSensor.state);
+            Serial.print("Percent: ");
+            Serial.println(battery.percent);
+            Serial.print("Voltage: ");
+            Serial.print(battery.voltage);
+            Serial.println(" Volt");
         }
         void tachoValue()
         {
             Serial.println(tacho.finalValue);
         }
-        void limitValue()
+        void limitValues()
         {
             Serial.println("Normal");
             Serial.print("  MAX: ");
@@ -101,19 +96,11 @@ namespace interpretCommand
             Serial.print("  AVE: ");
             Serial.println(normal.getAverage());
         }
-        void printNakedLimits()
+        void onTime()
         {
-            Serial.println("Bare limit values (NORMAL");
-
-            Serial.println(normal.getMax());
-            Serial.println(normal.getAverage());
-            Serial.println(normal.getMin());
+            Serial.println(fan.getOnTime());
         }
-    }
 
-    void refresh_normal()
-    {
-        refreshLimits();
     }
 
     void clearAllData()
@@ -133,15 +120,12 @@ namespace interpretCommand
 
 using namespace interpretCommand::print;
 Interpreter printTachoValue("tacho", tachoValue);
-Interpreter printBattery("battery", batteryValue);
-Interpreter printPeriferial("periferial", periferialValue);
-Interpreter printLimits("print limit", limitValue);
-Interpreter printBareLimits("limit", printNakedLimits);
+Interpreter printPeriferial("input", inputValues);
+Interpreter printLimits("limit", limitValues);
 
 using namespace interpretCommand;
-Interpreter analyse_normal("normal", refresh_normal);
-
+Interpreter analyse_normal("normal", refreshNormal);
 Interpreter clearLimits("clear", clearAllData);
-Interpreter toggleSerial("enable", toggleSerialEnable);
-
-Interpreter printSensorValues("print sensor", printSensorData);
+Interpreter toggleSerial("enable serial", toggleSerialEnable);
+Interpreter printSensorValues("sensor", sensorValues);
+Interpreter printFanOnTime("on time", onTime);

@@ -16,17 +16,11 @@ public:
     {
         pinMode(pin, INPUT_PULLUP);
     }
-    bool readAverage()
-    {
-        smooth.add(digitalRead(pin));
-        return smooth.average();
-    }
+
     bool scan()
     {
-        if (readAverage())
-            state = true;
-        else
-            state = false;
+        smooth.addMajority(digitalRead(pin));
+        state = smooth.getMajority();
         return state;
     }
 };

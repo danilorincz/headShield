@@ -22,12 +22,15 @@ public:
     void turnOff()
     {
         digitalWrite(pin, LOW);
-        timeWhenOn = -1;
+        timeWhenOn = 0;
         state = LOW;
     }
     unsigned long getOnTime()
     {
-        return millis() - timeWhenOn;
+        if (timeWhenOn == 0)
+            return 0;
+        else
+            return millis() - timeWhenOn;
     }
     virtual bool on()
     {

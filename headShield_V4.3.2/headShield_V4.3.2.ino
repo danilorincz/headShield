@@ -76,11 +76,11 @@ Battery battery(batteryPin, 300);
 
 //? HEAD SENSOR
 const int infraredPin = 35;
-InfraredSensor headSensor(infraredPin, 5);
+InfraredSensor headSensor(infraredPin, 30);
 
 //? VISOR
 const int reedSwitchPin = 18;
-ReedSwitch visor(reedSwitchPin, 5);
+ReedSwitch visor(reedSwitchPin, 40);
 
 //? TOUCH INPUT
 const int touchRightPin = 33;
@@ -98,9 +98,7 @@ const int audioEnPin = 16;
 Audio audio(audioEnPin);
 
 //? GLOBAL
-FanCondition underNormal;
 FanCondition normal;
-FanCondition overNormal;
 
 cond::conditionNumber fanErrorNumber;
 
@@ -265,27 +263,50 @@ void updateVisor()
 
 void parseAndAction_tacho()
 {
-
   if (!fan.active())
     return;
 
   int value = tacho.finalValue;
 
-  FanCondition copy_normal = normal;
-
-  copy_normal.setMin(copy_normal.getMin() - 15);
-  copy_normal.setMax(copy_normal.getMax() + 8);
-
-  if (copy_normal.inRange(value, 0, 0)) //* NORMAL
-  {
-    serialPrintIf("Normál működés, szűrők fent, ventillátorok jók");
+  if (normal.inRange(value, 15, 12)) //* NORMAL
     fanErrorNumber = cond::normal;
+  else if (normal.getMax() < value && value < normal.getMax() + 100) //* OVER NORMAL
+    fanErrorNumber = cond::overNormal;
+  else if (normal.getMin() - 100 < value && value < normal.getMin()) //* UNDER NORMAL
+    fanErrorNumber = cond::underNormal;
+  else
+    fanErrorNumber = cond::other; //* UNUSUAL
+
+  switch (fanErrorNumber)
+  {
+  case cond::normal:
+    serialPrintIf("NORMAL");
+    break;
+  case cond::underNormal:
+    serialPrintIf("CHECK FILTERS OR FANS");
+    break;
+  case cond::overNormal:
+    serialPrintIf("NOT ENOUGH AIRFLOW");
+    break;
+  case cond::other:
+    serialPrintIf("AIRFLOW SYSTEM MALFUNCTION");
+    break;
   }
 
   Serial.print("Tacho final: ");
   Serial.println(value);
 
+  if (fan.getOnTime() < 5000)
+    return;
+
   static Timer signalingTimer(3000);
+  if (fanErrorNumber != cond::normal)
+  {
+    if (signalingTimer.timeElapsedMillis())
+    {
+      piezo.playFanError();
+    }
+  }
 }
 
 void parseAndAction_battery()
@@ -303,10 +324,11 @@ void parseAndAction_headSensor()
     {
       piezo.playHelmetPutOn();
       serialPrintIf("HEAD SENSOR ON");
-      if (visor.state)
-        fan.on();
       onDone = true;
       offDone = false;
+
+      if (visor.state)
+        fan.on();
     }
     break;
   case 0:
@@ -316,8 +338,8 @@ void parseAndAction_headSensor()
       serialPrintIf("HEAD SENSOR OFF");
       offDone = true;
       onDone = false;
-      if (!visor.state)
-        fan.off();
+
+      fan.off();
     }
     break;
   }
@@ -332,22 +354,23 @@ void parseAndAction_visor()
   case 1:
     if (!onDone)
     {
-      if (headSensor.state)
-        fan.on();
       piezo.playVisorFoldedDown();
       serialPrintIf("VISOR ON");
       onDone = true;
       offDone = false;
+
+      fan.on();
     }
     break;
   case 0:
     if (!offDone)
     {
       piezo.playVisorFoldedUp();
-      fan.off();
       serialPrintIf("VISOR OFF");
       offDone = true;
       onDone = false;
+
+      fan.off();
     }
     break;
   }
@@ -360,7 +383,6 @@ FunctionRunner readSensorRunner(updateSensor, 200);
 
 void loop()
 {
-  //Serial.println("LOOP");
   server.handleClient();
 
   updateTacho();
@@ -368,15 +390,10 @@ void loop()
   updateHeadSensor();
   updateVisor();
 
-  Serial.println("1");
   tachoRunner.takeAction();
-  Serial.println("2");
   batteryRunner.takeAction();
-  Serial.println("3");
   visorRunner.takeAction();
-  Serial.println("4");
   headSensorRunner.takeAction();
-  Serial.println("5");
   readSensorRunner.takeAction();
 
   touchInputHandler();
@@ -390,13 +407,11 @@ void loop()
   printTachoValue.refresh(command);
   printPeriferial.refresh(command);
   printLimits.refresh(command);
-  printBareLimits.refresh(command);
-  printBattery.refresh(command);
+
   printSensorValues.refresh(command);
-
   analyse_normal.refresh(command);
-
   clearLimits.refresh(command);
+  printFanOnTime.refresh(command);
 
   sensorConnectRequest();
   sensorDisconnectRequest();

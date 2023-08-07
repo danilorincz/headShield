@@ -6,30 +6,29 @@ class InfraredSensor
 public:
     int pin;
     bool state;
-     MovingAverage smooth;
-
+    MovingAverage smooth;
 
     InfraredSensor(int pin, int smoothSize)
         : pin(pin),
           smooth(smoothSize) // initialize MovingAverage with a size of 45
     {
     }
-    int read()
+    int readAnalog()
     {
         return analogRead(pin);
     }
-    int readAverage()
+    bool readDigital()
     {
-        smooth.add(read());
-        return smooth.average();
+        if (readAnalog() > 4090)
+            return false;
+        else
+            return true;
     }
+
     bool scan()
     {
-        if (readAverage() != 4095)
-            state = true;
-        else
-            state = false;
-
+        smooth.addMajority(readDigital());
+        state = smooth.getMajority();
         return state;
     }
 };

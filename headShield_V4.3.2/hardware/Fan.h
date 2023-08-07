@@ -6,6 +6,7 @@ class Fan : public Device
 {
 public:
     Fan(int pin) : Device(pin) {}
+
 };
 
 class FanCondition
@@ -71,6 +72,7 @@ namespace cond
     {
         underNormal,
         normal,
-        overNormal
+        overNormal,
+        other
     };
 }
