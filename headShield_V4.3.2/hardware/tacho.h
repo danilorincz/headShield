@@ -15,7 +15,6 @@ private:
     int maxMeasure = 3;
     bool lastMeasure[3];
     MovingAverage smooth;
-    int threshold = 0;
 
 public:
     int finalValue = -1;
@@ -37,31 +36,7 @@ public:
     {
         return analogRead(analogPin);
     }
-    void updateThreshold()
-    {
-        int value;
-        int min = 4095;
-        int max = 0;
 
-        //int threshold;
-        for (int i = 0; i < 20; i++)
-        {
-            value = getAnalog();
-            if (value > max)
-                max = value;
-            else if (value < min)
-                min = value;
-        }
-        Serial.print("Max: ");
-        Serial.println(max);
-        Serial.print("Min: ");
-        Serial.println(min);
-
-        threshold = (max + min) / 2;
-
-        Serial.print("Threshold: ");
-        Serial.println(threshold);
-    }
     bool getDigital()
     {
         static bool newValue = false;
@@ -83,13 +58,14 @@ public:
 
     bool doMeasure()
     {
-        //int counter_doWhile = 0;
+        int counter_doWhile = 0;
+        int counter_while = 0;
+        bool returnValue = false;
 
-        do
-        {/*
+        while (true)
+        {
             counter_doWhile++;
-            if (counter_doWhile > 20)
-                break;*/
+
             bool lastState = getDigital();
             rollingValue = lastState;
 
@@ -97,16 +73,9 @@ public:
                 timeWhenHighStart = micros();
             else
                 timeWhenLowStart = micros();
-            //int counter_while = 0;
             while (getDigital() == lastState)
-            {/*
+            {
                 counter_while++;
-
-                if (counter_while > 300)
-                {
-                    Serial.println("BREAK");
-                    break;
-                }*/
             }
 
             if (lastState)
@@ -116,14 +85,32 @@ public:
 
             dutyCycle = timeHigh + timeLow;
 
-        } while (abs(timeHigh - timeLow) > 0.15 * dutyCycle || dutyCycle < 3500); // change this value as needed
-        return true;
+            if (abs(timeHigh - timeLow) < 0.15 * dutyCycle && dutyCycle > 3500) //* GOOD
+            {
+                returnValue = true;
+                break;
+            }
+            if (counter_doWhile > 100)
+            {
+                returnValue = false;
+                break;
+            }
+        }
+
+        Serial.print("Do while: ");
+        Serial.println(counter_doWhile);
+        Serial.print("While: ");
+        Serial.println(counter_while);
+
+        return returnValue;
     }
 
     int getAverage()
     {
         if (doMeasure())
             smooth.add(dutyCycle);
+        else
+            Serial.println("Measurement failed");
         finalValue = smooth.average();
         return finalValue;
     }

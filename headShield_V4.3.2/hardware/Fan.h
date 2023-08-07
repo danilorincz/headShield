@@ -6,7 +6,6 @@ class Fan : public Device
 {
 public:
     Fan(int pin) : Device(pin) {}
-
 };
 
 class FanCondition
@@ -68,17 +67,10 @@ public:
 
 namespace cond
 {
-
     enum conditionNumber
     {
-        noAir,
-        noAirSingle,
-
+        underNormal,
         normal,
-
-        noFilterSingle,
-        noFilter,
-        faultFan1,
-        other
+        overNormal
     };
 }
