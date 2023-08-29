@@ -85,16 +85,16 @@ public:
             else
                 timeLow = micros() - timeWhenLowStart;
 
-            dutyCycle = timeHigh + timeLow;
-
-            if (abs(timeHigh - timeLow) < 0.15 * dutyCycle && dutyCycle > 3500) //* GOOD
-            {
-                returnValue = true;
-                break;
-            }
             if (counter_doWhile >= 8 || counter_while >= 200)
             {
                 returnValue = false;
+                break;
+            }
+            
+            dutyCycle = timeHigh + timeLow;
+            if (abs(timeHigh - timeLow) < 0.15 * dutyCycle && dutyCycle > 3500) //* GOOD
+            {
+                returnValue = true;
                 break;
             }
         }

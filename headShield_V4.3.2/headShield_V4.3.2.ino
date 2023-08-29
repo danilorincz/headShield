@@ -1,5 +1,3 @@
-
-
 //? SETTINGS
 bool serialEnabled = false;
 bool soundEnabled = true;
@@ -99,7 +97,6 @@ Audio audio(audioEnPin);
 
 //? GLOBAL
 FanCondition normal;
-
 cond::conditionNumber fanErrorNumber;
 
 #include "basic.h"
@@ -120,24 +117,19 @@ void setup()
   tacho.begin();
 
   //* RETRIEVE DATA
-
   restore(normal, data, "normal");
 
   //* WIFI
-  /*
-  WiFi.disconnect();
-  WiFi.mode(WIFI_OFF);*/
   WiFi.mode(WIFI_AP);
   WiFi.softAPConfig(local_ip, local_ip, subnet);
   WiFi.softAP(ssid, password);
-
   serverOn();
   server.begin();
 
-  //* BME280
+  //* SENSOR
   BME280.reset();
   connectCommand = true;
-  static Timer connection(3000);
+  Timer connection(3000);
   while (!connection.timeElapsedMillis())
   {
     if (sensorConnectRequest())
@@ -147,6 +139,7 @@ void setup()
   ENS160.setPWRMode(ENS160_STANDARD_MODE);
   ENS160.setTempAndHum(25.0, 50.0);
 
+  //* start up sound
   piezo.playStartup();
 }
 
@@ -293,9 +286,6 @@ void parseAndAction_tacho()
     break;
   }
 
-  Serial.print("Tacho final: ");
-  Serial.println(value);
-
   if (fan.getOnTime() < 5000)
     return;
 
@@ -375,6 +365,7 @@ void parseAndAction_visor()
     break;
   }
 }
+
 FunctionRunner tachoRunner(parseAndAction_tacho, 1000);
 FunctionRunner batteryRunner(parseAndAction_battery, 4000);
 FunctionRunner visorRunner(parseAndAction_visor, 100);
@@ -384,6 +375,7 @@ FunctionRunner readSensorRunner(updateSensor, 200);
 void loop()
 {
   server.handleClient();
+  touchInputHandler();
 
   updateTacho();
   updateBattery();
@@ -396,7 +388,9 @@ void loop()
   headSensorRunner.takeAction();
   readSensorRunner.takeAction();
 
-  touchInputHandler();
+  sensorConnectRequest();
+  sensorDisconnectRequest();
+  sensorReconnectingRequest();
 
   using namespace interpreter;
 
@@ -412,8 +406,4 @@ void loop()
   analyse_normal.refresh(command);
   clearLimits.refresh(command);
   printFanOnTime.refresh(command);
-
-  sensorConnectRequest();
-  sensorDisconnectRequest();
-  sensorReconnectingRequest();
 }

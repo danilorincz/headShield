@@ -1,2 +1,0 @@
-- Mennyi ideig kell mennie a ventillátornak hogy stabilizálódjon a fordulatszám mérés eredménye? -> spinUpTime értékét keressük
-- Hányszor fut le a do while ciklus a tacho class-ban? -> counter_doWhile értékét keressük
