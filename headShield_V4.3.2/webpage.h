@@ -100,7 +100,7 @@ const char *webpageCode = R"=====(
                     break;
                 case 1:
                     stateText.innerText = "Filter/Fan Error";
-                    stateText.style.backgroundColor = "red";
+                    stateText.style.backgroundColor = "yellow";
                     stateText.style.color = "white";
                     break;
                 case 2:
@@ -110,7 +110,7 @@ const char *webpageCode = R"=====(
                     break;
                 case 3:
                     stateText.innerText = "Airflow Error";
-                    stateText.style.backgroundColor = "yellow";
+                    stateText.style.backgroundColor = "red";
                     stateText.style.color = "black";
                     break;
                 case 4:
