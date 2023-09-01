@@ -24,6 +24,12 @@ const char *webpageCode = R"=====(
         border-radius: 12px;
         font-size: 1.5em;
     }
+    #AQI {
+    display: inline-block;
+    padding: 4px 12px;
+    border-radius: 12px;
+    font-size: 1.5em;
+    }
     .battery {
         width: 50px;
         height: 20px;
@@ -64,18 +70,19 @@ const char *webpageCode = R"=====(
     <p id="batteryPercent"></p>
 </div>
 
+
+<div class="card">
+    <h2>Outside Air Quality</h2>
+    <p>Air Quality Index: <span id="AQI"></span></p>
+    <p id="TVOC">TVOC: </p>
+    <p id="ECO2">ECO2: </p>
+</div>
+
 <div class="card">
     <h2>Enviroment</h2>
     <p id="temp">Temperature: </p>
     <p id="press">Pressure: </p>
     <p id="humi">Humidity: </p>
-</div>
-
-<div class="card">
-    <h2>Air Quality</h2>
-    <p id="AQI">AQI: </p>
-    <p id="TVOC">TVOC: </p>
-    <p id="ECO2">ECO2: </p>
 </div>
 
 <script>
@@ -130,12 +137,42 @@ const char *webpageCode = R"=====(
                 batteryLevel.style.backgroundColor = 'red';
             }
 
-
+        let AQIElement = document.getElementById('AQI');
+        switch (data.AQI) {
+            case 1:
+                AQIElement.innerText = "Excelent";
+                AQIElement.style.backgroundColor = "blue";
+                AQIElement.style.color = "white";
+                break;
+            case 2:
+                AQIElement.innerText = "Good";
+                AQIElement.style.backgroundColor = "green";
+                AQIElement.style.color = "white";
+                break;
+            case 3:
+                AQIElement.innerText = "Moderate";
+                AQIElement.style.backgroundColor = "yellow";
+                AQIElement.style.color = "black";
+                break;
+            case 4:
+                AQIElement.innerText = "Poor";
+                AQIElement.style.backgroundColor = "#DAA520"; // darker yellow
+                AQIElement.style.color = "white";
+                break;
+            case 5:
+                AQIElement.innerText = "Unhealthy";
+                AQIElement.style.backgroundColor = "red";
+                AQIElement.style.color = "white";
+                break;
+            default:
+                AQIElement.innerText = "Unknown";
+                AQIElement.style.backgroundColor = "gray";
+                AQIElement.style.color = "white";
+        }
             // Updating Other Data
             document.getElementById('temp').innerText = `Temperature: ${data.temp} Celsius`;
             document.getElementById('press').innerText = `Pressure: ${data.press} Pa`;
             document.getElementById('humi').innerText = `Humidity: ${data.humi} %`;
-            document.getElementById('AQI').innerText = `AQI: ${data.AQI}`;
             document.getElementById('TVOC').innerText = `TVOC: ${data.TVOC} ppb`;
             document.getElementById('ECO2').innerText = `ECO2: ${data.ECO2} ppm`;
         });
