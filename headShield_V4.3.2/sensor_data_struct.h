@@ -4,9 +4,9 @@ class SensorData
 public:
   // BMS280
   bool initializeBME280 = false;
-  float temp;
-  float press;
-  float humi;
+  int temp;
+  int press;
+  int humi;
   // ENS160
   bool initializeENS160 = false;
   uint8_t status;

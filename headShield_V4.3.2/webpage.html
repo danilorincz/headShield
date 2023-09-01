@@ -1,0 +1,54 @@
+<html>
+<head>
+  <title>Premet Powered Air Purifying Respirator</title>
+  <style>
+    body {
+      font-family: Arial, sans-serif;
+    }
+    .data-group {
+      border: 1px solid #ccc;
+      margin: 15px;
+      padding: 10px;
+      border-radius: 5px;
+    }
+    .data-group h2 {
+      margin-top: 0;
+    }
+  </style>
+</head>
+<body>
+
+  <h1>Premet Powered Air Purifying Respirator</h1>
+
+  <div id="stateAndBattery" class="data-group">
+    <h2>State and Battery</h2>
+    <p id="state"></p>
+    <p id="battery"></p>
+  </div>
+
+  <div id="bms280Data" class="data-group">
+    <h2>BMS280 Data</h2>
+    <p id="temp"></p>
+    <p id="press"></p>
+    <p id="humi"></p>
+  </div>
+
+  <div id="ens160Data" class="data-group">
+    <h2>ENS160 Data</h2>
+    <p id="AQI"></p>
+    <p id="TVOC"></p>
+    <p id="ECO2"></p>
+  </div>
+
+  <script>
+    function updateData() {
+      // Fetch data and update the fields
+    }
+
+    // Call updateData function initially and then every 1 second
+    updateData();
+    setInterval(updateData, 1000);
+  </script>
+
+</body>
+</html>
