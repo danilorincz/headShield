@@ -48,7 +48,7 @@ IPAddress gateway(192, 168, 1, 1);
 IPAddress subnet(255, 255, 255, 0);
 WebServer server(80);
 
-//?  SENSOR
+//? SENSOR
 SensorData perkData;
 #define SEA_LEVEL_PRESSURE 1015.0f
 DFRobot_ENS160_I2C ENS160(&Wire, 0x53);
@@ -330,6 +330,7 @@ void parseAndAction_headSensor()
       onDone = false;
 
       fan.off();
+      lamp.off(); //! CHECK
     }
     break;
   }

@@ -21,7 +21,7 @@ bool sensorConnectRequest()
   static Timer connectingSensorMax(3000);
   if (connectCommand)
   {
-    if (!connectingSensorMax.timeElapsedMillis()) // itt még nézi hogy van-e szenzor
+    if (!connectingSensorMax.timeElapsedMillis()) // looking for connection until time passed
     {
       static bool BME_ok = false;
       static bool ENS_ok = false;
@@ -41,7 +41,7 @@ bool sensorConnectRequest()
         return true;
       }
     }
-    else // letelt az ido
+    else // time has passed
     {
       connectCommand = false;
     }
