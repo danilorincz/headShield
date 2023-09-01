@@ -70,6 +70,7 @@ namespace cond
 {
     enum conditionNumber
     {
+        off,
         underNormal,
         normal,
         overNormal,

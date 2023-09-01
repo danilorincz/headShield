@@ -244,6 +244,8 @@ void accountBattery(int &modifyThis)
 void updateBattery()
 {
   battery.getPercent();
+  if (battery.percent > 100)
+    battery.percent = 100;
 }
 void updateHeadSensor()
 {
@@ -257,7 +259,10 @@ void updateVisor()
 void parseAndAction_tacho()
 {
   if (!fan.active())
+  {
+    fanErrorNumber = cond::off;
     return;
+  }
 
   int value = tacho.finalValue;
 

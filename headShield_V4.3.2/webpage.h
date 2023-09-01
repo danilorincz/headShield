@@ -15,6 +15,12 @@ const char *webpageCode = R"=====(
         h1 {
             text-align: center;
         }
+        #stateText {
+            display: inline-block;
+            padding: 4px 12px;
+            border-radius: 12px;
+            font-size: 1.5em;
+        }
     </style>
 </head>
 <body>
@@ -23,12 +29,12 @@ const char *webpageCode = R"=====(
 
 <div class="card">
     <h2>System</h2>
-    <p id="state">State: </p>
+    <p id="state">State: <span id="stateText"></span></p>
     <p id="battery">Battery: </p>
 </div>
 
 <div class="card">
-    <h2>Enviromental</h2>
+    <h2>Enviroment</h2>
     <p id="temp">Temperature: </p>
     <p id="press">Pressure: </p>
     <p id="humi">Humidity: </p>
@@ -46,14 +52,40 @@ const char *webpageCode = R"=====(
         fetch('/helmetData')
         .then(response => response.json())
         .then(data => {
-            document.getElementById('state').innerText = "State: " + data.state;
-            document.getElementById('battery').innerText = "Battery: " + data.battery + "%";
-            document.getElementById('temp').innerText = "Temperature: " + data.temp + " Celsius";
-            document.getElementById('press').innerText = "Pressure: " + data.press + " Pa";
-            document.getElementById('humi').innerText = "Humidity: " + data.humi + "%";
-            document.getElementById('AQI').innerText = "AQI: " + data.AQI;
-            document.getElementById('TVOC').innerText = "TVOC: " + data.TVOC + " ppb";
-            document.getElementById('ECO2').innerText = "ECO2: " + data.ECO2 + " ppm";
+            // ... Existing Code ...
+
+            let stateText = document.getElementById('stateText');
+            switch (data.state) {
+                case 0:
+                    stateText.innerText = "OFF";
+                    stateText.style.backgroundColor = "black";
+                    stateText.style.color = "white";
+                    break;
+                case 1:
+                    stateText.innerText = "Filter/Fan Error";
+                    stateText.style.backgroundColor = "red";
+                    stateText.style.color = "white";
+                    break;
+                case 2:
+                    stateText.innerText = "Normal";
+                    stateText.style.backgroundColor = "green";
+                    stateText.style.color = "white";
+                    break;
+                case 3:
+                    stateText.innerText = "Airflow Error";
+                    stateText.style.backgroundColor = "yellow";
+                    stateText.style.color = "black";
+                    break;
+                case 4:
+                    stateText.innerText = "Malfunction";
+                    stateText.style.backgroundColor = "purple";
+                    stateText.style.color = "white";
+                    break;
+                default:
+                    stateText.innerText = "Unknown";
+                    stateText.style.backgroundColor = "gray";
+                    stateText.style.color = "white";
+            }
         });
     }
 
