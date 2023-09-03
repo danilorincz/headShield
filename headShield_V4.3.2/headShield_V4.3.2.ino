@@ -37,6 +37,8 @@ bool soundEnabled = true;
 #include <algorithm>
 #include "Webpage.h"
 
+#include "onTimeTracker.h"
+
 //? DATA STORAGE
 Preferences data;
 
@@ -59,6 +61,7 @@ bool sensorConnected = false;
 //? FAN
 const int fanPin = 5;
 Fan fan(fanPin);
+OnTimeTracker fanTracker(600, 4000);
 
 //? POWER LED
 const int LEDPin = 19;
@@ -115,6 +118,7 @@ void setup()
   visor.begin();
   battery.begin();
   tacho.begin();
+  fanTracker.begin();
 
   //* RETRIEVE DATA
   restore(normal, data, "normal");
@@ -291,7 +295,7 @@ void parseAndAction_tacho()
     break;
   }
 
-  if (fan.getOnTime() < 5000)
+  if (fan.getCurrentSessionOn() < 5000)
     return;
 
   static Timer signalingTimer(3000);
@@ -380,6 +384,8 @@ FunctionRunner readSensorRunner(updateSensor, 200);
 
 void loop()
 {
+  fanTracker.update(fan.state);
+
   server.handleClient();
   touchInputHandler();
 
@@ -412,4 +418,5 @@ void loop()
   analyse_normal.refresh(command);
   clearLimits.refresh(command);
   printFanOnTime.refresh(command);
+
 }

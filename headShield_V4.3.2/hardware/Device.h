@@ -25,7 +25,7 @@ public:
         timeWhenOn = 0;
         state = LOW;
     }
-    unsigned long getOnTime()
+    unsigned long getCurrentSessionOn()
     {
         if (timeWhenOn == 0)
             return 0;

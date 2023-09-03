@@ -3,15 +3,15 @@
 Preferences data;
 #define FAN_PIN 2
 unsigned long fanOnTime = 0;
-unsigned long fanTurnedOnTime = 0;               // stores the time the fan was last turned on
-const unsigned long writeInterval = 10;          // write every 10 seconds
-const unsigned long maxWritesPerLocation = 1000; // writes per location
+unsigned long fanTurnedOnTime = 0;
+const unsigned long writeInterval = 10;
+const unsigned long maxWritesPerLocation = 1000;
 unsigned long writeCount = 0;
 int locationIndex = 0;
 unsigned long lastWriteTime = 0;
 bool fanWasOn = false;
 bool fanIsOn = false;
-String serialInput;  // Stores incoming Serial data
+String serialInput;
 void setup()
 {
     Serial.begin(115200);
@@ -25,14 +25,9 @@ void setup()
 
 void printLatestFanOnTime()
 {
-    // Get the latest location index and write count
     int latestLocationIndex = data.getUInt("locationIndex", 0);
     unsigned long latestWriteCount = data.getUInt("writeCount", 0);
-
-    // Generate the key for the latest fanOnTime
     String locationKey = String("fanOnTime") + String(latestLocationIndex);
-
-    // Retrieve and print the latest fanOnTime
     unsigned long latestFanOnTime = data.getULong(locationKey.c_str(), 0);
     Serial.print("Latest fanOnTime from flash memory: ");
     Serial.println(latestFanOnTime);
@@ -55,6 +50,42 @@ void writeFanOnTimeToFlash()
 unsigned long logTime = 0;
 void loop()
 {
+    if (fanIsOn)
+    {
+        if (fanTurnedOnTime == 0)
+        {
+            fanTurnedOnTime = millis();
+        }
+        fanOnTime += millis() - fanTurnedOnTime;
+        fanTurnedOnTime = millis();
+
+        if (millis() - lastWriteTime > writeInterval * 1000UL)
+        {
+            writeFanOnTimeToFlash();
+        }
+    }
+    else if (fanWasOn)
+    {
+        fanOnTime += millis() - fanTurnedOnTime;
+        writeFanOnTimeToFlash();
+        fanTurnedOnTime = 0;
+    }
+    else
+    {
+        fanTurnedOnTime = 0;
+    }
+
+    fanWasOn = fanIsOn;
+
+    if (millis() - logTime > 1000)
+    {
+        printLatestFanOnTime();
+        logTime = millis();
+    }
+}
+void serailInputRead()
+{
+
     while (Serial.available() > 0)
     {
         char incomingByte = Serial.read();
@@ -74,38 +105,5 @@ void loop()
         {
             serialInput += incomingByte;
         }
-    }
-    if (fanIsOn)
-    {
-        if (fanTurnedOnTime == 0)
-        {
-            fanTurnedOnTime = millis();
-        }
-        fanOnTime += millis() - fanTurnedOnTime;
-        fanTurnedOnTime = millis();
-
-        if (millis() - lastWriteTime > writeInterval * 1000UL)
-        {
-            writeFanOnTimeToFlash();
-        }
-    }
-    else if (fanWasOn)
-    {
-        // The fan has just been turned off
-        fanOnTime += millis() - fanTurnedOnTime;
-        writeFanOnTimeToFlash();
-        fanTurnedOnTime = 0;
-    }
-    else
-    {
-        fanTurnedOnTime = 0;
-    }
-
-    fanWasOn = fanIsOn;
-
-    if (millis() - logTime > 1000)
-    {
-        printLatestFanOnTime();
-        logTime = millis();
     }
 }

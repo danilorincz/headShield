@@ -62,6 +62,10 @@ namespace interpretCommand
 {
     namespace print
     {
+        void fanOnTime()
+        {
+            fanTracker.printLatestOnTime();
+        }
         void sensorValues()
         {
             perkData.log();
@@ -122,10 +126,10 @@ using namespace interpretCommand::print;
 Interpreter printTachoValue("tacho", tachoValue);
 Interpreter printPeriferial("input", inputValues);
 Interpreter printLimits("limit", limitValues);
+Interpreter printFanOnTime("fan on time", fanOnTime);
 
 using namespace interpretCommand;
 Interpreter analyse_normal("normal", refreshNormal);
 Interpreter clearLimits("clear", clearAllData);
 Interpreter toggleSerial("enable serial", toggleSerialEnable);
 Interpreter printSensorValues("sensor", sensorValues);
-Interpreter printFanOnTime("on time", onTime);
