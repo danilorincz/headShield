@@ -61,7 +61,7 @@ bool sensorConnected = false;
 //? FAN
 const int fanPin = 5;
 Fan fan(fanPin);
-OnTimeTracker fanTracker(600, 4000);
+OnTimeTracker fanTracker(5, 4000);
 
 //? POWER LED
 const int LEDPin = 19;

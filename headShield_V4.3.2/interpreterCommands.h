@@ -15,7 +15,7 @@ StatData tachoAnalysis(int numberOfMeasurements, int measurementsMultiplier)
     {
         int newValue = tacho.getAverage();
 
-        if (fan.getOnTime() > spinUpTime)
+        if (fan.getCurrentSessionOn() > spinUpTime)
         {
             if (statisticsNow.addValue(newValue))
             {
@@ -100,10 +100,6 @@ namespace interpretCommand
             Serial.print("  AVE: ");
             Serial.println(normal.getAverage());
         }
-        void onTime()
-        {
-            Serial.println(fan.getOnTime());
-        }
 
     }
 
@@ -126,7 +122,7 @@ using namespace interpretCommand::print;
 Interpreter printTachoValue("tacho", tachoValue);
 Interpreter printPeriferial("input", inputValues);
 Interpreter printLimits("limit", limitValues);
-Interpreter printFanOnTime("fan on time", fanOnTime);
+Interpreter printFanOnTime("onTime", fanOnTime);
 
 using namespace interpretCommand;
 Interpreter analyse_normal("normal", refreshNormal);
