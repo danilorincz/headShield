@@ -34,16 +34,16 @@ public:
         accumulatedOnTime = data.getULong(locKey.c_str(), 0);
     }
 
-    unsigned long getAccumulatedOnTime()
+    unsigned long get_timeOn()
     {
         return accumulatedOnTime;
     }
 
-    unsigned long getOnTimeSinceLastSave()
+    unsigned long get_latestSavedOnTime()
     {
-        return accumulatedOnTime - lastSavedOnTime;
+        String locKey = String("aOnT") + String(memIdx);
+        return data.getULong(locKey.c_str(), 0);
     }
-
     void setSaveInterval(unsigned long newInterval)
     {
         savePeriodTime = newInterval;
@@ -65,7 +65,7 @@ public:
         {
             memIdx++;
             String locKey = String("aOnT") + String(memIdx);
-            unsigned long latestOnTime = getLatestOnTime();
+            unsigned long latestOnTime = get_latestSavedOnTime();
             data.putULong(locKey.c_str(), accumulatedOnTime + latestOnTime);
             data.putUInt("mIdx", memIdx);
             isUpdated = false;
@@ -77,12 +77,6 @@ public:
         }
         Serial.println("stopped by 3.");
         return false;
-    }
-
-    unsigned long getLatestOnTime()
-    {
-        String locKey = String("aOnT") + String(memIdx);
-        return data.getULong(locKey.c_str(), 0);
     }
 
     bool clearLatestData()
@@ -98,7 +92,7 @@ public:
         else
             return false;
     }
-    float estimateMemoryWear()
+    float get_memoryWear()
     {
         const unsigned long maxWriteEraseCycles = 100000; // Typical for ESP32
         unsigned long totalWrites = memIdx;               // Assuming each increment of memIdx corresponds to a write

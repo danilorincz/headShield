@@ -1,8 +1,8 @@
 //* Automatikusan működő html_to_string.py létrehozása
 
 // 1_Programozás
-    // szűrő szűrő idő számítás
-        // meghatározni az optimális frissítési időt
+    // szűrő idő számítás
+        //* meghatározni az optimális frissítési időt
         //* algorítmust írni a memóriakezeléshez
         //* szűrő idő osztály létrehozni
     // figyelmeztető ciklus

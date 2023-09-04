@@ -64,11 +64,11 @@ namespace interpretCommand
     {
         void filterOnTime()
         {
-            Serial.println(filterTracker.getLatestOnTime());
+            Serial.println(filterTracker.get_timeOn());
         }
         void memoryWear()
         {
-            Serial.println(filterTracker.estimateMemoryWear());
+            Serial.println(filterTracker.get_memoryWear());
         }
         void sensorValues()
         {

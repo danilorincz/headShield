@@ -68,6 +68,7 @@ const char* webpageCode = R"=====(
         <div id=\"batteryLevel\" class=\"battery-level\"></div>
       </div>
       <p id=\"batteryPercent\"></p>
+      
     </div>
 
     <div class=\"card\">
@@ -184,55 +185,15 @@ const char* webpageCode = R"=====(
             document.getElementById(
               \"ECO2\"
             ).innerText = `ECO2: ${data.ECO2} ppm`;
+            document.getElementById(
+              \"filterTime\"
+            ).innerText = `Filter time: ${data.filterTime}`;
           });
       }
 
       // Fetch the data every 2 seconds
       setInterval(fetchData, 2000);
     </script>
-  </body>
-</html>
-)=====\"; const char *webpageCode = R\"=====(
-<!DOCTYPE html>
-<html>
-  <head>
-    <title>Documentation Dummy Page</title>
-    <style>
-      /* Your existing CSS here */
-      h1 {
-        text-align: center;
-      }
-      .state,
-      .aqi {
-        display: inline-block;
-        padding: 4px 12px;
-        border-radius: 12px;
-        font-size: 1.5em;
-        margin: 5px;
-      }
-    </style>
-  </head>
-  <body>
-    <h1>State Values</h1>
-    <p class=\"state\" style=\"background-color: black; color: white\">OFF</p>
-    <p class=\"state\" style=\"background-color: red; color: white\">
-      Filter/Fan Error
-    </p>
-    <p class=\"state\" style=\"background-color: green; color: white\">Normal</p>
-    <p class=\"state\" style=\"background-color: yellow; color: black\">
-      Airflow Error
-    </p>
-    <p class=\"state\" style=\"background-color: purple; color: white\">
-      Malfunction
-    </p>
-    <p class=\"state\" style=\"background-color: gray; color: white\">Unknown</p>
-
-    <h1>AQI Values</h1>
-    <p class=\"aqi\" style=\"background-color: blue; color: white\">Excellent</p>
-    <p class=\"aqi\" style=\"background-color: green; color: white\">Good</p>
-    <p class=\"aqi\" style=\"background-color: yellow; color: black\">Moderate</p>
-    <p class=\"aqi\" style=\"background-color: darkorange; color: white\">Poor</p>
-    <p class=\"aqi\" style=\"background-color: red; color: white\">Unhealthy</p>
   </body>
 </html>
 )=====";
