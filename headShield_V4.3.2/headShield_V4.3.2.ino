@@ -37,7 +37,7 @@ bool soundEnabled = true;
 #include <algorithm>
 #include "Webpage.h"
 
-#include "onTimeTracker.h"
+//#include "onTimeTracker.h"
 
 //? DATA STORAGE
 Preferences data;
@@ -64,7 +64,7 @@ Fan fan(fanPin);
 
 unsigned long autoUpdateFilterTime = 10 * 60 * 1000;
 unsigned long saveMaxPeriodTime = 4 * 60 * 1000;
-OnTimeTracker filterTracker(saveMaxPeriodTime);
+//OnTimeTracker filterTracker(saveMaxPeriodTime);
 
 //? POWER LED
 const int LEDPin = 19;
@@ -121,7 +121,7 @@ void setup()
   visor.begin();
   battery.begin();
   tacho.begin();
-  filterTracker.begin();
+  //filterTracker.begin();
   //* RETRIEVE DATA
   restore(normal, data, "normal");
 
@@ -342,7 +342,7 @@ void parseAndAction_headSensor()
       fan.off();
       lamp.off(); //! CHECK
 
-      filterTracker.save();
+      //filterTracker.save();
     }
     break;
   }
@@ -385,12 +385,10 @@ FunctionRunner visorRunner(parseAndAction_visor, 100);
 FunctionRunner headSensorRunner(parseAndAction_headSensor, 200);
 FunctionRunner readSensorRunner(updateSensor, 200);
 
-
-
 unsigned long previousOnTime = 0;
 Timer printFilterLatestOnTime(1000);
 void loop()
-{
+{ /*
   filterTracker.update(fan.state);
 
   if (filterTracker.get_timeOn() - previousOnTime > autoUpdateFilterTime)
@@ -398,9 +396,10 @@ void loop()
     filterTracker.save();
     previousOnTime = filterTracker.get_timeOn();
   }
+  
   if (printFilterLatestOnTime.timeElapsedMillis())
     Serial.println(millisToTimeString(filterTracker.get_timeOn()));
-
+*/
   server.handleClient();
   touchInputHandler();
 
@@ -431,8 +430,8 @@ void loop()
   printSensorValues.refresh(command);
   analyse_normal.refresh(command);
   clearLimits.refresh(command);
-
+  /*
   printFilterTime.refresh(command);
   toggleFan.refresh(command);
-  printMemoryWear.refresh(command);
+  printMemoryWear.refresh(command);*/
 }

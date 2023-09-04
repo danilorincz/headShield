@@ -61,15 +61,15 @@ void refreshNormal()
 namespace interpretCommand
 {
     namespace print
-    {
+    {/*
         void filterOnTime()
         {
-            Serial.println(filterTracker.get_timeOn());
+            //Serial.println(filterTracker.get_timeOn());
         }
         void memoryWear()
         {
-            Serial.println(filterTracker.get_memoryWear());
-        }
+            //Serial.println(filterTracker.get_memoryWear());
+        }*/
         void sensorValues()
         {
             perkData.log();
@@ -133,9 +133,9 @@ using namespace interpretCommand::print;
 Interpreter printTachoValue("tacho", tachoValue);
 Interpreter printPeriferial("input", inputValues);
 Interpreter printLimits("limit", limitValues);
-
+/*
 Interpreter printFilterTime("filter", filterOnTime);
-Interpreter printMemoryWear("wear", memoryWear);
+Interpreter printMemoryWear("wear", memoryWear);*/
 
 using namespace interpretCommand;
 Interpreter analyse_normal("normal", refreshNormal);
@@ -143,4 +143,4 @@ Interpreter clearLimits("clear", clearAllData);
 Interpreter toggleSerial("enable serial", toggleSerialEnable);
 Interpreter printSensorValues("sensor", sensorValues);
 
-Interpreter toggleFan("fan", manualFanToggle);
+//Interpreter toggleFan("fan", manualFanToggle);

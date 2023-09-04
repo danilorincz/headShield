@@ -15,7 +15,7 @@ void handle_getData()
     doc["AQI"] = perkData.AQI;
     doc["TVOC"] = perkData.TVOC;
     doc["ECO2"] = perkData.ECO2;
-    doc["filterTime"] = millisToTimeString(filterTracker.get_timeOn());
+    //doc["filterTime"] = millisToTimeString(filterTracker.get_timeOn());
     String jsonData;
     serializeJson(doc, jsonData);
 
