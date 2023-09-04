@@ -68,7 +68,7 @@ const char* webpageCode = R"=====(
         <div id=\"batteryLevel\" class=\"battery-level\"></div>
       </div>
       <p id=\"batteryPercent\"></p>
-      
+      <p id=\"filterTime\">Filter Time:</p>
     </div>
 
     <div class=\"card\">
