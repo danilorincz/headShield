@@ -61,7 +61,10 @@ bool sensorConnected = false;
 //? FAN
 const int fanPin = 5;
 Fan fan(fanPin);
-OnTimeTracker fanTracker(5, 4000);
+
+unsigned long autoUpdateFilterTime = 6000;
+unsigned long saveMaxPeriodTime = 3000;
+OnTimeTracker filterTracker(saveMaxPeriodTime);
 
 //? POWER LED
 const int LEDPin = 19;
@@ -118,8 +121,7 @@ void setup()
   visor.begin();
   battery.begin();
   tacho.begin();
-  fanTracker.begin();
-
+  filterTracker.begin();
   //* RETRIEVE DATA
   restore(normal, data, "normal");
 
@@ -337,9 +339,10 @@ void parseAndAction_headSensor()
       serialPrintIf("HEAD SENSOR OFF");
       offDone = true;
       onDone = false;
-
       fan.off();
       lamp.off(); //! CHECK
+
+      filterTracker.save();
     }
     break;
   }
@@ -382,33 +385,46 @@ FunctionRunner visorRunner(parseAndAction_visor, 100);
 FunctionRunner headSensorRunner(parseAndAction_headSensor, 200);
 FunctionRunner readSensorRunner(updateSensor, 200);
 
+//* 1. azt akarom hogy ha megy a rendszer, akkor mondjuk mentse el 10 percenként
+//* 2. ha leveszi a felhasználó a fejéről, akkor is mentse el, de csak ha nem 0 az értéke
+//* 3. ha az előző x percben már történt mentés, akkor minden további mentést tiltson le amíg le nem telik a x perc.
+
+unsigned long previousOnTime = 0;
+Timer printFilterLatestOnTime(1000);
 void loop()
 {
-  fanTracker.update(fan.state);
+  filterTracker.update(fan.state);
+
+  if (filterTracker.getAccumulatedOnTime() - previousOnTime > autoUpdateFilterTime)
+  {
+    filterTracker.save();
+    previousOnTime = filterTracker.getAccumulatedOnTime();
+  }
+  if (printFilterLatestOnTime.timeElapsedMillis())
+    Serial.println(millisToTimeString(filterTracker.getAccumulatedOnTime()));
 
   server.handleClient();
   touchInputHandler();
+  
+    updateTacho();
+    updateBattery();
+    updateHeadSensor();
+    updateVisor();
 
-  updateTacho();
-  updateBattery();
-  updateHeadSensor();
-  updateVisor();
-
-  tachoRunner.takeAction();
-  batteryRunner.takeAction();
-  visorRunner.takeAction();
-  headSensorRunner.takeAction();
-  readSensorRunner.takeAction();
-
-  sensorConnectRequest();
-  sensorDisconnectRequest();
-  sensorReconnectingRequest();
-
+    tachoRunner.takeAction();
+    batteryRunner.takeAction();
+    visorRunner.takeAction();
+    headSensorRunner.takeAction();
+    readSensorRunner.takeAction();
+    sensorConnectRequest();
+    sensorDisconnectRequest();
+    sensorReconnectingRequest();
+  
   using namespace interpreter;
 
   if (Serial.available())
     command = interpreter::getCommand();
-
+  
   toggleSerial.refresh(command);
   printTachoValue.refresh(command);
   printPeriferial.refresh(command);
@@ -417,6 +433,8 @@ void loop()
   printSensorValues.refresh(command);
   analyse_normal.refresh(command);
   clearLimits.refresh(command);
-  printFanOnTime.refresh(command);
-
+  
+  printFilterTime.refresh(command);
+  toggleFan.refresh(command);
+  printMemoryWear.refresh(command);
 }

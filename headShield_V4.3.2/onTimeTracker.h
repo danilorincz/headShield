@@ -6,90 +6,104 @@ class OnTimeTracker
 {
 private:
     Preferences data;
-    unsigned long deviceOnTime;
-    unsigned long deviceTurnedOnTime;
-    const unsigned long writeInterval;
-    const unsigned long maxWritesPerLocation;
-    unsigned long writeCount;
-    int locationIndex;
-    unsigned long lastWriteTime;
-    bool deviceWasOn;
+    unsigned long accumulatedOnTime; // Total time the device has been on
+    unsigned long lastUpdateTime;    // Last time the 'update' function was called
+    int memIdx;                      // Index to keep track of where to write next in flash memory
+    bool isUpdated;                  // Flag to check if accumulatedOnTime has been updated
+    unsigned long timeSinceLastUpdate;
+    unsigned long lastSavedOnTime;
+    unsigned long lastSaveTimestamp;
+    unsigned long savePeriodTime;
 
 public:
-    OnTimeTracker(const unsigned long writeInterval = 60, const unsigned long maxWritesPerLocation = 1000) : writeInterval(writeInterval), maxWritesPerLocation(maxWritesPerLocation),
-                                                                                                             deviceOnTime(0), deviceTurnedOnTime(0), writeCount(0), locationIndex(0), lastWriteTime(0), deviceWasOn(false)
+    OnTimeTracker(unsigned long savePeriodTime) : accumulatedOnTime(0),
+                                                  lastUpdateTime(0),
+                                                  memIdx(0),
+                                                  timeSinceLastUpdate(0),
+                                                  lastSavedOnTime(0),
+                                                  lastSaveTimestamp(0),
+                                                  savePeriodTime(savePeriodTime)
     {
     }
 
     void begin()
     {
         data.begin("app", false);
-        locationIndex = data.getUInt("locationIndex", 0);
-        writeCount = data.getUInt("writeCount", 0);
-        String locationKey = String("deviceOnTime") + String(locationIndex);
-        deviceOnTime = data.getULong(locationKey.c_str(), 0);
+        memIdx = data.getUInt("mIdx", 0);                // memoryLocationIndex
+        String locKey = String("aOnT") + String(memIdx); // accumulatedOnTime
+        accumulatedOnTime = data.getULong(locKey.c_str(), 0);
     }
 
+    unsigned long getAccumulatedOnTime()
+    {
+        return accumulatedOnTime;
+    }
+
+    unsigned long getOnTimeSinceLastSave()
+    {
+        return accumulatedOnTime - lastSavedOnTime;
+    }
+
+    void setSaveInterval(unsigned long newInterval)
+    {
+        savePeriodTime = newInterval;
+    }
     void update(bool deviceIsOn)
     {
         if (deviceIsOn)
         {
-            if (deviceTurnedOnTime == 0)
-            {
-                deviceTurnedOnTime = millis();
-            }
-            deviceOnTime += millis() - deviceTurnedOnTime;
-            deviceTurnedOnTime = millis();
+            accumulatedOnTime += (millis() - lastUpdateTime);
+            isUpdated = true;
+        }
+        lastUpdateTime = millis();
+    }
 
-            if (millis() - lastWriteTime > writeInterval * 1000UL)
-            {
-                writeCount++;
-                if (writeCount >= maxWritesPerLocation)
-                {
-                    locationIndex++;
-                    writeCount = 0;
-                }
-                String locationKey = String("deviceOnTime") + String(locationIndex);
-                data.putULong(locationKey.c_str(), deviceOnTime);
-                data.putUInt("locationIndex", locationIndex);
-                data.putUInt("writeCount", writeCount);
-                lastWriteTime = millis();
-            }
-        }
-        else if (deviceWasOn)
+    bool save()
+    {
+        unsigned long currentTime = millis();
+        if (isUpdated && currentTime - lastSaveTimestamp >= savePeriodTime)
         {
-            deviceOnTime += millis() - deviceTurnedOnTime;
-            writeCount++;
-            if (writeCount >= maxWritesPerLocation)
-            {
-                locationIndex++;
-                writeCount = 0;
-            }
-            String locationKey = String("deviceOnTime") + String(locationIndex);
-            data.putULong(locationKey.c_str(), deviceOnTime);
-            data.putUInt("locationIndex", locationIndex);
-            data.putUInt("writeCount", writeCount);
-            lastWriteTime = millis();
-            deviceTurnedOnTime = 0;
+            memIdx++;
+            String locKey = String("aOnT") + String(memIdx);
+            unsigned long latestOnTime = getLatestOnTime();
+            data.putULong(locKey.c_str(), accumulatedOnTime + latestOnTime);
+            data.putUInt("mIdx", memIdx);
+            isUpdated = false;
+            lastSavedOnTime = accumulatedOnTime;
+            lastSaveTimestamp = currentTime;
+            Serial.print("New time has been saved to flash: ");
+            Serial.println(accumulatedOnTime + latestOnTime);
+            return true;
         }
-        else
-        {
-            deviceTurnedOnTime = 0;
-        }
-        deviceWasOn = deviceIsOn;
+        Serial.println("stopped by 3.");
+        return false;
     }
 
     unsigned long getLatestOnTime()
     {
-        int latestLocationIndex = data.getUInt("locationIndex", 0);
-        String locationKey = String("deviceOnTime") + String(latestLocationIndex);
-        return data.getULong(locationKey.c_str(), 0);
+        String locKey = String("aOnT") + String(memIdx);
+        return data.getULong(locKey.c_str(), 0);
     }
 
-    void printLatestOnTime()
+    bool clearLatestData()
     {
-        unsigned long latestOnTime = getLatestOnTime();
-        Serial.print("Latest device on-time from flash memory: ");
-        Serial.println(latestOnTime);
+        if (memIdx > 0)
+        {
+            String locKey = String("aOnT") + String(memIdx);
+            data.remove(locKey.c_str());
+            memIdx--;
+            data.putUInt("mIdx", memIdx);
+            return true;
+        }
+        else
+            return false;
+    }
+    float estimateMemoryWear()
+    {
+        const unsigned long maxWriteEraseCycles = 100000; // Typical for ESP32
+        unsigned long totalWrites = memIdx;               // Assuming each increment of memIdx corresponds to a write
+
+        float wearPercentage = ((float)totalWrites / maxWriteEraseCycles) * 100;
+        return wearPercentage;
     }
 };

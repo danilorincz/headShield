@@ -3,8 +3,8 @@
 // 1_Programozás
     // szűrő szűrő idő számítás
         // meghatározni az optimális frissítési időt
-        // algorítmust írni a memóriakezeléshez
-        // szűrő idő osztály létrehozni
+        //* algorítmust írni a memóriakezeléshez
+        //* szűrő idő osztály létrehozni
     // figyelmeztető ciklus
         // figyelmeztető ciklus megalkotása
             // optimális jelzési időköz meghatározása
@@ -38,4 +38,4 @@
     // legyártani 7 db-t
     // dxf fájl készítése
 
-// 5_VEzérlőprogram leírásáank frissítése a végleges program alapján
+// 5_Vezérlőprogram leírásáank frissítése a végleges program alapján

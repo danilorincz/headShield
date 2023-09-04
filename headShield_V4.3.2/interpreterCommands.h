@@ -62,9 +62,13 @@ namespace interpretCommand
 {
     namespace print
     {
-        void fanOnTime()
+        void filterOnTime()
         {
-            fanTracker.printLatestOnTime();
+            Serial.println(filterTracker.getLatestOnTime());
+        }
+        void memoryWear()
+        {
+            Serial.println(filterTracker.estimateMemoryWear());
         }
         void sensorValues()
         {
@@ -102,7 +106,14 @@ namespace interpretCommand
         }
 
     }
-
+    void manualFanToggle()
+    {
+        fan.toggle();
+        if (fan.state)
+            Serial.println("Fan ON");
+        else
+            Serial.println("Fan OFF");
+    }
     void clearAllData()
     {
         nvs_flash_erase();
@@ -122,10 +133,14 @@ using namespace interpretCommand::print;
 Interpreter printTachoValue("tacho", tachoValue);
 Interpreter printPeriferial("input", inputValues);
 Interpreter printLimits("limit", limitValues);
-Interpreter printFanOnTime("onTime", fanOnTime);
+
+Interpreter printFilterTime("filter", filterOnTime);
+Interpreter printMemoryWear("wear", memoryWear);
 
 using namespace interpretCommand;
 Interpreter analyse_normal("normal", refreshNormal);
 Interpreter clearLimits("clear", clearAllData);
 Interpreter toggleSerial("enable serial", toggleSerialEnable);
 Interpreter printSensorValues("sensor", sensorValues);
+
+Interpreter toggleFan("fan", manualFanToggle);
