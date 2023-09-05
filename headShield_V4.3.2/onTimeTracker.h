@@ -90,7 +90,7 @@ public:
             data.remove(locKey.c_str());
             memIdx--;
             data.putUInt("mIdx", memIdx);
-            //accumulatedOnTime = 0;
+            accumulatedOnTime = 0;
             Serial.println("Filter memory cleared!");
             return true;
         }
