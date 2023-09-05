@@ -17,6 +17,7 @@ private:
     bool sessionFirstSave = false;
 
 public:
+    float memoryHealth;
     OnTimeTracker(unsigned long savePeriodTime) : accumulatedOnTime(0),
                                                   lastUpdateTime(0),
                                                   memIdx(0),
@@ -89,6 +90,8 @@ public:
             data.remove(locKey.c_str());
             memIdx--;
             data.putUInt("mIdx", memIdx);
+            //accumulatedOnTime = 0;
+            Serial.println("Filter memory cleared!");
             return true;
         }
         else
@@ -101,5 +104,10 @@ public:
 
         float wearPercentage = ((float)totalWrites / maxWriteEraseCycles) * 100;
         return wearPercentage;
+    }
+    float get_memoryHealth()
+    {
+        memoryHealth = 100.00 - get_memoryWear();
+        return memoryHealth;
     }
 };

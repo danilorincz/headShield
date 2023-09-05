@@ -15,8 +15,9 @@ void handle_getData()
     doc["AQI"] = perkData.AQI;
     doc["TVOC"] = perkData.TVOC;
     doc["ECO2"] = perkData.ECO2;
-    doc["filterTime"] = onTimeString; //millisToTimeString(filterTracker.get_timeOn());
+    doc["filterTime"] = millisToTimeString(filterTracker.get_timeOn());
     doc["warningSystemStatus"] = tacho.warning;
+    doc["memoryHealth"] = String(filterTracker.get_memoryHealth());
     String jsonData;
     serializeJson(doc, jsonData);
 
@@ -25,6 +26,7 @@ void handle_getData()
 
 void handle_restart()
 {
+    filterTracker.clearLatestData();
     Serial.println("RESET FILTER");
     server.send_P(200, "text/plain", "OK");
 }
@@ -37,6 +39,6 @@ void serverOn()
 {
     server.on("/", handle_root);
     server.on("/helmetData", handle_getData);
-    server.on("/resetTime", handle_restart);
-    server.on("/toggleWarning",  handle_toggleWarning);
+    server.on("/resetTime", HTTP_POST, handle_restart);
+    server.on("/toggleWarning", HTTP_POST, handle_toggleWarning);
 }

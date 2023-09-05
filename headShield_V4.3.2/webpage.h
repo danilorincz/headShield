@@ -72,6 +72,7 @@ const char* webpageCode = R"=====(
       <button id="restartButton">Restart</button>
       <button id="toggleButton">Toggle Warning</button>
       <span id="warningText">Warning, the system is OFF</span>
+      <p id="memoryHealth">Memory health:</p>
     </div>
 
     <div class="card">
@@ -201,6 +202,9 @@ const char* webpageCode = R"=====(
             document.getElementById(
               "filterTime"
             ).innerText = `Filter time: ${data.filterTime}`;
+            document.getElementById(
+              "memoryHealth"
+            ).innerText = `Memory health: ${data.memoryHealth}%`;
           });
       }
 

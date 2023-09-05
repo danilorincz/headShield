@@ -7,7 +7,7 @@
         //* szűrő idő osztály létrehozni
     // hibák
         // akkumulátor töltöttség ne növekedhessen
-        // 
+        // setup-ban járassa egy kicsit a ventillátorokat hogy megtudjuk a tényleges töltöttséget
     // figyelmeztető ciklus
         // figyelmeztető ciklus megalkotása
             // optimális jelzési időköz meghatározása

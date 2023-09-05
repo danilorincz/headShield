@@ -65,8 +65,6 @@ Fan fan(fanPin);
 unsigned long autoUpdateFilterTime = 10 * 60 * 1000;
 unsigned long saveMaxPeriodTime = 4 * 60 * 1000;
 OnTimeTracker filterTracker(saveMaxPeriodTime);
-unsigned long previousOnTime = 0;
-String onTimeString = "";
 
 //? POWER LED
 const int LEDPin = 19;
@@ -307,7 +305,7 @@ void parseAndAction_tacho()
   {
     Serial.println("Warning cycle is turned OFF");
   }
-/*
+  /*
   if (fan.getCurrentSessionOn() < 5000)
     return;
 
@@ -319,8 +317,6 @@ void parseAndAction_tacho()
       piezo.playFanError();
     }
   }*/
-
-
 }
 
 void parseAndAction_battery()
@@ -395,7 +391,13 @@ void parseAndAction_visor()
 void updateFilterTracker()
 {
   filterTracker.update(fan.state);
-  onTimeString = millisToTimeString(filterTracker.get_timeOn());
+
+  static unsigned long previousOnTime = 0;
+  if (filterTracker.get_timeOn() - previousOnTime > autoUpdateFilterTime)
+  {
+    filterTracker.save();
+    previousOnTime = filterTracker.get_timeOn();
+  }
 }
 
 FunctionRunner tachoRunner(parseAndAction_tacho, 1000);
@@ -407,14 +409,7 @@ FunctionRunner readFilterTrack(updateFilterTracker, 1000);
 
 void loop()
 {
-
   readFilterTrack.takeAction();
-
-  if (filterTracker.get_timeOn() - previousOnTime > autoUpdateFilterTime)
-  {
-    filterTracker.save();
-    previousOnTime = filterTracker.get_timeOn();
-  }
 
   server.handleClient();
   touchInputHandler();
