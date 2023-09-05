@@ -70,6 +70,8 @@ const char* webpageCode = R"=====(
       <p id="batteryPercent"></p>
       <p id="filterTime">Filter Time:</p>
       <button id="restartButton">Restart</button>
+      <button id="toggleButton">Toggle Warning</button>
+      <span id="warningText">Warning, the system is OFF</span>
     </div>
 
     <div class="card">
@@ -170,6 +172,16 @@ const char* webpageCode = R"=====(
                 AQIElement.style.backgroundColor = "gray";
                 AQIElement.style.color = "white";
             }
+            let toggleButton = document.getElementById("toggleButton");
+            let warningText = document.getElementById("warningText");
+
+            if (data.warningSystemStatus) {
+              toggleButton.innerText = "Turn OFF Warning";
+              warningText.innerText = "";
+            } else {
+              toggleButton.innerText = "Turn ON Warning";
+              warningText.innerText = "Warning, the system is OFF";
+            }
             // Updating Other Data
             document.getElementById(
               "temp"
@@ -194,7 +206,24 @@ const char* webpageCode = R"=====(
 
       // Fetch the data every 2 seconds
       setInterval(fetchData, 2000);
+      // Add this event listener to your existing script
+      document.addEventListener("DOMContentLoaded", function () {
+        let toggleButton = document.getElementById("toggleButton");
 
+        toggleButton.addEventListener("click", function () {
+          fetch("/toggleWarning", {
+            method: "POST",
+          })
+            .then((response) => {
+              if (!response.ok) {
+                console.error("Failed to toggle warning system.");
+              }
+            })
+            .catch((error) => {
+              console.error("Error:", error);
+            });
+        });
+      });
       // Add this in your existing script tag
       document.addEventListener("DOMContentLoaded", function () {
         let restartButton = document.getElementById("restartButton");

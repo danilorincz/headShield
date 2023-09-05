@@ -16,6 +16,7 @@ void handle_getData()
     doc["TVOC"] = perkData.TVOC;
     doc["ECO2"] = perkData.ECO2;
     doc["filterTime"] = onTimeString; //millisToTimeString(filterTracker.get_timeOn());
+    doc["warningSystemStatus"] = tacho.warning;
     String jsonData;
     serializeJson(doc, jsonData);
 
@@ -27,9 +28,15 @@ void handle_restart()
     Serial.println("RESET FILTER");
     server.send_P(200, "text/plain", "OK");
 }
+void handle_toggleWarning()
+{
+    tacho.warning = !tacho.warning;
+    server.send(200, "text/plain", "OK");
+}
 void serverOn()
 {
     server.on("/", handle_root);
     server.on("/helmetData", handle_getData);
     server.on("/resetTime", handle_restart);
+    server.on("/toggleWarning",  handle_toggleWarning);
 }

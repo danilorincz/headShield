@@ -299,6 +299,15 @@ void parseAndAction_tacho()
     break;
   }
 
+  if (tacho.warning)
+  {
+    Serial.println("Warning cycle is turned ON");
+  }
+  else
+  {
+    Serial.println("Warning cycle is turned OFF");
+  }
+/*
   if (fan.getCurrentSessionOn() < 5000)
     return;
 
@@ -309,7 +318,9 @@ void parseAndAction_tacho()
     {
       piezo.playFanError();
     }
-  }
+  }*/
+
+
 }
 
 void parseAndAction_battery()

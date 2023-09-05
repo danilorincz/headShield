@@ -17,6 +17,7 @@ private:
     MovingAverage smooth;
 
 public:
+    bool warning = true;
     int finalValue = -1;
     unsigned long dutyCycle = 0;
     Tachometer(int analogPin, int smoothSize)
@@ -27,6 +28,14 @@ public:
     void begin()
     {
         pinMode(analogPin, INPUT_PULLDOWN);
+    }
+    void warningOn()
+    {
+        warning = true;
+    }
+    void warningOff()
+    {
+        warning = false;
     }
     bool fastMajority(bool a, bool b, bool c)
     {
@@ -90,7 +99,7 @@ public:
                 returnValue = false;
                 break;
             }
-            
+
             dutyCycle = timeHigh + timeLow;
             if (abs(timeHigh - timeLow) < 0.15 * dutyCycle && dutyCycle > 3500) //* GOOD
             {

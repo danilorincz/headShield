@@ -19,7 +19,7 @@
     // webes felületbe
         //* szűrő idő
         //* szűrő idő újraindítási lehetőség
-        // figyelmeztető rendszer kikapcsolás
+        //* figyelmeztető rendszer kikapcsolás
         // memória állapot százalék
 
 // 2_Műszaki leírás
