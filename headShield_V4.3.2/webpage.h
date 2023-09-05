@@ -16,6 +16,7 @@ const char* webpageCode = R"=====(
         display: flex;
         flex-direction: column;
         align-items: center;
+        position: relative;
       }
       h1 {
         text-align: center;
@@ -32,11 +33,16 @@ const char* webpageCode = R"=====(
         border-radius: 12px;
         font-size: 1.5em;
       }
+      .card-container {
+        position: relative; /* sets the positioning context for child elements */
+      }
       .battery {
         width: 50px;
         height: 20px;
         border: 2px solid black;
-        position: relative;
+        position: absolute; /* allows precise positioning within .card-container */
+        top: 30px; /* distance from top edge */
+        right: 30px; /* distance from right edge */
       }
 
       .battery:before {
@@ -55,6 +61,11 @@ const char* webpageCode = R"=====(
         color: white;
         font-weight: bold;
         text-align: center; /* To center the text */
+      }
+      button {
+        width: 150px; /* Set width */
+        height: 50px; /* Set height */
+        font-size: 18px;
       }
     </style>
   </head>
@@ -77,7 +88,7 @@ const char* webpageCode = R"=====(
 
     <div class="card">
       <h2>Outside Air Quality</h2>
-      <p>Air Quality Index: <span id="AQI"></span></p>
+      <span id="AQI"></span>
       <p id="TVOC">TVOC:</p>
       <p id="ECO2">ECO2:</p>
     </div>
@@ -177,10 +188,10 @@ const char* webpageCode = R"=====(
             let warningText = document.getElementById("warningText");
 
             if (data.warningSystemStatus) {
-              toggleButton.innerText = "Turn OFF Warning";
+              toggleButton.innerText = "Warning OFF";
               warningText.innerText = "";
             } else {
-              toggleButton.innerText = "Turn ON Warning";
+              toggleButton.innerText = "Warning ON";
               warningText.innerText = "Warning, the system is OFF";
             }
             // Updating Other Data
