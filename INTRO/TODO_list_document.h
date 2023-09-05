@@ -21,7 +21,7 @@
         //* szűrő idő újraindítási lehetőség
         //* figyelmeztető rendszer kikapcsolás
         //* memória állapot százalék
-        // weblap szerkesztése a végleges fromájába
+        //* weblap szerkesztése a végleges fromájába
 
 // 2_Műszaki leírás
     // kiegészíteni a szenzoros cuccokkal
