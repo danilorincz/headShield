@@ -5,6 +5,9 @@
         //* meghatározni az optimális frissítési időt
         //* algorítmust írni a memóriakezeléshez
         //* szűrő idő osztály létrehozni
+    // hibák
+        // akkumulátor töltöttség ne növekedhessen
+        // 
     // figyelmeztető ciklus
         // figyelmeztető ciklus megalkotása
             // optimális jelzési időköz meghatározása
@@ -14,8 +17,10 @@
         // normal tartomány alsó és felső határának kitolása, úgy hogy épp hogy jelezzen a megváltozott körülményre
     // OTA implementálása
     // webes felületbe
-        //  integrálni a szűrő időt és újraindításának lehetőségét
-        //  légszűrő rendszer figyelmeztetések kikapcsolásának lehetősége
+        //* szűrő idő
+        //* szűrő idő újraindítási lehetőség
+        // figyelmeztető rendszer kikapcsolás
+        // memória állapot százalék
 
 // 2_Műszaki leírás
     // kiegészíteni a szenzoros cuccokkal

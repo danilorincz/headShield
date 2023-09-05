@@ -40,7 +40,7 @@ const char* webpageCode = R"=====(
       }
 
       .battery:before {
-        content: \"\";
+        content: "";
         width: 5px;
         height: 14px;
         position: absolute;
@@ -61,138 +61,165 @@ const char* webpageCode = R"=====(
   <body>
     <h1>Premet Powered<br />Air Purifying Respirator</h1>
 
-    <div class=\"card\">
+    <div class="card">
       <h2>System</h2>
-      <p id=\"state\">State: <span id=\"stateText\"></span></p>
-      <div class=\"battery\">
-        <div id=\"batteryLevel\" class=\"battery-level\"></div>
+      <p id="state">State: <span id="stateText"></span></p>
+      <div class="battery">
+        <div id="batteryLevel" class="battery-level"></div>
       </div>
-      <p id=\"batteryPercent\"></p>
-      <p id=\"filterTime\">Filter Time:</p>
+      <p id="batteryPercent"></p>
+      <p id="filterTime">Filter Time:</p>
+      <button id="restartButton">Restart</button>
     </div>
 
-    <div class=\"card\">
+    <div class="card">
       <h2>Outside Air Quality</h2>
-      <p>Air Quality Index: <span id=\"AQI\"></span></p>
-      <p id=\"TVOC\">TVOC:</p>
-      <p id=\"ECO2\">ECO2:</p>
+      <p>Air Quality Index: <span id="AQI"></span></p>
+      <p id="TVOC">TVOC:</p>
+      <p id="ECO2">ECO2:</p>
     </div>
 
-    <div class=\"card\">
+    <div class="card">
       <h2>Enviroment</h2>
-      <p id=\"temp\">Temperature:</p>
-      <p id=\"press\">Pressure:</p>
-      <p id=\"humi\">Humidity:</p>
+      <p id="temp">Temperature:</p>
+      <p id="press">Pressure:</p>
+      <p id="humi">Humidity:</p>
     </div>
 
     <script>
       function fetchData() {
-        fetch(\"/helmetData\")
+        fetch("/helmetData")
           .then((response) => response.json())
           .then((data) => {
             // Handling the State
-            let stateText = document.getElementById(\"stateText\");
+            let stateText = document.getElementById("stateText");
             switch (data.state) {
               case 0:
-                stateText.innerText = \"OFF\";
-                stateText.style.backgroundColor = \"black\";
-                stateText.style.color = \"white\";
+                stateText.innerText = "OFF";
+                stateText.style.backgroundColor = "black";
+                stateText.style.color = "white";
                 break;
               case 1:
-                stateText.innerText = \"Filter/Fan Error\";
-                stateText.style.backgroundColor = \"yellow\";
-                stateText.style.color = \"white\";
+                stateText.innerText = "Filter/Fan Error";
+                stateText.style.backgroundColor = "yellow";
+                stateText.style.color = "white";
                 break;
               case 2:
-                stateText.innerText = \"Normal\";
-                stateText.style.backgroundColor = \"green\";
-                stateText.style.color = \"white\";
+                stateText.innerText = "Normal";
+                stateText.style.backgroundColor = "green";
+                stateText.style.color = "white";
                 break;
               case 3:
-                stateText.innerText = \"Airflow Error\";
-                stateText.style.backgroundColor = \"red\";
-                stateText.style.color = \"black\";
+                stateText.innerText = "Airflow Error";
+                stateText.style.backgroundColor = "red";
+                stateText.style.color = "black";
                 break;
               case 4:
-                stateText.innerText = \"Malfunction\";
-                stateText.style.backgroundColor = \"purple\";
-                stateText.style.color = \"white\";
+                stateText.innerText = "Malfunction";
+                stateText.style.backgroundColor = "purple";
+                stateText.style.color = "white";
                 break;
               default:
-                stateText.innerText = \"Unknown\";
-                stateText.style.backgroundColor = \"gray\";
-                stateText.style.color = \"white\";
+                stateText.innerText = "Unknown";
+                stateText.style.backgroundColor = "gray";
+                stateText.style.color = "white";
             }
 
             // Handling the Battery
-            let batteryLevel = document.getElementById(\"batteryLevel\");
+            let batteryLevel = document.getElementById("batteryLevel");
             let percent = data.battery;
             batteryLevel.style.width = `${percent}%`;
             batteryLevel.innerText = `${percent}%`; // Displaying percentage inside the indicator
             if (percent > 50) {
-              batteryLevel.style.backgroundColor = \"green\";
+              batteryLevel.style.backgroundColor = "green";
             } else if (percent > 20) {
-              batteryLevel.style.backgroundColor = \"yellow\";
+              batteryLevel.style.backgroundColor = "yellow";
             } else {
-              batteryLevel.style.backgroundColor = \"red\";
+              batteryLevel.style.backgroundColor = "red";
             }
 
-            let AQIElement = document.getElementById(\"AQI\");
+            let AQIElement = document.getElementById("AQI");
             switch (data.AQI) {
               case 1:
-                AQIElement.innerText = \"Excelent\";
-                AQIElement.style.backgroundColor = \"blue\";
-                AQIElement.style.color = \"white\";
+                AQIElement.innerText = "Excelent";
+                AQIElement.style.backgroundColor = "blue";
+                AQIElement.style.color = "white";
                 break;
               case 2:
-                AQIElement.innerText = \"Good\";
-                AQIElement.style.backgroundColor = \"green\";
-                AQIElement.style.color = \"white\";
+                AQIElement.innerText = "Good";
+                AQIElement.style.backgroundColor = "green";
+                AQIElement.style.color = "white";
                 break;
               case 3:
-                AQIElement.innerText = \"Moderate\";
-                AQIElement.style.backgroundColor = \"yellow\";
-                AQIElement.style.color = \"black\";
+                AQIElement.innerText = "Moderate";
+                AQIElement.style.backgroundColor = "yellow";
+                AQIElement.style.color = "black";
                 break;
               case 4:
-                AQIElement.innerText = \"Poor\";
-                AQIElement.style.backgroundColor = \"#DAA520\"; // darker yellow
-                AQIElement.style.color = \"white\";
+                AQIElement.innerText = "Poor";
+                AQIElement.style.backgroundColor = "#DAA520"; // darker yellow
+                AQIElement.style.color = "white";
                 break;
               case 5:
-                AQIElement.innerText = \"Unhealthy\";
-                AQIElement.style.backgroundColor = \"red\";
-                AQIElement.style.color = \"white\";
+                AQIElement.innerText = "Unhealthy";
+                AQIElement.style.backgroundColor = "red";
+                AQIElement.style.color = "white";
                 break;
               default:
-                AQIElement.innerText = \"Unknown\";
-                AQIElement.style.backgroundColor = \"gray\";
-                AQIElement.style.color = \"white\";
+                AQIElement.innerText = "Unknown";
+                AQIElement.style.backgroundColor = "gray";
+                AQIElement.style.color = "white";
             }
             // Updating Other Data
             document.getElementById(
-              \"temp\"
+              "temp"
             ).innerText = `Temperature: ${data.temp} Celsius`;
             document.getElementById(
-              \"press\"
+              "press"
             ).innerText = `Pressure: ${data.press} Pa`;
             document.getElementById(
-              \"humi\"
+              "humi"
             ).innerText = `Humidity: ${data.humi} %`;
             document.getElementById(
-              \"TVOC\"
+              "TVOC"
             ).innerText = `TVOC: ${data.TVOC} ppb`;
             document.getElementById(
-              \"ECO2\"
+              "ECO2"
             ).innerText = `ECO2: ${data.ECO2} ppm`;
             document.getElementById(
-              \"filterTime\"
+              "filterTime"
             ).innerText = `Filter time: ${data.filterTime}`;
           });
       }
 
       // Fetch the data every 2 seconds
       setInterval(fetchData, 2000);
+
+      // Add this in your existing script tag
+      document.addEventListener("DOMContentLoaded", function () {
+        let restartButton = document.getElementById("restartButton");
+        restartButton.addEventListener("click", function () {
+          let userConfirmed = window.confirm(
+            "Are you sure you want to perform a reset?"
+          );
+          if (userConfirmed) {
+            // Send request to server to reset
+            fetch("/resetTime", {
+              method: "POST",
+            })
+              .then((response) => {
+                if (response.ok) {
+                  alert("Time reset successfully.");
+                } else {
+                  alert("Failed to reset time.");
+                }
+              })
+              .catch((error) => {
+                console.error("Error:", error);
+              });
+          }
+        });
+      });
     </script>
   </body>
 </html>

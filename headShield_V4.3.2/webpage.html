@@ -66,6 +66,7 @@
       </div>
       <p id="batteryPercent"></p>
       <p id="filterTime">Filter Time:</p>
+      <button id="restartButton">Restart</button>
     </div>
 
     <div class="card">
@@ -190,6 +191,32 @@
 
       // Fetch the data every 2 seconds
       setInterval(fetchData, 2000);
+
+      // Add this in your existing script tag
+      document.addEventListener("DOMContentLoaded", function () {
+        let restartButton = document.getElementById("restartButton");
+        restartButton.addEventListener("click", function () {
+          let userConfirmed = window.confirm(
+            "Are you sure you want to perform a reset?"
+          );
+          if (userConfirmed) {
+            // Send request to server to reset
+            fetch("/resetTime", {
+              method: "POST",
+            })
+              .then((response) => {
+                if (response.ok) {
+                  alert("Time reset successfully.");
+                } else {
+                  alert("Failed to reset time.");
+                }
+              })
+              .catch((error) => {
+                console.error("Error:", error);
+              });
+          }
+        });
+      });
     </script>
   </body>
 </html>

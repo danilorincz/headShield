@@ -14,6 +14,7 @@ private:
     unsigned long lastSavedOnTime;
     unsigned long lastSaveTimestamp;
     unsigned long savePeriodTime;
+    bool sessionFirstSave = false;
 
 public:
     OnTimeTracker(unsigned long savePeriodTime) : accumulatedOnTime(0),
@@ -61,7 +62,7 @@ public:
     bool save()
     {
         unsigned long currentTime = millis();
-        if (isUpdated && currentTime - lastSaveTimestamp >= savePeriodTime)
+        if (isUpdated && ((currentTime - lastSaveTimestamp >= savePeriodTime) || !sessionFirstSave))
         {
             memIdx++;
             String locKey = String("aOnT") + String(memIdx);
@@ -73,6 +74,7 @@ public:
             lastSaveTimestamp = currentTime;
             Serial.print("New time has been saved to flash: ");
             Serial.println(accumulatedOnTime + latestOnTime);
+            sessionFirstSave = true;
             return true;
         }
         Serial.println("stopped by 3.");
