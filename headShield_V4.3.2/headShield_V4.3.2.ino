@@ -79,6 +79,7 @@ Tachometer tacho(tachometerPin, 400);
 //? BATTERY
 const int batteryPin = 32;
 Battery battery(batteryPin, 300);
+unsigned int batteryPercentage = 0;
 
 //? HEAD SENSOR
 const int infraredPin = 35;
@@ -332,6 +333,13 @@ void airflowSystemWarning()
 
 void parseAndAction_battery()
 {
+  batteryPercentage = battery.percent;
+  static unsigned int prevPercent = battery.percent;
+
+  if (batteryPercentage > prevPercent)
+    batteryPercentage = prevPercent;
+
+  prevPercent = batteryPercentage;
 }
 void parseAndAction_headSensor()
 {

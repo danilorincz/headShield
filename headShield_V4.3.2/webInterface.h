@@ -8,7 +8,7 @@ void handle_getData()
 {
     StaticJsonDocument<200> doc;
     doc["state"] = fanErrorNumber;
-    doc["battery"] = battery.percent;
+    doc["battery"] = batteryPercentage;
     doc["temp"] = perkData.temp;
     doc["press"] = perkData.press;
     doc["humi"] = perkData.humi;

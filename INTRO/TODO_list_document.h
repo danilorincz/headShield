@@ -1,6 +1,6 @@
 //* Automatikusan működő html_to_string.py létrehozása
 
-// 1_Programozás
+//* 1_Programozás
     //* szűrő idő számítás
         //* meghatározni az optimális frissítési időt
         //* algorítmust írni a memóriakezeléshez
@@ -13,10 +13,8 @@
         //* figyelmeztető rendszer kikapcsolás
         //* memória állapot százalék
         //* weblap szerkesztése a végleges fromájába
-    // figyelmeztető ciklus
-        // alacsony töltöttség figyelmeztetés
-        //* állapot figyelmeztetés
-    // normal tartomány alsó és felső határának kitolása, úgy hogy épp hogy jelezzen a megváltozott körülményre
+    //* figyelmeztető ciklus
+    //* normal tartomány alsó és felső határának kitolása, úgy hogy épp hogy jelezzen a megváltozott körülményre
 
 // 2_Műszaki leírás
     //* kiegészíteni a szenzoros cuccokkal
