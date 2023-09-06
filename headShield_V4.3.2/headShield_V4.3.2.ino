@@ -39,6 +39,8 @@ bool soundEnabled = true;
 
 #include "onTimeTracker.h"
 
+#include "Majority.h"
+
 //? DATA STORAGE
 Preferences data;
 
@@ -229,18 +231,13 @@ void updateSensor()
   perkData.ECO2 = ENS160.getECO2();
 }
 
-bool fanTurnedOnLongEnough()
-{
-}
-
 void updateTacho()
 {
   if (fan.active())
   {
     tacho.getAverage();
+    accountBattery(tacho.finalValue);
   }
-
-  accountBattery(tacho.finalValue);
 }
 void accountBattery(int &modifyThis)
 {
@@ -250,8 +247,6 @@ void accountBattery(int &modifyThis)
 void updateBattery()
 {
   battery.getPercent();
-  if (battery.percent > 100)
-    battery.percent = 100;
 }
 void updateHeadSensor()
 {
@@ -297,26 +292,42 @@ void parseAndAction_tacho()
     break;
   }
 
+  static Timer makeWarningTimer(10000);
+
   if (tacho.warning)
   {
-    Serial.println("Warning cycle is turned ON");
-  }
-  else
-  {
-    Serial.println("Warning cycle is turned OFF");
-  }
-  /*
-  if (fan.getCurrentSessionOn() < 5000)
-    return;
-
-  static Timer signalingTimer(3000);
-  if (fanErrorNumber != cond::normal)
-  {
-    if (signalingTimer.timeElapsedMillis())
+    MajorityResult newResult = getMajority(fanErrorNumber);
+    if (newResult.isMajority && newResult.majorityValue != cond::normal)
     {
-      piezo.playFanError();
+      Serial.println("Last five values were not normal");
+      if (makeWarningTimer.timeElapsedMillis())
+      {
+        Serial.println("Warning signal");
+        airflowSystemWarning();
+      }
     }
-  }*/
+    else
+    {
+      makeWarningTimer.preTime = millis();
+    }
+  }
+}
+void airflowSystemWarning()
+{
+  fan.off();
+  delay(300);
+
+  int lampLevel = lamp.level;
+  lamp.level = 0;
+
+  for (int i = 0; i < 5; i++)
+  {
+    lamp.toggleBetween(0, 3);
+    delay(20);
+  }
+  piezo.playError();
+  lamp.setLevel(lampLevel);
+  fan.on();
 }
 
 void parseAndAction_battery()

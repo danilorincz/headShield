@@ -11,6 +11,7 @@ public:
     float voltage;
     int level;
     MovingAverage smooth;
+    float lastMeasuredVoltage = 0; // New member variable to keep track of the last measured voltage
 
     // defining the two known points
     float voltage1 = 6;
@@ -47,7 +48,18 @@ public:
 
     float getVoltage()
     {
-        voltage = slope * readAverage() + intercept;
+        float newVoltage = slope * readAverage() + intercept;
+
+        if (lastMeasuredVoltage == 0 || newVoltage <= lastMeasuredVoltage)
+        {
+            voltage = newVoltage;
+            lastMeasuredVoltage = newVoltage;
+        }
+        else
+        {
+            voltage = lastMeasuredVoltage;
+        }
+
         return voltage;
     }
 
@@ -55,9 +67,10 @@ public:
     {
         float voltage = getVoltage();
         percent = map(voltage * 100, 6 * 100, 8.4 * 100, 0, 100);
-        
-
-
+        if (percent > 100)
+            percent = 100;
+        if (percent < 0)
+            percent = 0;
         return percent;
     }
 };

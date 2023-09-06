@@ -44,15 +44,6 @@ public:
         return state;
     }
 
-    void signal()
-    {
-        digitalWrite(pin, HIGH);
-        delay(40);
-        digitalWrite(pin, LOW);
-        delay(40);
-    }
- 
-
     void setLevel(int newLevel)
     {
 
