@@ -81,7 +81,6 @@ const char* webpageCode = R"=====(
         <div id="batteryLevel" class="battery-level"></div>
       </div>
       <p id="batteryPercent"></p>
-      <p id="memoryHealth">Memory health:</p>
     </div>
 
     <div class="card">
@@ -217,9 +216,6 @@ const char* webpageCode = R"=====(
             document.getElementById(
               "filterTime"
             ).innerText = `In use since: ${data.filterTime}`;
-            document.getElementById(
-              "memoryHealth"
-            ).innerText = `Memory health: ${data.memoryHealth}%`;
           });
       }
 

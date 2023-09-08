@@ -341,6 +341,7 @@ void parseAndAction_battery()
 
   prevPercent = batteryPercentage;
 }
+unsigned long lastSaveTimestamp = 0;
 void parseAndAction_headSensor()
 {
   static bool onDone = false;
@@ -370,7 +371,16 @@ void parseAndAction_headSensor()
       fan.off();
       lamp.off(); //! CHECK
 
-      filterTracker.save();
+  
+      unsigned long currentTime = millis();
+      
+      if (currentTime - lastSaveTimestamp > 120000)
+      {
+        if (filterTracker.save())
+        {
+          lastSaveTimestamp = currentTime;
+        }
+      }
     }
     break;
   }

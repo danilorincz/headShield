@@ -1,3 +1,4 @@
+
 #pragma once
 
 #include <Preferences.h>
@@ -15,6 +16,7 @@ private:
     unsigned long lastSaveTimestamp;
     unsigned long savePeriodTime;
     bool sessionFirstSave = false;
+    const int maxKeys = 20;
 
 public:
     float memoryHealth;
@@ -60,11 +62,17 @@ public:
         lastUpdateTime = millis();
     }
 
-    bool save()
+    bool save(bool overwrite = false)
     {
+
         unsigned long currentTime = millis();
-        if (isUpdated && ((currentTime - lastSaveTimestamp >= savePeriodTime) || !sessionFirstSave))
+
+        if (((currentTime - lastSaveTimestamp >= savePeriodTime) || overwrite || !sessionFirstSave) && !isUpdated)
         {
+            if (memIdx >= maxKeys)
+            {
+                memIdx = 0;
+            }
             memIdx++;
             String locKey = String("aOnT") + String(memIdx);
             unsigned long latestOnTime = get_latestSavedOnTime();
@@ -78,8 +86,10 @@ public:
             sessionFirstSave = true;
             return true;
         }
-        Serial.println("stopped by 3.");
-        return false;
+        else
+        {
+            return false;
+        }
     }
 
     bool clearLatestData()

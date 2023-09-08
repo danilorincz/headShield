@@ -16,7 +16,7 @@
     //* figyelmeztető ciklus
     //* normal tartomány alsó és felső határának kitolása, úgy hogy épp hogy jelezzen a megváltozott körülményre
 
-// 2_Műszaki leírás
+//* 2_Műszaki leírás
     //* kiegészíteni a szenzoros cuccokkal
         //* behivatkozni azt a táblázatot az ESN160 leírásából
     //* mégegyszer átfutni légszűrő rendszer mérését és kiegészíteni illetve javítani ha programban változás történt
@@ -27,11 +27,10 @@
     //* "unknown" és "malfunction" profilok kifejtése
     //* szűrő idő mérés kifejtése
     //* 4.4 Névleges térfogatáram megállapítása => szerkesztés
-    // figyelmeztető ciklus
+    //* figyelmeztető ciklus
 
-// 3_Használati útmutató
+//* 3_Használati útmutató
     //* webes felület kiegészítése a szűrő frissítéssel
-    // védőszövet felhelyezése, és kép
 
 // 4_Védőszövet
     // anyag választás

@@ -17,7 +17,6 @@ void handle_getData()
     doc["ECO2"] = perkData.ECO2;
     doc["filterTime"] = millisToTimeString(filterTracker.get_timeOn());
     doc["warningSystemStatus"] = tacho.warning;
-    doc["memoryHealth"] = String(filterTracker.get_memoryHealth());
     String jsonData;
     serializeJson(doc, jsonData);
 
