@@ -148,7 +148,7 @@ void setup()
   ENS160.setPWRMode(ENS160_STANDARD_MODE);
   ENS160.setTempAndHum(25.0, 50.0);
 
-  //* start up sound
+  //* start up
   piezo.playStartup();
 }
 
@@ -371,12 +371,11 @@ void parseAndAction_headSensor()
       fan.off();
       lamp.off(); //! CHECK
 
-  
       unsigned long currentTime = millis();
-      
+
       if (currentTime - lastSaveTimestamp > 120000)
       {
-        if (filterTracker.save())
+        if (filterTracker.save(true))
         {
           lastSaveTimestamp = currentTime;
         }
