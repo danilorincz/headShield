@@ -5,7 +5,8 @@ bool soundEnabled = true;
 //? DOWNLOADED LIBRARIEs
 #include <Arduino.h>
 #include <WiFi.h>
-#include <WebServer.h>
+#include <ESPAsyncWebServer.h>
+
 #include <analogWrite.h>
 #include <pitches.h>
 #include <Tone32.h>
@@ -50,7 +51,8 @@ const char *password = "123456789";
 IPAddress local_ip(192, 168, 1, 1);
 IPAddress gateway(192, 168, 1, 1);
 IPAddress subnet(255, 255, 255, 0);
-WebServer server(80);
+
+AsyncWebServer server(80);
 
 //? SENSOR
 SensorData perkData;
@@ -439,7 +441,7 @@ void loop()
 {
   readFilterTrack.takeAction();
 
-  server.handleClient();
+  //server.handleClient();
   touchInputHandler();
 
   updateTacho();

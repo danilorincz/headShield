@@ -1,10 +1,11 @@
 
 
-void handle_root()
+void handle_root(AsyncWebServerRequest *request)
 {
-    server.send_P(200, "text/html", webpageCode);
+    request->send_P(200, "text/html", webpageCode);
 }
-void handle_getData()
+
+void handle_getData(AsyncWebServerRequest *request)
 {
     StaticJsonDocument<200> doc;
     doc["state"] = fanErrorNumber;
@@ -19,25 +20,29 @@ void handle_getData()
     doc["warningSystemStatus"] = tacho.warning;
     String jsonData;
     serializeJson(doc, jsonData);
-
-    server.send(200, "application/json", jsonData);
+    request->send(200, "application/json", jsonData);
 }
 
-void handle_restart()
+void handle_restart(AsyncWebServerRequest *request)
 {
     filterTracker.clearLatestData();
     Serial.println("RESET FILTER");
-    server.send_P(200, "text/plain", "OK");
+    request->send_P(200, "text/plain", "OK");
 }
-void handle_toggleWarning()
+void handle_toggleWarning(AsyncWebServerRequest *request)
 {
     tacho.warning = !tacho.warning;
-    server.send(200, "text/plain", "OK");
+    request->send(200, "text/plain", "OK");
 }
+
 void serverOn()
 {
-    server.on("/", handle_root);
-    server.on("/helmetData", handle_getData);
-    server.on("/resetTime", HTTP_POST, handle_restart);
-    server.on("/toggleWarning", HTTP_POST, handle_toggleWarning);
+    server.on("/", HTTP_GET, [](AsyncWebServerRequest *request)
+              { handle_root(request); });
+    server.on("/helmetData", HTTP_GET, [](AsyncWebServerRequest *request)
+              { handle_getData(request); });
+    server.on("/resetTime", HTTP_POST, [](AsyncWebServerRequest *request)
+              { handle_restart(request); });
+    server.on("/toggleWarning", HTTP_POST, [](AsyncWebServerRequest *request)
+              { handle_toggleWarning(request); });
 }
