@@ -38,4 +38,17 @@
     // legyártani 7 db-t
     // dxf fájl készítése
 
-// 5_Vezérlőprogram leírásának frissítése a végleges program alapján
+//* 5_Vezérlőprogram leírásának frissítése a végleges program alapján
+
+// 6_Dokumentum hibajavítások
+// 7_Mindegyik sisakon egy füstös vizsgálatot végezni
+// 8_Frissíteni minden sisakon a programot, és egyedi SSID-t adni nekik
+// Matricákat felragasztani
+// Utolsó tesztek a csomagolás előtt
+// Becsomagolni mindent
+
+
+
+
+
+
