@@ -6,6 +6,7 @@ bool soundEnabled = true;
 #include <Arduino.h>
 #include <WiFi.h>
 #include <ESPAsyncWebServer.h>
+#include <AsyncElegantOTA.h>
 
 #include <analogWrite.h>
 #include <pitches.h>
@@ -136,6 +137,7 @@ void setup()
   WiFi.softAP(ssid, password);
   serverOn();
   server.begin();
+  AsyncElegantOTA.begin(&server);
 
   //* SENSOR
   BME280.reset();
@@ -441,7 +443,7 @@ void loop()
 {
   readFilterTrack.takeAction();
 
-  //server.handleClient();
+  AsyncElegantOTA.loop();
   touchInputHandler();
 
   updateTacho();

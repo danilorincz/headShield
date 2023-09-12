@@ -15,6 +15,7 @@
         //* weblap szerkesztése a végleges fromájába
     //* figyelmeztető ciklus
     //* normal tartomány alsó és felső határának kitolása, úgy hogy épp hogy jelezzen a megváltozott körülményre
+    // OTA
 
 //* 2_Műszaki leírás
     //* kiegészíteni a szenzoros cuccokkal

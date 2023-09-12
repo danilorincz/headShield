@@ -2,6 +2,7 @@
 
 void handle_root(AsyncWebServerRequest *request)
 {
+    Serial.println("ROOT");
     request->send_P(200, "text/html", webpageCode);
 }
 
