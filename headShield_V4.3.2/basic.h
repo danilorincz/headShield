@@ -2,7 +2,7 @@
 #include <Preferences.h>
 #include "stat_data_struct.h"
 
-void restore(FanCondition &intoThis, Preferences &fromHere, String mapName)
+void restoreCondition(FanCondition &intoThis, Preferences &fromHere, String mapName)
 {
   StatData loaded;
   fromHere.begin(mapName.c_str(), false);
@@ -14,7 +14,29 @@ void restore(FanCondition &intoThis, Preferences &fromHere, String mapName)
   delay(10);
   intoThis.setLimit(loaded);
 }
-
+String restoreWifiCredentials(Preferences &fromHere)
+{
+  fromHere.begin("data", false);
+  String SSID = fromHere.getString("SSID", default_ssid);
+  fromHere.end();
+  return SSID;
+}
+bool setSSID(String &inputCommand)
+{
+  if (inputCommand.startsWith("setSSID:"))
+  {
+    String newSSID = inputCommand.substring(8);
+    data.begin("data", false);
+    data.putString("SSID", newSSID);
+    data.end();
+    WiFi.softAP(newSSID.c_str(), password);
+    Serial.print("New SSID set to: ");
+    Serial.println(newSSID);
+    inputCommand = "";
+    return true;
+  }
+  return false;
+}
 void putData(StatData putThis, Preferences &here, String mapName)
 {
   here.begin(mapName.c_str(), false);

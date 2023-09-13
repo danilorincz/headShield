@@ -41,11 +41,13 @@
 
 //* 5_Vezérlőprogram leírásának frissítése a végleges program alapján
 
-// 6_Dokumentum hibajavítások
+//* 6_Dokumentum hibajavítások
 // 7_Mindegyik sisakon egy füstös vizsgálatot végezni
 // 8_Frissíteni minden sisakon a programot, és egyedi SSID-t adni nekik
 // Matricákat felragasztani
-// Utolsó tesztek a csomagolás előtt
+// Tesztelni az akksit
+// Tesztelni az időmérőt
+
 // Becsomagolni mindent
 
 

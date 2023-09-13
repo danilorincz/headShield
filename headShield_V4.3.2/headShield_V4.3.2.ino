@@ -47,8 +47,8 @@ bool soundEnabled = true;
 Preferences data;
 
 //? WIFI
-const char *ssid = "headShield";
-const char *password = "123456789";
+const char *default_ssid = "HeadShield";
+const char *password = "PAPR_user_2023";
 IPAddress local_ip(192, 168, 1, 1);
 IPAddress gateway(192, 168, 1, 1);
 IPAddress subnet(255, 255, 255, 0);
@@ -129,12 +129,13 @@ void setup()
   tacho.begin();
   filterTracker.begin();
   //* RETRIEVE DATA
-  restore(normal, data, "normal");
-
+  restoreCondition(normal, data, "normal");
+  String restoredSSID = restoreWifiCredentials(data);
+  const char *ssidChar = restoredSSID.c_str();
   //* WIFI
   WiFi.mode(WIFI_AP);
   WiFi.softAPConfig(local_ip, local_ip, subnet);
-  WiFi.softAP(ssid, password);
+  WiFi.softAP(ssidChar, password);
   serverOn();
   server.begin();
   AsyncElegantOTA.begin(&server);
@@ -464,6 +465,8 @@ void loop()
 
   if (Serial.available())
     command = interpreter::getCommand();
+
+  setSSID(command);
 
   toggleSerial.refresh(command);
   printTachoValue.refresh(command);
