@@ -56,12 +56,7 @@ public:
     {
         float voltage = getVoltage();
         percent = map(voltage * 100, 6 * 100, 8.4 * 100, 0, 100);
-/*
-        if (percent > prevPercent)
-            percent = prevPercent;
 
-        prevPercent = percent;
-*/
         if (percent > 100)
             percent = 100;
         if (percent < 0)

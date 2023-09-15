@@ -127,6 +127,62 @@ namespace interpretCommand
         serialEnabled = !serialEnabled;
     }
 
+    // tudni akarom:
+    // index
+    // mennyi időnél járunk
+    // mennyi a tachométer tényleges értéke
+    // mekkora az akkumulátor valódi töltöttsége
+    // mekkora az akkumulátor legkissebb mért töltöttsége
+    void batteryTest()
+    {
+        Timer log(60 * 1000);
+        fan.on();
+
+        unsigned int realPercent;
+        unsigned int lowestPercent = 100;
+
+        unsigned int sinceStartMinute = 0;
+
+        int allTimeMinTacho = 9999;
+        int allTimeMaxTacho = 0;
+
+        Serial.println("BATTERY TEST PROGRAM START");
+        Serial.println(" ");
+        while (true)
+        {
+            realPercent = battery.getPercent();
+
+            if (realPercent < lowestPercent)
+            {
+                lowestPercent = realPercent;
+            }
+
+            tacho.getAverage();
+
+            if (tacho.finalValue < allTimeMinTacho && tacho.finalValue > 3000)
+                allTimeMinTacho = tacho.finalValue;
+
+            if (tacho.finalValue > allTimeMaxTacho)
+                allTimeMaxTacho = tacho.finalValue;
+
+            if (log.timeElapsedMillis())
+            {
+                sinceStartMinute++;
+
+                Serial.print("#");
+                Serial.println(sinceStartMinute);
+                Serial.println(battery.percent);
+                Serial.println(lowestPercent);
+                Serial.println(tacho.finalValue);
+                Serial.println(allTimeMinTacho);
+                Serial.println(allTimeMaxTacho);
+
+                allTimeMinTacho = 9999;
+                allTimeMaxTacho = 0;
+            }
+        }
+    }
+
 }
 
 using namespace interpretCommand::print;
@@ -144,3 +200,4 @@ Interpreter toggleSerial("enable serial", toggleSerialEnable);
 Interpreter printSensorValues("sensor", sensorValues);
 
 Interpreter toggleFan("fan", manualFanToggle);
+Interpreter analyseBattery("battery test", batteryTest);

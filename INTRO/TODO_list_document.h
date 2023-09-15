@@ -14,8 +14,9 @@
         //* memória állapot százalék
         //* weblap szerkesztése a végleges fromájába
     //* figyelmeztető ciklus
-    //* normal tartomány alsó és felső határának kitolása, úgy hogy épp hogy jelezzen a megváltozott körülményre
-    // OTA
+    //* OTA
+    //* lehessen változtatni az SSID-t
+    // normal tartomány alsó és felső határának kitolása, úgy hogy épp hogy jelezzen a megváltozott körülményre
 
 //* 2_Műszaki leírás
     //* kiegészíteni a szenzoros cuccokkal
@@ -42,12 +43,14 @@
 //* 5_Vezérlőprogram leírásának frissítése a végleges program alapján
 
 //* 6_Dokumentum hibajavítások
-// 7_Mindegyik sisakon egy füstös vizsgálatot végezni
-// 8_Frissíteni minden sisakon a programot, és egyedi SSID-t adni nekik
+// Megoldani az anemométer szigetelését
+// Mindegyik sisakon egy füstös vizsgálatot végezni
 // Matricákat felragasztani
-// Tesztelni az akksit
-// Tesztelni az időmérőt
-
+//* Feltölteni minden sisakra a legújabb kódot
+// Minden sisak kapjon egyedi SSID-t
+//* Tesztelni az akksit -> írni egy kódot ami elvégzi az elemzést
+// Tesztelni az időmérőt -> megvizsgálni egy normál használat közbeni időt, miközben manuálisan is mérjük az időt
+// Tesztelni a vezetéknélküli feltöltést
 // Becsomagolni mindent
 
 

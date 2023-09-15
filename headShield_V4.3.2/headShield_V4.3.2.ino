@@ -118,6 +118,7 @@ cond::conditionNumber fanErrorNumber;
 
 void setup()
 {
+ 
   //* BEGIN
   Serial.begin(115200);
   fan.begin();
@@ -480,4 +481,5 @@ void loop()
   printFilterTime.refresh(command);
   toggleFan.refresh(command);
   printMemoryWear.refresh(command);
+  analyseBattery.refresh(command);
 }
