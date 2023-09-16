@@ -169,13 +169,20 @@ namespace interpretCommand
             {
                 sinceStartMinute++;
 
-                Serial.print("#");
-                Serial.println(sinceStartMinute);
-                Serial.println(battery.percent);
-                Serial.println(lowestPercent);
-                Serial.println(tacho.finalValue);
-                Serial.println(allTimeMinTacho);
-                Serial.println(allTimeMaxTacho);
+
+Serial.print(sinceStartMinute);
+Serial.print("\t");
+Serial.print(battery.percent);
+Serial.print("\t");
+Serial.print(lowestPercent);
+Serial.print("\t");
+Serial.print(tacho.finalValue);
+Serial.print("\t");
+Serial.print(allTimeMinTacho);
+Serial.print("\t");
+Serial.println(allTimeMaxTacho);
+
+
 
                 allTimeMinTacho = 9999;
                 allTimeMaxTacho = 0;

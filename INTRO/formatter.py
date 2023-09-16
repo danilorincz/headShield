@@ -1,6 +1,5 @@
-BATTERY TEST PROGRAM START
- 
-#1
+# Sample raw data as a string
+raw_data = """#1
 76
 73
 3539
@@ -1680,3 +1679,32 @@ BATTERY TEST PROGRAM START
 3540
 3534
 3543
+"""
+
+# Split the raw data into lines
+lines = raw_data.strip().split("\n")
+
+# Open a file to write the formatted data
+with open("formatted_data.txt", "w") as f:
+    # Write the header
+    f.write("#\tBattery%\tLowest%\tTachoFinal\tMinTacho\tMaxTacho\n")
+    
+    # Initialize an empty list to hold the current test data
+    current_test = []
+    
+    for line in lines:
+        if line.startswith("#"):
+            # If we encounter a new test and current_test is not empty, write it to the file
+            if current_test:
+                f.write("\t".join(current_test) + "\n")
+            # Start a new test
+            current_test = [line[1:]]
+        else:
+            # Append the data to the current test
+            current_test.append(line)
+    
+    # Write the last test if it exists
+    if current_test:
+        f.write("\t".join(current_test) + "\n")
+
+print("Formatted data has been written to 'formatted_data.txt'")
