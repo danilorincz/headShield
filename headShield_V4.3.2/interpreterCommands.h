@@ -169,6 +169,7 @@ namespace interpretCommand
             if (condition != prevCondition)
             {
                 prevCondition = condition;
+                Serial.println(getSSID());
                 switch (condition)
                 {
                 case 0:
@@ -181,15 +182,20 @@ namespace interpretCommand
                     Serial.println("NO AIR");
                     break;
                 }
+                visor.scan();
+                if (visor.state)
+                    Serial.println("VISOR DOWN");
+                else
+                    Serial.println("VISOR UP");
                 Serial.print("Min.");
                 Serial.print("\t");
                 Serial.print("Charge");
                 Serial.print("\t");
                 Serial.print("T");
                 Serial.print("\t");
-                Serial.print("T_MAX");
+                Serial.print("T_MIN");
                 Serial.print("\t");
-                Serial.println("T_MIN");
+                Serial.println("T_MAX");
             }
 
             if (log.timeElapsedMillis())
@@ -198,7 +204,7 @@ namespace interpretCommand
                 float sinceStartMinuteFloat = (float)sinceStartMinute / 2.00;
                 Serial.print(sinceStartMinuteFloat);
                 Serial.print("\t");
-                Serial.print(lowestPercent);
+                Serial.print(realPercent);
                 Serial.print("\t");
                 Serial.print(tacho.finalValue);
                 Serial.print("\t");
@@ -241,6 +247,7 @@ namespace interpretCommand
                         {
                             int a = Serial.read();
                         }
+                        log.preTime = millis();
                         break;
                     }
                 }

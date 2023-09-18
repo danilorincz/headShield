@@ -38,6 +38,14 @@ bool setSSID(String &inputCommand)
   return false;
 }
 
+String getSSID()
+{
+  data.begin("data", false);
+  String mySSID = data.getString("SSID", default_ssid);
+  data.end();
+  return mySSID;
+}
+
 bool setNormal(String &inputCommand)
 {
   if (inputCommand.startsWith("set min:"))
