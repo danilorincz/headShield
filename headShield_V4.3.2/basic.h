@@ -37,6 +37,40 @@ bool setSSID(String &inputCommand)
   }
   return false;
 }
+
+bool setNormal(String &inputCommand)
+{
+  if (inputCommand.startsWith("set min:"))
+  {
+    String newMinString = inputCommand.substring(8);
+    int newMin = newMinString.toInt();
+    data.begin("normal");
+    normal.setMin(newMin);
+    delay(10);
+    data.putInt("min", newMin);
+    delay(10);
+    data.end();
+    inputCommand = "";
+    Serial.println("SET MIN");
+    return true;
+  }
+  if (inputCommand.startsWith("set max:"))
+  {
+    String newMaxString = inputCommand.substring(8);
+    int newMax = newMaxString.toInt();
+    data.begin("normal");
+    normal.setMax(newMax);
+    delay(10);
+    data.putInt("max", newMax);
+    delay(10);
+    data.end();
+    inputCommand = "";
+    Serial.println("SET MAX");
+    return true;
+  }
+
+  return false;
+}
 void putData(StatData putThis, Preferences &here, String mapName)
 {
   here.begin(mapName.c_str(), false);

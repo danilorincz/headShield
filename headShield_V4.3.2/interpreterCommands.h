@@ -127,15 +127,9 @@ namespace interpretCommand
         serialEnabled = !serialEnabled;
     }
 
-    // tudni akarom:
-    // index
-    // mennyi időnél járunk
-    // mennyi a tachométer tényleges értéke
-    // mekkora az akkumulátor valódi töltöttsége
-    // mekkora az akkumulátor legkissebb mért töltöttsége
     void batteryTest()
     {
-        Timer log(60 * 1000);
+        Timer log(30 * 1000);
         fan.on();
 
         unsigned int realPercent;
@@ -148,8 +142,11 @@ namespace interpretCommand
 
         Serial.println("BATTERY TEST PROGRAM START");
         Serial.println(" ");
+        int condition = 0; // 0-> normal 1-> noFilter 2-> noAir
+        int prevCondition = -1;
         while (true)
         {
+
             realPercent = battery.getPercent();
 
             if (realPercent < lowestPercent)
@@ -157,7 +154,11 @@ namespace interpretCommand
                 lowestPercent = realPercent;
             }
 
-            tacho.getAverage();
+            static Timer runTachoMeasure(5);
+            if (runTachoMeasure.timeElapsedMillis())
+            {
+                tacho.getAverage();
+            }
 
             if (tacho.finalValue < allTimeMinTacho && tacho.finalValue > 3000)
                 allTimeMinTacho = tacho.finalValue;
@@ -165,33 +166,88 @@ namespace interpretCommand
             if (tacho.finalValue > allTimeMaxTacho)
                 allTimeMaxTacho = tacho.finalValue;
 
+            if (condition != prevCondition)
+            {
+                prevCondition = condition;
+                switch (condition)
+                {
+                case 0:
+                    Serial.println("NORMAL");
+                    break;
+                case 1:
+                    Serial.println("NO FILTER");
+                    break;
+                case 2:
+                    Serial.println("NO AIR");
+                    break;
+                }
+                Serial.print("Min.");
+                Serial.print("\t");
+                Serial.print("Charge");
+                Serial.print("\t");
+                Serial.print("T");
+                Serial.print("\t");
+                Serial.print("T_MAX");
+                Serial.print("\t");
+                Serial.println("T_MIN");
+            }
+
             if (log.timeElapsedMillis())
             {
                 sinceStartMinute++;
-
-
-Serial.print(sinceStartMinute);
-Serial.print("\t");
-Serial.print(battery.percent);
-Serial.print("\t");
-Serial.print(lowestPercent);
-Serial.print("\t");
-Serial.print(tacho.finalValue);
-Serial.print("\t");
-Serial.print(allTimeMinTacho);
-Serial.print("\t");
-Serial.println(allTimeMaxTacho);
-
-
+                float sinceStartMinuteFloat = (float)sinceStartMinute / 2.00;
+                Serial.print(sinceStartMinuteFloat);
+                Serial.print("\t");
+                Serial.print(lowestPercent);
+                Serial.print("\t");
+                Serial.print(tacho.finalValue);
+                Serial.print("\t");
+                Serial.print(allTimeMinTacho);
+                Serial.print("\t");
+                Serial.println(allTimeMaxTacho);
 
                 allTimeMinTacho = 9999;
                 allTimeMaxTacho = 0;
             }
+
+            if (sinceStartMinute == 10)
+            {
+                sinceStartMinute = 0;
+                switch (condition)
+                {
+                case 0:
+                    Serial.println("normal done! remove the filters");
+                    break;
+                case 1:
+                    Serial.println("no filter done! add the clogged filter");
+                    break;
+                case 2:
+                    Serial.println("no air done! change device");
+                    return;
+                    break;
+                }
+                condition++;
+                Serial.println("Press any button to continue");
+
+                while (true)
+                {
+                    if (runTachoMeasure.timeElapsedMillis())
+                    {
+                        tacho.getAverage();
+                    }
+                    if (Serial.available())
+                    {
+                        for (int i = 0; i < 64; i++)
+                        {
+                            int a = Serial.read();
+                        }
+                        break;
+                    }
+                }
+            }
         }
     }
-
 }
-
 using namespace interpretCommand::print;
 Interpreter printTachoValue("tacho", tachoValue);
 Interpreter printPeriferial("input", inputValues);

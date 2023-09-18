@@ -118,7 +118,7 @@ cond::conditionNumber fanErrorNumber;
 
 void setup()
 {
- 
+
   //* BEGIN
   Serial.begin(115200);
   fan.begin();
@@ -240,9 +240,17 @@ void updateSensor()
 
 void updateTacho()
 {
+  static unsigned long lastMeasure = millis();
+
   if (fan.active())
   {
-    tacho.getAverage();
+    static Timer runTachoMeasure(5);
+    if (runTachoMeasure.timeElapsedMillis())
+    {
+
+      tacho.getAverage();
+    }
+
     accountBattery(tacho.finalValue);
   }
 }
@@ -468,6 +476,7 @@ void loop()
     command = interpreter::getCommand();
 
   setSSID(command);
+  setNormal(command);
 
   toggleSerial.refresh(command);
   printTachoValue.refresh(command);
