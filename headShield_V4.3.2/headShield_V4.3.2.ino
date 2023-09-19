@@ -238,19 +238,19 @@ void updateSensor()
   perkData.ECO2 = ENS160.getECO2();
 }
 
+
 void updateTacho()
 {
   static unsigned long lastMeasure = millis();
 
   if (fan.active())
   {
-    static Timer runTachoMeasure(5);
-    if (runTachoMeasure.timeElapsedMillis())
+    static unsigned long tachoMeasureStart = 0;
+    if (millis() - tachoMeasureStart > 5)
     {
-
       tacho.getAverage();
+      tachoMeasureStart = millis();
     }
-
     accountBattery(tacho.finalValue);
   }
 }

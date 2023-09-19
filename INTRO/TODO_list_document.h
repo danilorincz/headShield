@@ -53,6 +53,11 @@
 // Tesztelni a vezetéknélküli feltöltést
 // Becsomagolni mindent
 
+//! PROBLÉMÁK
+// HS1: azakkumulátor töltöttségi szint mérése 83%-ot mutat amikor 100%-ot kéne
+// HS1: a reed kapcsoló nem érzékel megfelelően csak ha odébb nyomjuk a mágnest
+// HS4: nincs különbség a normal és noAir között
+
 
 
 

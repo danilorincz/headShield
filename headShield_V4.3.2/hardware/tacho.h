@@ -114,7 +114,9 @@ public:
     int getAverage()
     {
         if (doMeasure())
-            smooth.add(dutyCycle);
+            smooth.add(dutyCycle);/*
+        else
+            Serial.println("Measurement failed");*/
 
         finalValue = smooth.average();
         return finalValue;
