@@ -9,9 +9,11 @@ public:
     unsigned int rawValueAverage;
     unsigned int percent;
     unsigned int prevPercent;
-    float voltage;
     int level;
     MovingAverage smooth;
+    float voltage;
+    float a = 1;
+    float b = 0;
 
     // defining the two known points
     float voltage1 = 6;
@@ -38,6 +40,11 @@ public:
         rawValue = analogRead(pin);
         return rawValue;
     }
+    void setCorrection(float a_new, float b_new)
+    {
+        a = a_new;
+        b = b_new;
+    }
 
     int readAverage()
     {
@@ -49,6 +56,7 @@ public:
     float getVoltage()
     {
         voltage = slope * readAverage() + intercept;
+        voltage = a * voltage + b;
         return voltage;
     }
 

@@ -38,6 +38,17 @@ bool setSSID(String &inputCommand)
   return false;
 }
 
+void restoreBatteryCorrection()
+{
+  data.begin("batPar", false);
+  delay(10);
+  float a = data.getFloat("a", -1);
+  float b = data.getFloat("b", -1);
+  delay(10);
+  data.end();
+  battery.setCorrection(a, b);
+}
+
 String getSSID()
 {
   data.begin("data", false);
@@ -79,6 +90,45 @@ bool setNormal(String &inputCommand)
 
   return false;
 }
+
+void setBatteryParameter(String &inputCommand)
+{
+  float new_a = 0.0;
+  float new_b = 0.0;
+
+  if (!inputCommand.startsWith("set bat:"))
+    return;
+
+  inputCommand.remove(0, 8);
+  inputCommand.trim();
+
+  int spaceIndex = inputCommand.indexOf(' ');
+
+  if (spaceIndex == -1)
+    return;
+
+  String stra = inputCommand.substring(0, spaceIndex);
+  String strb = inputCommand.substring(spaceIndex + 1);
+
+  new_a = stra.toFloat();
+  new_b = strb.toFloat();
+
+  Serial.print("new_a: ");
+  Serial.println(new_a, 2);
+  Serial.print("new_b: ");
+  Serial.println(new_b, 2);
+
+  data.begin("batPar");
+  delay(10);
+  data.putFloat("a", new_a);
+  data.putFloat("b", new_b);
+  data.end();
+
+  battery.setCorrection(new_a, new_b);
+
+  inputCommand = "";
+}
+
 void putData(StatData putThis, Preferences &here, String mapName)
 {
   here.begin(mapName.c_str(), false);

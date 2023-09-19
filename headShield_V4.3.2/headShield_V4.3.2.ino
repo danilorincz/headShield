@@ -133,6 +133,7 @@ void setup()
   restoreCondition(normal, data, "normal");
   String restoredSSID = restoreWifiCredentials(data);
   const char *ssidChar = restoredSSID.c_str();
+  restoreBatteryCorrection();
   //* WIFI
   WiFi.mode(WIFI_AP);
   WiFi.softAPConfig(local_ip, local_ip, subnet);
@@ -238,7 +239,6 @@ void updateSensor()
   perkData.ECO2 = ENS160.getECO2();
 }
 
-
 void updateTacho()
 {
   static unsigned long lastMeasure = millis();
@@ -263,6 +263,7 @@ void updateBattery()
 {
   battery.getPercent();
 }
+
 void updateHeadSensor()
 {
   headSensor.scan();
@@ -282,14 +283,14 @@ void parseAndAction_tacho()
 
   int value = tacho.finalValue;
 
-  if (normal.inRange(value, 15, 12)) //* NORMAL
+  if (normal.getMin() < value && value < normal.getMax())
     fanErrorNumber = cond::normal;
-  else if (normal.getMax() < value && value < normal.getMax() + 100) //* OVER NORMAL
-    fanErrorNumber = cond::overNormal;
-  else if (normal.getMin() - 100 < value && value < normal.getMin()) //* UNDER NORMAL
+  else if (normal.getMin() - 100 < value && value < normal.getMin())
     fanErrorNumber = cond::underNormal;
+  else if (normal.getMax() < value && value < normal.getMax() + 100)
+    fanErrorNumber = cond::overNormal;
   else
-    fanErrorNumber = cond::other; //* UNUSUAL
+    fanErrorNumber = cond::other;
 
   switch (fanErrorNumber)
   {
@@ -355,7 +356,7 @@ void parseAndAction_battery()
 
   prevPercent = batteryPercentage;
 }
-unsigned long lastSaveTimestamp = 0;
+
 void parseAndAction_headSensor()
 {
   static bool onDone = false;
@@ -385,13 +386,13 @@ void parseAndAction_headSensor()
       fan.off();
       lamp.off(); //! CHECK
 
-      unsigned long currentTime = millis();
+      static unsigned long headSensorSaveStart = 0;
 
-      if (currentTime - lastSaveTimestamp > 120000)
+      if (millis() - headSensorSaveStart > 120000)
       {
         if (filterTracker.save(true))
         {
-          lastSaveTimestamp = currentTime;
+          headSensorSaveStart = millis();
         }
       }
     }
@@ -477,6 +478,7 @@ void loop()
 
   setSSID(command);
   setNormal(command);
+  setBatteryParameter(command);
 
   toggleSerial.refresh(command);
   printTachoValue.refresh(command);
