@@ -57,6 +57,10 @@
 // HS1: azakkumulátor töltöttségi szint mérése 83%-ot mutat amikor 100%-ot kéne
 //* HS1: a reed kapcsoló nem érzékel megfelelően csak ha odébb nyomjuk a mágnest
 //* HS4: nincs különbség a normal és noAir között
+/* csináltam egy 3x5 perces tacho testet minden sisakon hétfőn. Kedden megismételtem, 
+és a HS4 kivételével mindegyik nagyobb értékeket mutatott mint tegnap és újra kelle kalibrálni*/
+// a HS1-nek ismét eltérés volt kedd és szerda közötti mérésekben. De a többi egyenlőre hozza a tegnapi értékeket. szerda van
+
 
 
 

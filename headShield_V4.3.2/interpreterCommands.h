@@ -254,6 +254,65 @@ namespace interpretCommand
             }
         }
     }
+
+    void performLongTest()
+    {
+        Timer log(30 * 1000);
+        fan.on();
+
+        unsigned int realPercent;
+
+        unsigned int sinceStartMinute = 0;
+
+        int allTimeMinTacho = 9999;
+        int allTimeMaxTacho = 0;
+
+        Serial.println("LONG TEST PROGRAM START");
+        Serial.println(" ");
+
+        while (true)
+        {
+            realPercent = battery.getPercent();
+
+            static Timer runTachoMeasure(5);
+            if (runTachoMeasure.timeElapsedMillis())
+            {
+                tacho.getAverage();
+            }
+
+            if (tacho.finalValue < allTimeMinTacho && tacho.finalValue > 3000)
+                allTimeMinTacho = tacho.finalValue;
+
+            if (tacho.finalValue > allTimeMaxTacho)
+                allTimeMaxTacho = tacho.finalValue;
+
+            if (log.timeElapsedMillis())
+            {
+                sinceStartMinute++;
+
+                Serial.print(sinceStartMinute);
+                Serial.print("\t");
+                Serial.print(realPercent);
+                Serial.print("\t");
+                Serial.print(tacho.finalValue);
+                Serial.print("\t");
+                Serial.print(allTimeMinTacho);
+                Serial.print("\t");
+                Serial.println(allTimeMaxTacho);
+
+                allTimeMinTacho = 9999;
+                allTimeMaxTacho = 0;
+            }
+
+            if (sinceStartMinute == 90)
+            {
+                fan.off();
+                Serial.println("FINISHED______________________________");
+                return;
+            }
+        }
+    }
+
 }
 using namespace interpretCommand::print;
 Interpreter printTachoValue("tacho", tachoValue);
@@ -271,3 +330,4 @@ Interpreter printSensorValues("sensor", sensorValues);
 
 Interpreter toggleFan("fan", manualFanToggle);
 Interpreter analyseBattery("battery test", batteryTest);
+Interpreter longTest("long test", performLongTest);

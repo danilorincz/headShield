@@ -101,7 +101,7 @@ public:
             }
 
             dutyCycle = timeHigh + timeLow;
-            if (abs(timeHigh - timeLow) < 0.15 * dutyCycle && dutyCycle > 3500) //* GOOD
+            if (abs(timeHigh - timeLow) < 0.10 * dutyCycle && dutyCycle > 3300) //* GOOD
             {
                 returnValue = true;
                 break;

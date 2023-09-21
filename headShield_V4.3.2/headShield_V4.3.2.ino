@@ -246,12 +246,12 @@ void updateTacho()
   if (fan.active())
   {
     static unsigned long tachoMeasureStart = 0;
-    if (millis() - tachoMeasureStart > 5)
+    if (millis() - tachoMeasureStart > 10)
     {
       tacho.getAverage();
       tachoMeasureStart = millis();
     }
-    accountBattery(tacho.finalValue);
+    //accountBattery(tacho.finalValue);
   }
 }
 void accountBattery(int &modifyThis)
@@ -452,6 +452,7 @@ FunctionRunner readFilterTrack(updateFilterTracker, 1000);
 
 void loop()
 {
+
   readFilterTrack.takeAction();
 
   AsyncElegantOTA.loop();
@@ -493,4 +494,5 @@ void loop()
   toggleFan.refresh(command);
   printMemoryWear.refresh(command);
   analyseBattery.refresh(command);
+  longTest.refresh(command);
 }
