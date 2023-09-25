@@ -251,12 +251,12 @@ void updateTacho()
       tacho.getAverage();
       tachoMeasureStart = millis();
     }
-    //accountBattery(tacho.finalValue);
+    accountBattery(tacho.finalValue);
   }
 }
 void accountBattery(int &modifyThis)
 {
-  int offset = map(battery.percent, 100, 0, 0, 10);
+  int offset = map(battery.percent, 100, 0, 0, 6);
   modifyThis -= offset;
 }
 void updateBattery()
@@ -442,6 +442,57 @@ void updateFilterTracker()
     previousOnTime = filterTracker.get_timeOn();
   }
 }
+int magicNumber = 3610;
+void adjustThresholds(int tachoValue, FanCondition &newThresholds)
+{
+  if (fan.getCurrentSessionOn() < 12 * 1000)
+    return;
+  static MovingAverage movingAvg(3);
+  if (fanErrorNumber != cond::normal)
+  {
+    movingAvg.clear();
+    return;
+  }
+
+  static Timer addTimer(1000);
+  static Timer modifyTimer(3000);
+  float avg;
+  if (addTimer.timeElapsedMillis())
+  {
+    if (3565 < tachoValue && tachoValue < 3610)
+    {
+      Serial.println("Tacho: " + String(tachoValue));
+      movingAvg.add(tachoValue);
+    }
+    else
+    {
+      Serial.println("OUT OF RANGE");
+    }
+  }
+
+  if (modifyTimer.timeElapsedMillis())
+  {
+
+    avg = movingAvg.average();
+    Serial.println("Average: " + String(avg));
+    if (3565 < avg && avg < 3610)
+    {
+
+      newThresholds.setMin((int)avg - 20);
+      newThresholds.setMax((int)avg + 12);
+      if (newThresholds.getMax() >= magicNumber)
+      {
+        newThresholds.setMax(magicNumber);
+        newThresholds.setMin(magicNumber - 36);
+      }
+      int newMax = newThresholds.getMax();
+      int newMin = newThresholds.getMin();
+      newMax = newThresholds.getMax();
+      newMin = newThresholds.getMin();
+      Serial.println("New thresholds: " + String(newMax) + "  " + String(newMin));
+    }
+  }
+}
 
 FunctionRunner tachoRunner(parseAndAction_tacho, 1000);
 FunctionRunner batteryRunner(parseAndAction_battery, 4000);
@@ -452,6 +503,8 @@ FunctionRunner readFilterTrack(updateFilterTracker, 1000);
 
 void loop()
 {
+  if (fan.active())
+    adjustThresholds(tacho.finalValue, normal);
 
   readFilterTrack.takeAction();
 
