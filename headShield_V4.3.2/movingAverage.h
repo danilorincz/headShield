@@ -76,4 +76,5 @@ public:
         sum = 0;
         count = 0;
     }
+
 };

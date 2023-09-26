@@ -312,6 +312,12 @@ namespace interpretCommand
             }
         }
     }
+    void printAccel()
+    {
+        Serial.println("Acceleraion: " + String(accelerationValue));
+        Serial.println("Max: " + String(accelerationMax));
+        Serial.println("Min: " + String(accelerationMin));
+    }
 
 }
 using namespace interpretCommand::print;
@@ -331,3 +337,4 @@ Interpreter printSensorValues("sensor", sensorValues);
 Interpreter toggleFan("fan", manualFanToggle);
 Interpreter analyseBattery("battery test", batteryTest);
 Interpreter longTest("long test", performLongTest);
+Interpreter logAcceleration("accel", printAccel);
