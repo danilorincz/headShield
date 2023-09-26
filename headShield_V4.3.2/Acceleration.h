@@ -1,6 +1,7 @@
 #include <vector>
 #include <Arduino.h>
 #include <algorithm>
+#include "timer.h"
 class Acceleration
 {
 private:
@@ -45,10 +46,12 @@ public:
             count--;
         }
 
-        if (count < (X / 1000) * 25)
+        if (count < (X / 1000) * 20)
         {
-            Serial.println("Error: Not enough values received in the last " + String(X) + " seconds.");
-            return 0;
+            static Timer logErrorTimer(1000);
+            if (logErrorTimer.timeElapsedMillis())
+                Serial.println("Error: Not enough values received in the last " + String(X) + " seconds.");
+            return -10;
         }
 
         firstValue = values.front();

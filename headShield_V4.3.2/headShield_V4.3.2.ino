@@ -278,8 +278,9 @@ void parseAndAction_tacho()
   }
 
   int value = tacho.finalValue;
-
-  if (normal.getMin() < value && value < normal.getMax())
+  if (3540 < value && value < 3580)
+    fanErrorNumber = cond::normal;
+  else if (normal.getMin() < value && value < normal.getMax())
     fanErrorNumber = cond::normal;
   else if (normal.getMin() - 100 < value && value < normal.getMin())
     fanErrorNumber = cond::underNormal;
@@ -441,8 +442,8 @@ void updateFilterTracker()
 
 void adjustThresholds(int tachoValue, FanCondition &newThresholds)
 {
-  const unsigned int sampleSize = 10;
-  const unsigned int addDuration = 150;
+  const unsigned int sampleSize = 15;
+  const unsigned int addDuration = 100;
   const unsigned int periodTime = sampleSize * addDuration;
 
   static MovingAverage adjustAverage(sampleSize);
@@ -457,11 +458,16 @@ void adjustThresholds(int tachoValue, FanCondition &newThresholds)
 
   if (fan.getCurrentSessionOn() < 7000)
     return;
-  if (3550 > tachoValue || tachoValue > 3700)
-    return;
-  if (fanErrorNumber != cond::normal)
+  if (3400 > tachoValue || tachoValue > 3700)
     return;
 
+  if (fanErrorNumber != cond::normal)
+  {
+    static Timer logOutOfRangeTimer(1000);
+    if (logOutOfRangeTimer.timeElapsedMillis())
+      Serial.println("OUT OF RANGE");
+    return;
+  }
   if (addAccelDataTimer.timeElapsedMillis())
   {
     acc.addValue(tacho.finalValue);
@@ -470,7 +476,6 @@ void adjustThresholds(int tachoValue, FanCondition &newThresholds)
     accelerationMin = accelMinMax.getMinValue(4000);
     accelerationMax = accelMinMax.getMaxValue(4000);
   }
-
   //* ADD TACHO VALUE TO AVERAGE AND CALCULATE
   if (addTimer.timeElapsedMillis())
   {
@@ -479,16 +484,15 @@ void adjustThresholds(int tachoValue, FanCondition &newThresholds)
   }
 
   //* GET NEW THRESHOLDS
-  if ((-0.45 < accelerationMin && accelerationMax < 0.45) && (3550 < newAverage && newAverage < 3630))
+  if ((-0.35 < accelerationMin && accelerationMax < 0.35) && (3540 < newAverage && newAverage < 3600) && accelerationValue != -10)
   {
     if (modifyThresholdTimer.timeElapsedMillis())
     {
-
       Serial.println("ENABLE ADJUST");
       Serial.print("Accel max: ");
       Serial.println(accelerationMax);
 
-      int newMax = newAverage + 14;
+      int newMax = newAverage + 5;
       int newMin = newAverage - 20;
       newThresholds.setMax(newMax);
       newThresholds.setMin(newMin);
@@ -499,7 +503,9 @@ void adjustThresholds(int tachoValue, FanCondition &newThresholds)
   }
   else
   {
-    Serial.println("DISABLE ADJUST");
+    static Timer logDisableAdjustTimer(1000);
+    if (logDisableAdjustTimer.timeElapsedMillis())
+      Serial.println("DISABLE ADJUST*******************");
     adjustAverage.clear();
   }
 }

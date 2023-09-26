@@ -2,17 +2,7 @@
 
 class Device
 {
-public:
-    int pin;
-    bool state;
-    unsigned long timeWhenOn = 0;
-
-    Device(int pin) : pin(pin) {}
-
-    void begin()
-    {
-        pinMode(pin, OUTPUT);
-    }
+private:
     void turnOn()
     {
         digitalWrite(pin, HIGH);
@@ -25,6 +15,19 @@ public:
         timeWhenOn = 0;
         state = LOW;
     }
+
+public:
+    int pin;
+    bool state;
+    unsigned long timeWhenOn = 0;
+
+    Device(int pin) : pin(pin) {}
+
+    void begin()
+    {
+        pinMode(pin, OUTPUT);
+    }
+
     unsigned long getCurrentSessionOn()
     {
         if (timeWhenOn == 0)
@@ -61,10 +64,5 @@ public:
     bool active()
     {
         return state;
-    }
-    void suspend()
-    {
-        digitalWrite(pin, LOW);
-        timeWhenOn = -1;
     }
 };
