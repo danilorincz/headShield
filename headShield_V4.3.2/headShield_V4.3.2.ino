@@ -278,10 +278,14 @@ void parseAndAction_tacho()
   }
 
   int value = tacho.finalValue;
-  /*if (3540 < value && value < 3575)
-    fanErrorNumber = cond::normal;*/
+
   if (normal.getMin() < value && value < normal.getMax())
     fanErrorNumber = cond::normal;
+  else if (3555 < value && value < 3575)
+  {
+    //Serial.println("Saved by static limits________________________________");
+    fanErrorNumber = cond::normal;
+  }
   else if (normal.getMin() - 100 < value && value < normal.getMin())
     fanErrorNumber = cond::underNormal;
   else if (normal.getMax() < value && value < normal.getMax() + 100)
@@ -312,10 +316,10 @@ void parseAndAction_tacho()
     MajorityResult newResult = getMajority(fanErrorNumber);
     if (newResult.isMajority && newResult.majorityValue != cond::normal)
     {
-      Serial.println("Last five values were not normal");
+      //Serial.println("Last five values were not normal");
       if (makeWarningTimer.timeElapsedMillis())
       {
-        Serial.println("Warning signal");
+        //Serial.println("Warning signal");
         //airflowSystemWarning();
       }
     }
@@ -439,17 +443,14 @@ void updateFilterTracker()
     previousOnTime = filterTracker.get_timeOn();
   }
 }
-
+/*
 void adjustThresholds(int tachoValue, FanCondition &newThresholds)
 {
-  const unsigned int sampleSize = 10;
-  const unsigned int addDuration = 100; // milliseconds
-  const unsigned int periodTime = sampleSize * addDuration;
+  static const unsigned int sampleSize = 10;
+  static const unsigned int addDuration = 100; // milliseconds
+  static const unsigned int periodTime = sampleSize * addDuration;
 
-  static Timer addTimer(addDuration);
-  static Timer modifyThresholdTimer(periodTime);
-
-  static Timer addAccelDataTimer(30);
+  static MovingAverage adjustAverage(sampleSize);
   static Acceleration acc;
   static MinMax accelMinMax;
 
@@ -464,9 +465,11 @@ void adjustThresholds(int tachoValue, FanCondition &newThresholds)
   {
     static Timer logOutOfRangeTimer(1000);
     if (logOutOfRangeTimer.timeElapsedMillis())
-      Serial.println("OUT OF RANGE");
+      //Serial.println("OUT OF RANGE");
     return;
   }
+
+  static Timer addAccelDataTimer(30);
   if (addAccelDataTimer.timeElapsedMillis())
   {
     acc.addValue(tacho.finalValue);
@@ -475,8 +478,9 @@ void adjustThresholds(int tachoValue, FanCondition &newThresholds)
     accelerationMin = accelMinMax.getMinValue(periodTime);
     accelerationMax = accelMinMax.getMaxValue(periodTime);
   }
-  static MovingAverage adjustAverage(sampleSize);
+
   //* ADD TACHO VALUE TO AVERAGE AND CALCULATE
+  static Timer addTimer(addDuration);
   if (addTimer.timeElapsedMillis())
   {
     adjustAverage.add(tachoValue);
@@ -484,51 +488,52 @@ void adjustThresholds(int tachoValue, FanCondition &newThresholds)
   }
 
   //* GET NEW THRESHOLDS
+  static Timer modifyThresholdTimer(periodTime);
   if ((-0.35 < accelerationMin && accelerationMax < 0.35) && accelerationValue != -10)
   {
     if (modifyThresholdTimer.timeElapsedMillis())
     {
-      Serial.println("ENABLE ADJUST");
-      Serial.print("Accel max: ");
-      Serial.println(accelerationMax);
+      //Serial.println("ENABLE ADJUST_********");
+      //Serial.print("Accel max: ");
+      //Serial.println(accelerationMax);
 
-      int newMax = newAverage + 10;
-      int newMin = newAverage - 20;
+      int newMax = newAverage + 8;
+      int newMin = newAverage - 25;
       newThresholds.setMax(newMax);
       newThresholds.setMin(newMin);
-      Serial.println("New threshold: ");
-      Serial.println("  MAX: " + String(newMax));
-      Serial.println("  MIN: " + String(newMin));
+      //Serial.println("Tacho: " + String(tachoValue));
+      //Serial.println("Avg tacho: " + String(newAverage));
+      //Serial.println("New threshold: ");
+      //Serial.println("  MAX: " + String(newMax));
+      //Serial.println("  MIN: " + String(newMin));
     }
   }
   else
   {
     static Timer logDisableAdjustTimer(1000);
     if (logDisableAdjustTimer.timeElapsedMillis())
-      Serial.println("DISABLE ADJUST*******************");
+    {
+      //Serial.println("DISABLE ADJUST_XXXXXXXX");
+      //Serial.println("Tacho: " + String(tachoValue));
+      //Serial.println("Avg tacho: " + String(newAverage));
+      //Serial.println("Acc. Max: " + String(accelerationMax));
+      //Serial.println("Acc. Min: " + String(accelerationMin));
+    }
     adjustAverage.clear();
   }
 }
-
+*/
 FunctionRunner tachoRunner(parseAndAction_tacho, 1000);
 FunctionRunner batteryRunner(parseAndAction_battery, 4000);
 FunctionRunner visorRunner(parseAndAction_visor, 100);
 FunctionRunner headSensorRunner(parseAndAction_headSensor, 200);
 FunctionRunner readSensorRunner(updateSensor, 200);
 FunctionRunner readFilterTrack(updateFilterTracker, 1000);
-
+// csökkentsd a period time-ot
 void loop()
 {
-  //* CALCULATE ACCELEARTION
-  if (fan.active())
-  { /*
-    acc.addValue(tacho.finalValue);
-    accelerationValue = acc.calculateAcceleration(3000);
-    accelMinMax.addValue(accelerationValue);
-    accelerationMin = accelMinMax.getMinValue(4000);
-    accelerationMax = accelMinMax.getMaxValue(4000);*/
-  }
-  adjustThresholds(tacho.finalValue, normal);
+
+//adjustThresholds(tacho.finalValue, normal);
 
   readFilterTrack.takeAction();
 
@@ -574,3 +579,21 @@ void loop()
   longTest.refresh(command);
   logAcceleration.refresh(command);
 }
+
+
+/*
+  if (fan.active())
+  { 
+    static Acceleration acc;
+    static MinMax accelMinMax;
+    acc.addValue(tacho.finalValue);
+    accelerationValue = acc.calculateAcceleration(1000);
+    accelMinMax.addValue(accelerationValue);
+    accelerationMin = accelMinMax.getMinValue(1000);
+    accelerationMax = accelMinMax.getMaxValue(1000);
+    //Serial.print(accelerationValue*1000);
+    //Serial.print(",");
+    //Serial.print(accelerationMin*1000);
+    //Serial.print(",");
+    //Serial.println(accelerationMax*1000);
+  }*/
