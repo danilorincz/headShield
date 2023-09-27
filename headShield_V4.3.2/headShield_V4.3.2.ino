@@ -279,13 +279,11 @@ void parseAndAction_tacho()
 
   int value = tacho.finalValue;
 
-  if (normal.getMin() < value && value < normal.getMax())
-    fanErrorNumber = cond::normal;
-  else if (3555 < value && value < 3575)
+  if ((normal.getMin() < value && value < normal.getMax()) || 3555 < value && value < 3575)
   {
-    //Serial.println("Saved by static limits________________________________");
     fanErrorNumber = cond::normal;
   }
+
   else if (normal.getMin() - 100 < value && value < normal.getMin())
     fanErrorNumber = cond::underNormal;
   else if (normal.getMax() < value && value < normal.getMax() + 100)
@@ -316,10 +314,10 @@ void parseAndAction_tacho()
     MajorityResult newResult = getMajority(fanErrorNumber);
     if (newResult.isMajority && newResult.majorityValue != cond::normal)
     {
-      //Serial.println("Last five values were not normal");
+      Serial.println("Last five values were not normal");
       if (makeWarningTimer.timeElapsedMillis())
       {
-        //Serial.println("Warning signal");
+        Serial.println("Warning signal");
         //airflowSystemWarning();
       }
     }
@@ -443,7 +441,7 @@ void updateFilterTracker()
     previousOnTime = filterTracker.get_timeOn();
   }
 }
-/*
+
 void adjustThresholds(int tachoValue, FanCondition &newThresholds)
 {
   static const unsigned int sampleSize = 10;
@@ -465,8 +463,8 @@ void adjustThresholds(int tachoValue, FanCondition &newThresholds)
   {
     static Timer logOutOfRangeTimer(1000);
     if (logOutOfRangeTimer.timeElapsedMillis())
-      //Serial.println("OUT OF RANGE");
-    return;
+      Serial.println("OUT OF RANGE");
+      return;
   }
 
   static Timer addAccelDataTimer(30);
@@ -493,19 +491,19 @@ void adjustThresholds(int tachoValue, FanCondition &newThresholds)
   {
     if (modifyThresholdTimer.timeElapsedMillis())
     {
-      //Serial.println("ENABLE ADJUST_********");
-      //Serial.print("Accel max: ");
-      //Serial.println(accelerationMax);
+      Serial.println("ENABLE ADJUST_********");
+      Serial.print("Accel max: ");
+      Serial.println(accelerationMax);
 
       int newMax = newAverage + 8;
       int newMin = newAverage - 25;
       newThresholds.setMax(newMax);
       newThresholds.setMin(newMin);
-      //Serial.println("Tacho: " + String(tachoValue));
-      //Serial.println("Avg tacho: " + String(newAverage));
-      //Serial.println("New threshold: ");
-      //Serial.println("  MAX: " + String(newMax));
-      //Serial.println("  MIN: " + String(newMin));
+      Serial.println("Tacho: " + String(tachoValue));
+      Serial.println("Avg tacho: " + String(newAverage));
+      Serial.println("New threshold: ");
+      Serial.println("  MAX: " + String(newMax));
+      Serial.println("  MIN: " + String(newMin));
     }
   }
   else
@@ -513,16 +511,16 @@ void adjustThresholds(int tachoValue, FanCondition &newThresholds)
     static Timer logDisableAdjustTimer(1000);
     if (logDisableAdjustTimer.timeElapsedMillis())
     {
-      //Serial.println("DISABLE ADJUST_XXXXXXXX");
-      //Serial.println("Tacho: " + String(tachoValue));
-      //Serial.println("Avg tacho: " + String(newAverage));
-      //Serial.println("Acc. Max: " + String(accelerationMax));
-      //Serial.println("Acc. Min: " + String(accelerationMin));
+      Serial.println("DISABLE ADJUST_XXXXXXXX");
+      Serial.println("Tacho: " + String(tachoValue));
+      Serial.println("Avg tacho: " + String(newAverage));
+      Serial.println("Acc. Max: " + String(accelerationMax));
+      Serial.println("Acc. Min: " + String(accelerationMin));
     }
     adjustAverage.clear();
   }
 }
-*/
+
 FunctionRunner tachoRunner(parseAndAction_tacho, 1000);
 FunctionRunner batteryRunner(parseAndAction_battery, 4000);
 FunctionRunner visorRunner(parseAndAction_visor, 100);
@@ -532,8 +530,7 @@ FunctionRunner readFilterTrack(updateFilterTracker, 1000);
 // csökkentsd a period time-ot
 void loop()
 {
-
-//adjustThresholds(tacho.finalValue, normal);
+  adjustThresholds(tacho.finalValue, normal);
 
   readFilterTrack.takeAction();
 
@@ -580,7 +577,6 @@ void loop()
   logAcceleration.refresh(command);
 }
 
-
 /*
   if (fan.active())
   { 
@@ -591,9 +587,9 @@ void loop()
     accelMinMax.addValue(accelerationValue);
     accelerationMin = accelMinMax.getMinValue(1000);
     accelerationMax = accelMinMax.getMaxValue(1000);
-    //Serial.print(accelerationValue*1000);
-    //Serial.print(",");
-    //Serial.print(accelerationMin*1000);
-    //Serial.print(",");
-    //Serial.println(accelerationMax*1000);
+    Serial.print(accelerationValue*1000);
+    Serial.print(",");
+    Serial.print(accelerationMin*1000);
+    Serial.print(",");
+    Serial.println(accelerationMax*1000);
   }*/
