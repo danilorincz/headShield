@@ -92,7 +92,12 @@ namespace interpretCommand
         }
         void tachoValue()
         {
-            Serial.println(tacho.finalValue);
+            static int lastValue = 0;
+            if (lastValue != tacho.finalValue)
+            {
+                Serial.println(tacho.finalValue);
+                lastValue = tacho.finalValue;
+            }
         }
         void limitValues()
         {
@@ -312,11 +317,9 @@ namespace interpretCommand
             }
         }
     }
-    void printAccel()
+    void enableAccel()
     {
-        Serial.println("Acceleraion: " + String(accelerationValue));
-        Serial.println("Max: " + String(accelerationMax));
-        Serial.println("Min: " + String(accelerationMin));
+        accelPrintEnable = !accelPrintEnable;
     }
 
 }
@@ -337,4 +340,4 @@ Interpreter printSensorValues("sensor", sensorValues);
 Interpreter toggleFan("fan", manualFanToggle);
 Interpreter analyseBattery("battery test", batteryTest);
 Interpreter longTest("long test", performLongTest);
-Interpreter logAcceleration("accel", printAccel);
+Interpreter logAcceleration("accel", enableAccel);

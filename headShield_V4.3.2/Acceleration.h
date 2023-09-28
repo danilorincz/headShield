@@ -46,7 +46,7 @@ public:
             count--;
         }
 
-        if (count < (X / 1000) * 20)
+        if (count < (X / 1000) * 10)
         {
             static Timer logErrorTimer(1000);
             if (logErrorTimer.timeElapsedMillis())

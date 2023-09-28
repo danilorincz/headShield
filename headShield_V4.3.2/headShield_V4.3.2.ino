@@ -45,7 +45,8 @@ bool soundEnabled = true;
 #include "Acceleration.h"
 //? DATA STORAGE
 Preferences data;
-
+bool accelPrintEnable = false;
+unsigned long durationUpdate;
 //? WIFI
 const char *default_ssid = "HeadShield";
 const char *password = "PAPR_user_2023";
@@ -240,11 +241,14 @@ void updateSensor()
   perkData.TVOC = ENS160.getTVOC();
   perkData.ECO2 = ENS160.getECO2();
 }
-
+int tachoLastValue;
 void updateTacho()
 {
   if (fan.active())
   {
+    tacho.getAverage();
+    tacho.getAverage();
+    tacho.getAverage();
     tacho.getAverage();
     accountBattery(tacho.finalValue);
   }
@@ -279,14 +283,14 @@ void parseAndAction_tacho()
 
   int value = tacho.finalValue;
 
-  if ((normal.getMin() < value && value < normal.getMax()) || 3555 < value && value < 3575)
+  if ((normal.getMin() < value && value < normal.getMax()) || 3575 < value && value < 3615)
   {
     fanErrorNumber = cond::normal;
   }
 
-  else if (normal.getMin() - 100 < value && value < normal.getMin())
+  else if (normal.getMin() - 100 < value && value < normal.getMin() || value < 3555)
     fanErrorNumber = cond::underNormal;
-  else if (normal.getMax() < value && value < normal.getMax() + 100)
+  else if (normal.getMax() < value && value < normal.getMax() + 100 || value > 3645)
     fanErrorNumber = cond::overNormal;
   else
     fanErrorNumber = cond::other;
@@ -464,10 +468,10 @@ void adjustThresholds(int tachoValue, FanCondition &newThresholds)
     static Timer logOutOfRangeTimer(1000);
     if (logOutOfRangeTimer.timeElapsedMillis())
       Serial.println("OUT OF RANGE");
-      return;
+    return;
   }
 
-  static Timer addAccelDataTimer(30);
+  static Timer addAccelDataTimer(50);
   if (addAccelDataTimer.timeElapsedMillis())
   {
     acc.addValue(tacho.finalValue);
@@ -487,7 +491,7 @@ void adjustThresholds(int tachoValue, FanCondition &newThresholds)
 
   //* GET NEW THRESHOLDS
   static Timer modifyThresholdTimer(periodTime);
-  if ((-0.35 < accelerationMin && accelerationMax < 0.35) && accelerationValue != -10)
+  if ((-0.65 < accelerationMin && accelerationMax < 0.65) && accelerationValue != -10)
   {
     if (modifyThresholdTimer.timeElapsedMillis())
     {
@@ -495,8 +499,9 @@ void adjustThresholds(int tachoValue, FanCondition &newThresholds)
       Serial.print("Accel max: ");
       Serial.println(accelerationMax);
 
-      int newMax = newAverage + 8;
+      int newMax = newAverage + 15;
       int newMin = newAverage - 25;
+   
       newThresholds.setMax(newMax);
       newThresholds.setMin(newMin);
       Serial.println("Tacho: " + String(tachoValue));
@@ -519,6 +524,14 @@ void adjustThresholds(int tachoValue, FanCondition &newThresholds)
     }
     adjustAverage.clear();
   }
+  if (accelPrintEnable)
+  {
+    Serial.print("Acceleraion: " + String(accelerationValue));
+    Serial.print(",");
+    Serial.print("Max: " + String(accelerationMax));
+    Serial.print(",");
+    Serial.println("Min: " + String(accelerationMin));
+  }
 }
 
 FunctionRunner tachoRunner(parseAndAction_tacho, 1000);
@@ -537,7 +550,12 @@ void loop()
   AsyncElegantOTA.loop();
   touchInputHandler();
 
-  updateTacho();
+  if (fan.active())
+  {
+    static Timer updateTachoTimer(50);
+    if (updateTachoTimer.timeElapsedMillis())
+      updateTacho();
+  }
   updateBattery();
   updateHeadSensor();
   updateVisor();
