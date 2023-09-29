@@ -112,9 +112,29 @@ const int audioEnPin = 16;
 Audio audio(audioEnPin);
 
 //? GLOBAL
+struct AdaptiveValues
+{
+  unsigned int ABSOLUTE_MIN;
+  unsigned int NOFILTER_CONST_MAX;
+  unsigned int NORMAL_INITIAL_MIN;
+  unsigned int NORMAL_CONST_MIN;
+  unsigned int NORMAL_CONST_MAX;
+  unsigned int NORMAL_INITIAL_MAX;
+  unsigned int NOAIR_CONST_MIN;
+  unsigned int ABSOLUTE_MAX;
+  unsigned int LOWER_DIF;
+  unsigned int UPPER_DIF;
+  float MAX_ACCEL;
+};
 FanCondition normal;
+AdaptiveValues ADAPT;
 cond::conditionNumber fanErrorNumber;
 
+void setInitialLimits()
+{
+  normal.setMax(ADAPT.NORMAL_INITIAL_MAX);
+  normal.setMin(ADAPT.NORMAL_INITIAL_MIN);
+}
 #include "basic.h"
 #include "webInterface.h"
 #include "interpreterCommands.h"
@@ -160,6 +180,8 @@ void setup()
 
   //* start up
   piezo.playStartup();
+  loadAdaptiveSettings(data, ADAPT);
+  setInitialLimits();
 }
 
 bool multiTouch()
@@ -283,17 +305,26 @@ void parseAndAction_tacho()
 
   int value = tacho.finalValue;
 
-  if ((normal.getMin() < value && value < normal.getMax()) || 3575 < value && value < 3620)
+  if ((normal.getMin() < value && value < normal.getMax()) || //? NORMAL
+      ADAPT.NORMAL_CONST_MIN < value && value < ADAPT.NORMAL_CONST_MAX)
   {
     fanErrorNumber = cond::normal;
   }
 
-  else if (normal.getMin() - 100 < value && value < normal.getMin() || value < 3555)
+  else if (ADAPT.ABSOLUTE_MIN < value && value < normal.getMin() || //? NO FILTER
+           value < ADAPT.NOFILTER_CONST_MAX)
+  {
     fanErrorNumber = cond::underNormal;
-  else if (normal.getMax() < value && value < normal.getMax() + 100 || value > 3645)
+  }
+  else if (normal.getMax() < value && value < ADAPT.ABSOLUTE_MAX || //? NO AIR
+           value > ADAPT.NOAIR_CONST_MIN)
+  {
     fanErrorNumber = cond::overNormal;
+  }
   else
-    fanErrorNumber = cond::other;
+  {
+    fanErrorNumber = cond::other; //? MALFUNCTION
+  }
 
   switch (fanErrorNumber)
   {
@@ -460,12 +491,11 @@ void adjustThresholds(int tachoValue, FanCondition &newThresholds)
 
   if (fan.getCurrentSessionOn() < 7000)
     return;
-  if (3400 > tachoValue || tachoValue > 3700)
-    return;
 
   if (fanErrorNumber != cond::normal)
   {
     static Timer logOutOfRangeTimer(1000);
+    //setInitialLimits();
     if (logOutOfRangeTimer.timeElapsedMillis())
       Serial.println("OUT OF RANGE");
     return;
@@ -491,13 +521,25 @@ void adjustThresholds(int tachoValue, FanCondition &newThresholds)
 
   //* GET NEW THRESHOLDS
   static Timer modifyThresholdTimer(periodTime);
-  if ((-0.65 < accelerationMin && accelerationMax < 0.65) && accelerationValue != -10)
+  if ((-ADAPT.MAX_ACCEL < accelerationMin && accelerationMax < ADAPT.MAX_ACCEL) && accelerationValue != -10)
   {
     if (modifyThresholdTimer.timeElapsedMillis())
     {
-      int newMax = newAverage + 15;
-      int newMin = newAverage - 25;
+      int newMax = newAverage + ADAPT.UPPER_DIF;
+      int newMin = newAverage - ADAPT.LOWER_DIF;
 
+      if (newMax >= ADAPT.NOAIR_CONST_MIN)
+      {
+        Serial.println("UPPER LIMIT REACHED");
+        newMax = ADAPT.NOAIR_CONST_MIN;
+        newMin = ADAPT.NOAIR_CONST_MIN - ADAPT.UPPER_DIF - ADAPT.LOWER_DIF;
+      }
+      if (newMin <= ADAPT.NOFILTER_CONST_MAX)
+      {
+        Serial.println("LOWER LIMIT REACHED");
+        newMin = ADAPT.NOFILTER_CONST_MAX;
+        newMax = ADAPT.NOAIR_CONST_MIN + ADAPT.UPPER_DIF + ADAPT.LOWER_DIF;
+      }
       newThresholds.setMax(newMax);
       newThresholds.setMin(newMin);
       Serial.println("EN");
@@ -562,15 +604,20 @@ void loop()
   using namespace interpreter;
 
   if (Serial.available())
+  {
+    Serial.println("COMMAND: " + command);
     command = interpreter::getCommand();
+  }
 
   setSSID(command);
   setNormal(command);
   setBatteryParameter(command);
+  setAdaptiveSettings(command, ADAPT);
 
   toggleSerial.refresh(command);
   printTachoValue.refresh(command);
   printPeriferial.refresh(command);
+
   printLimits.refresh(command);
 
   printSensorValues.refresh(command);
@@ -583,6 +630,7 @@ void loop()
   analyseBattery.refresh(command);
   longTest.refresh(command);
   logAcceleration.refresh(command);
+  printAdaptive.refresh(command);
 }
 
 /*

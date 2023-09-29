@@ -62,6 +62,36 @@ namespace interpretCommand
 {
     namespace print
     {
+        void printAdaptiveSettings()
+        {
+            // Load settings from flash
+            loadAdaptiveSettings(data, ADAPT);
+
+            // Print settings to Serial
+            Serial.println("Current Settings:");
+            Serial.print("ABSOLUTE_MIN: ");
+            Serial.println(ADAPT.ABSOLUTE_MIN);
+            Serial.print("NOFILTER_CONST_MAX: ");
+            Serial.println(ADAPT.NOFILTER_CONST_MAX);
+            Serial.print("NORMAL_INITIAL_MIN: ");
+            Serial.println(ADAPT.NORMAL_INITIAL_MIN);
+            Serial.print("NORMAL_CONST_MIN: ");
+            Serial.println(ADAPT.NORMAL_CONST_MIN);
+            Serial.print("NORMAL_CONST_MAX: ");
+            Serial.println(ADAPT.NORMAL_CONST_MAX);
+            Serial.print("NORMAL_INITIAL_MAX: ");
+            Serial.println(ADAPT.NORMAL_INITIAL_MAX);
+            Serial.print("NOAIR_CONST_MIN: ");
+            Serial.println(ADAPT.NOAIR_CONST_MIN);
+            Serial.print("ABSOLUTE_MAX: ");
+            Serial.println(ADAPT.ABSOLUTE_MAX);
+            Serial.print("LOWER_DIF: ");
+            Serial.println(ADAPT.LOWER_DIF);
+            Serial.print("UPPER_DIF: ");
+            Serial.println(ADAPT.UPPER_DIF);
+            Serial.print("MAX_ACCEL: ");
+            Serial.println(ADAPT.MAX_ACCEL, 2); // 2 decimal places
+        }
         void filterOnTime()
         {
             Serial.println(filterTracker.get_timeOn());
@@ -327,6 +357,7 @@ using namespace interpretCommand::print;
 Interpreter printTachoValue("tacho", tachoValue);
 Interpreter printPeriferial("input", inputValues);
 Interpreter printLimits("limit", limitValues);
+Interpreter printAdaptive("adaptive data", printAdaptiveSettings);
 
 Interpreter printFilterTime("filter", filterOnTime);
 Interpreter printMemoryWear("wear", memoryWear);

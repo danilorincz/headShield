@@ -59,36 +59,32 @@ String getSSID()
 
 bool setNormal(String &inputCommand)
 {
+  String newValueString = inputCommand.substring(8);
+  int newValue = newValueString.toInt();
+  data.begin("normal");
+  delay(10);
+  bool returnValue = false;
   if (inputCommand.startsWith("set min:"))
   {
-    String newMinString = inputCommand.substring(8);
-    int newMin = newMinString.toInt();
-    data.begin("normal");
-    normal.setMin(newMin);
-    delay(10);
-    data.putInt("min", newMin);
-    delay(10);
-    data.end();
-    inputCommand = "";
+    normal.setMin(newValue);
+    data.putInt("min", newValue);
     Serial.println("SET MIN");
-    return true;
+    returnValue = true;
   }
   if (inputCommand.startsWith("set max:"))
   {
-    String newMaxString = inputCommand.substring(8);
-    int newMax = newMaxString.toInt();
-    data.begin("normal");
-    normal.setMax(newMax);
-    delay(10);
-    data.putInt("max", newMax);
+    normal.setMax(newValue);
+    data.putInt("max", newValue);
+    Serial.println("SET MAX");
+    returnValue = true;
+  }
+  if (returnValue)
+  {
     delay(10);
     data.end();
     inputCommand = "";
-    Serial.println("SET MAX");
-    return true;
   }
-
-  return false;
+  return returnValue;
 }
 
 void setBatteryParameter(String &inputCommand)
@@ -193,4 +189,126 @@ String millisToTimeString(unsigned long millis)
   String timeString = hoursStr + ":" + minutesStr + ":" + secondsStr;
 
   return timeString;
+}
+
+void saveAdaptiveSettings(Preferences &prefs, const AdaptiveValues &settings)
+{
+  prefs.begin("settings", false);
+  delay(10);
+  prefs.putUInt("ABS_MIN", settings.ABSOLUTE_MIN);
+  prefs.putUInt("NOF_MAX", settings.NOFILTER_CONST_MAX);
+  prefs.putUInt("NOR_INI_MIN", settings.NORMAL_INITIAL_MIN);
+  prefs.putUInt("NOR_CON_MIN", settings.NORMAL_CONST_MIN);
+  prefs.putUInt("NOR_CON_MAX", settings.NORMAL_CONST_MAX);
+  prefs.putUInt("NOR_INI_MAX", settings.NORMAL_INITIAL_MAX);
+  prefs.putUInt("NOA_MIN", settings.NOAIR_CONST_MIN);
+  prefs.putUInt("ABS_MAX", settings.ABSOLUTE_MAX);
+  prefs.putUInt("LOW_DIF", settings.LOWER_DIF);
+  prefs.putUInt("UPP_DIF", settings.UPPER_DIF);
+  prefs.putFloat("MAX_ACC", settings.MAX_ACCEL);
+  prefs.end();
+  delay(10);
+}
+
+void loadAdaptiveSettings(Preferences &prefs, AdaptiveValues &settings)
+{
+  prefs.begin("settings", false);
+  delay(10);
+  settings.ABSOLUTE_MIN = prefs.getUInt("ABS_MIN", 3400);
+  settings.NOFILTER_CONST_MAX = prefs.getUInt("NOF_MAX", 3555);
+  settings.NORMAL_INITIAL_MIN = prefs.getUInt("NOR_INI_MIN", 3570);
+  settings.NORMAL_CONST_MIN = prefs.getUInt("NOR_CON_MIN", 3575);
+  settings.NORMAL_CONST_MAX = prefs.getUInt("NOR_CON_MAX", 3620);
+  settings.NORMAL_INITIAL_MAX = prefs.getUInt("NOR_INI_MAX", 3640);
+  settings.NOAIR_CONST_MIN = prefs.getUInt("NOA_MIN", 3645);
+  settings.ABSOLUTE_MAX = prefs.getUInt("ABS_MAX", 3700);
+  settings.LOWER_DIF = prefs.getUInt("LOW_DIF", 25);
+  settings.UPPER_DIF = prefs.getUInt("UPP_DIF", 15);
+  settings.MAX_ACCEL = prefs.getFloat("MAX_ACC", 0.65);
+  prefs.end();
+  delay(10);
+}
+
+bool setAdaptiveSettings(String &inputCommand, AdaptiveValues &settings)
+{
+  bool returnValue = true;
+
+  if (inputCommand.startsWith("set absMin: "))
+  {
+    settings.ABSOLUTE_MIN = inputCommand.substring(11).toInt();
+    Serial.print("New ABSOLUTE_MIN set to: ");
+    Serial.println(settings.ABSOLUTE_MIN);
+  }
+  else if (inputCommand.startsWith("set noFilterMax: "))
+  {
+    settings.NOFILTER_CONST_MAX = inputCommand.substring(16).toInt();
+    Serial.print("New NOFILTER_CONST_MAX set to: ");
+    Serial.println(settings.NOFILTER_CONST_MAX);
+  }
+  else if (inputCommand.startsWith("set normalInitMin: "))
+  {
+    settings.NORMAL_INITIAL_MIN = inputCommand.substring(18).toInt();
+    Serial.print("New NORMAL_INITIAL_MIN set to: ");
+    Serial.println(settings.NORMAL_INITIAL_MIN);
+  }
+  else if (inputCommand.startsWith("set normalConstMin: "))
+  {
+    settings.NORMAL_CONST_MIN = inputCommand.substring(18).toInt();
+    Serial.print("New NORMAL_CONST_MIN set to: ");
+    Serial.println(settings.NORMAL_CONST_MIN);
+  }
+  else if (inputCommand.startsWith("set normalConstMax: "))
+  {
+    settings.NORMAL_CONST_MAX = inputCommand.substring(18).toInt();
+    Serial.print("New NORMAL_CONST_MAX set to: ");
+    Serial.println(settings.NORMAL_CONST_MAX);
+  }
+  else if (inputCommand.startsWith("set normalInitMax: "))
+  {
+    settings.NORMAL_INITIAL_MAX = inputCommand.substring(18).toInt();
+    Serial.print("New NORMAL_INITIAL_MAX set to: ");
+    Serial.println(settings.NORMAL_INITIAL_MAX);
+  }
+  else if (inputCommand.startsWith("set noAirMin: "))
+  {
+    settings.NOAIR_CONST_MIN = inputCommand.substring(13).toInt();
+    Serial.print("New NOAIR_CONST_MIN set to: ");
+    Serial.println(settings.NOAIR_CONST_MIN);
+  }
+  else if (inputCommand.startsWith("set absMax: "))
+  {
+    settings.ABSOLUTE_MAX = inputCommand.substring(11).toInt();
+    Serial.print("New ABSOLUTE_MAX set to: ");
+    Serial.println(settings.ABSOLUTE_MAX);
+  }
+  else if (inputCommand.startsWith("set lowerDif: "))
+  {
+    settings.LOWER_DIF = inputCommand.substring(13).toInt();
+    Serial.print("New LOWER_DIF set to: ");
+    Serial.println(settings.LOWER_DIF);
+  }
+  else if (inputCommand.startsWith("set upperDif: "))
+  {
+    settings.UPPER_DIF = inputCommand.substring(13).toInt();
+    Serial.print("New UPPER_DIF set to: ");
+    Serial.println(settings.UPPER_DIF);
+  }
+  else if (inputCommand.startsWith("set maxAccel: "))
+  {
+    settings.MAX_ACCEL = inputCommand.substring(13).toFloat();
+    Serial.print("New MAX_ACCEL set to: ");
+    Serial.println(settings.MAX_ACCEL, 2); // 2 decimal places
+  }
+  else
+  {
+    returnValue = false; // No matching command
+  }
+
+  // Save the updated settings
+  if (returnValue)
+  {
+    saveAdaptiveSettings(data, settings);
+    inputCommand = ""; // Clear the command
+  }
+  return returnValue; // Successfully set a setting
 }
