@@ -65,7 +65,7 @@ namespace interpretCommand
         void printAdaptiveSettings()
         {
             // Load settings from flash
-            loadAdaptiveSettings(data, ADAPT);
+
 
             // Print settings to Serial
             Serial.println("Current Settings:");

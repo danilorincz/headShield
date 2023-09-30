@@ -130,11 +130,6 @@ FanCondition normal;
 AdaptiveValues ADAPT;
 cond::conditionNumber fanErrorNumber;
 
-void setInitialLimits()
-{
-  normal.setMax(ADAPT.NORMAL_INITIAL_MAX);
-  normal.setMin(ADAPT.NORMAL_INITIAL_MIN);
-}
 #include "basic.h"
 #include "webInterface.h"
 #include "interpreterCommands.h"
@@ -153,10 +148,13 @@ void setup()
   tacho.begin();
   filterTracker.begin();
   //* RETRIEVE DATA
-  restoreCondition(normal, data, "normal");
   String restoredSSID = restoreWifiCredentials(data);
   const char *ssidChar = restoredSSID.c_str();
   restoreBatteryCorrection();
+  
+  setAdaptiveFromSSID();
+  setInitialLimits();
+  
   //* WIFI
   WiFi.mode(WIFI_AP);
   WiFi.softAPConfig(local_ip, local_ip, subnet);
@@ -180,10 +178,12 @@ void setup()
 
   //* start up
   piezo.playStartup();
-  loadAdaptiveSettings(data, ADAPT);
-  setInitialLimits();
 }
-
+void setInitialLimits()
+{
+  normal.setMax(ADAPT.NORMAL_INITIAL_MAX);
+  normal.setMin(ADAPT.NORMAL_INITIAL_MIN);
+}
 bool multiTouch()
 {
   bool returnValue = false;
@@ -263,7 +263,7 @@ void updateSensor()
   perkData.TVOC = ENS160.getTVOC();
   perkData.ECO2 = ENS160.getECO2();
 }
-int tachoLastValue;
+
 void updateTacho()
 {
   if (fan.active())
@@ -572,7 +572,7 @@ FunctionRunner visorRunner(parseAndAction_visor, 100);
 FunctionRunner headSensorRunner(parseAndAction_headSensor, 200);
 FunctionRunner readSensorRunner(updateSensor, 200);
 FunctionRunner readFilterTrack(updateFilterTracker, 1000);
-// csökkentsd a period time-ot
+
 void loop()
 {
   adjustThresholds(tacho.finalValue, normal);
@@ -632,20 +632,3 @@ void loop()
   logAcceleration.refresh(command);
   printAdaptive.refresh(command);
 }
-
-/*
-  if (fan.active())
-  { 
-    static Acceleration acc;
-    static MinMax accelMinMax;
-    acc.addValue(tacho.finalValue);
-    accelerationValue = acc.calculateAcceleration(1000);
-    accelMinMax.addValue(accelerationValue);
-    accelerationMin = accelMinMax.getMinValue(1000);
-    accelerationMax = accelMinMax.getMaxValue(1000);
-    Serial.print(accelerationValue*1000);
-    Serial.print(",");
-    Serial.print(accelerationMin*1000);
-    Serial.print(",");
-    Serial.println(accelerationMax*1000);
-  }*/

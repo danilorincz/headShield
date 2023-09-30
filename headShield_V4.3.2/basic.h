@@ -2,18 +2,6 @@
 #include <Preferences.h>
 #include "stat_data_struct.h"
 
-void restoreCondition(FanCondition &intoThis, Preferences &fromHere, String mapName)
-{
-  StatData loaded;
-  fromHere.begin(mapName.c_str(), false);
-  delay(10);
-  loaded.max = fromHere.getInt("max", -1);
-  loaded.min = fromHere.getInt("min", -1);
-  loaded.average = fromHere.getInt("ave", -1);
-  fromHere.end();
-  delay(10);
-  intoThis.setLimit(loaded);
-}
 String restoreWifiCredentials(Preferences &fromHere)
 {
   fromHere.begin("data", false);
@@ -191,42 +179,114 @@ String millisToTimeString(unsigned long millis)
   return timeString;
 }
 
-void saveAdaptiveSettings(Preferences &prefs, const AdaptiveValues &settings)
+void saveAdaptiveSettings(AdaptiveValues &settings)
 {
-  prefs.begin("settings", false);
+  data.begin("settings", false);
   delay(10);
-  prefs.putUInt("ABS_MIN", settings.ABSOLUTE_MIN);
-  prefs.putUInt("NOF_MAX", settings.NOFILTER_CONST_MAX);
-  prefs.putUInt("NOR_INI_MIN", settings.NORMAL_INITIAL_MIN);
-  prefs.putUInt("NOR_CON_MIN", settings.NORMAL_CONST_MIN);
-  prefs.putUInt("NOR_CON_MAX", settings.NORMAL_CONST_MAX);
-  prefs.putUInt("NOR_INI_MAX", settings.NORMAL_INITIAL_MAX);
-  prefs.putUInt("NOA_MIN", settings.NOAIR_CONST_MIN);
-  prefs.putUInt("ABS_MAX", settings.ABSOLUTE_MAX);
-  prefs.putUInt("LOW_DIF", settings.LOWER_DIF);
-  prefs.putUInt("UPP_DIF", settings.UPPER_DIF);
-  prefs.putFloat("MAX_ACC", settings.MAX_ACCEL);
-  prefs.end();
+  data.putUInt("ABS_MIN", settings.ABSOLUTE_MIN);
+  data.putUInt("NOF_MAX", settings.NOFILTER_CONST_MAX);
+  data.putUInt("NOR_INI_MIN", settings.NORMAL_INITIAL_MIN);
+  data.putUInt("NOR_CON_MIN", settings.NORMAL_CONST_MIN);
+  data.putUInt("NOR_CON_MAX", settings.NORMAL_CONST_MAX);
+  data.putUInt("NOR_INI_MAX", settings.NORMAL_INITIAL_MAX);
+  data.putUInt("NOA_MIN", settings.NOAIR_CONST_MIN);
+  data.putUInt("ABS_MAX", settings.ABSOLUTE_MAX);
+  data.putUInt("LOW_DIF", settings.LOWER_DIF);
+  data.putUInt("UPP_DIF", settings.UPPER_DIF);
+  data.putFloat("MAX_ACC", settings.MAX_ACCEL);
+  data.end();
   delay(10);
 }
 
-void loadAdaptiveSettings(Preferences &prefs, AdaptiveValues &settings)
+void loadAdaptiveSettings(AdaptiveValues &settings)
 {
-  prefs.begin("settings", false);
+  data.begin("settings", false);
   delay(10);
-  settings.ABSOLUTE_MIN = prefs.getUInt("ABS_MIN", 3400);
-  settings.NOFILTER_CONST_MAX = prefs.getUInt("NOF_MAX", 3555);
-  settings.NORMAL_INITIAL_MIN = prefs.getUInt("NOR_INI_MIN", 3570);
-  settings.NORMAL_CONST_MIN = prefs.getUInt("NOR_CON_MIN", 3575);
-  settings.NORMAL_CONST_MAX = prefs.getUInt("NOR_CON_MAX", 3620);
-  settings.NORMAL_INITIAL_MAX = prefs.getUInt("NOR_INI_MAX", 3640);
-  settings.NOAIR_CONST_MIN = prefs.getUInt("NOA_MIN", 3645);
-  settings.ABSOLUTE_MAX = prefs.getUInt("ABS_MAX", 3700);
-  settings.LOWER_DIF = prefs.getUInt("LOW_DIF", 25);
-  settings.UPPER_DIF = prefs.getUInt("UPP_DIF", 15);
-  settings.MAX_ACCEL = prefs.getFloat("MAX_ACC", 0.65);
-  prefs.end();
+  settings.ABSOLUTE_MIN = data.getUInt("ABS_MIN", 0);
+  settings.NOFILTER_CONST_MAX = data.getUInt("NOF_MAX", 0);
+  settings.NORMAL_INITIAL_MIN = data.getUInt("NOR_INI_MIN", 0);
+  settings.NORMAL_CONST_MIN = data.getUInt("NOR_CON_MIN", 0);
+  settings.NORMAL_CONST_MAX = data.getUInt("NOR_CON_MAX", 0);
+  settings.NORMAL_INITIAL_MAX = data.getUInt("NOR_INI_MAX", 0);
+  settings.NOAIR_CONST_MIN = data.getUInt("NOA_MIN", 0);
+  settings.ABSOLUTE_MAX = data.getUInt("ABS_MAX", 0);
+  settings.LOWER_DIF = data.getUInt("LOW_DIF", 0);
+  settings.UPPER_DIF = data.getUInt("UPP_DIF", 0);
+  settings.MAX_ACCEL = data.getFloat("MAX_ACC", 0.65);
+  data.end();
   delay(10);
+}
+
+bool setAdaptiveFromSSID()
+{
+  data.begin("data", false);
+  String loadedSSID = data.getString("SSID", default_ssid);
+  data.end();
+
+  if (loadedSSID == "HS_1")
+  {
+    ADAPT.ABSOLUTE_MIN = 3400;
+    ADAPT.NOFILTER_CONST_MAX = 3520;
+    ADAPT.NORMAL_INITIAL_MIN = 3525;
+    ADAPT.NORMAL_CONST_MIN = 3535;
+    ADAPT.NORMAL_CONST_MAX = 3580;
+    ADAPT.NORMAL_INITIAL_MAX = 3595;
+    ADAPT.NOAIR_CONST_MIN = 3600;
+    ADAPT.ABSOLUTE_MAX = 3700;
+    ADAPT.LOWER_DIF = 25;
+    ADAPT.UPPER_DIF = 15;
+    ADAPT.MAX_ACCEL = 0.65;
+  }
+  else if (loadedSSID == "HS_2")
+  {
+    ADAPT.ABSOLUTE_MIN = 3400;
+    ADAPT.NOFILTER_CONST_MAX = 0;
+    ADAPT.NORMAL_INITIAL_MIN = 0;
+    ADAPT.NORMAL_CONST_MIN = 0;
+    ADAPT.NORMAL_CONST_MAX = 0;
+    ADAPT.NORMAL_INITIAL_MAX = 0;
+    ADAPT.NOAIR_CONST_MIN = 0;
+    ADAPT.ABSOLUTE_MAX = 3700;
+    ADAPT.LOWER_DIF = 25;
+    ADAPT.UPPER_DIF = 15;
+    ADAPT.MAX_ACCEL = 0.65;
+  }
+  else if (loadedSSID == "HS_3")
+  {
+    ADAPT.ABSOLUTE_MIN = 3400;
+    ADAPT.NOFILTER_CONST_MAX = 3555;
+    ADAPT.NORMAL_INITIAL_MIN = 3570;
+    ADAPT.NORMAL_CONST_MIN = 3575;
+    ADAPT.NORMAL_CONST_MAX = 3620;
+    ADAPT.NORMAL_INITIAL_MAX = 3640;
+    ADAPT.NOAIR_CONST_MIN = 3645;
+    ADAPT.ABSOLUTE_MAX = 3700;
+    ADAPT.LOWER_DIF = 25;
+    ADAPT.UPPER_DIF = 15;
+    ADAPT.MAX_ACCEL = 0.65;
+  }
+  else if (loadedSSID == "HS_4")
+  {
+    ADAPT.ABSOLUTE_MIN = 3400;
+    ADAPT.NOFILTER_CONST_MAX = 3535;
+    ADAPT.NORMAL_INITIAL_MIN = 3540;
+    ADAPT.NORMAL_CONST_MIN = 3550;
+    ADAPT.NORMAL_CONST_MAX = 3595;
+    ADAPT.NORMAL_INITIAL_MAX = 3610;
+    ADAPT.NOAIR_CONST_MIN = 3615;
+    ADAPT.ABSOLUTE_MAX = 3700;
+    ADAPT.LOWER_DIF = 25;
+    ADAPT.UPPER_DIF = 15;
+    ADAPT.MAX_ACCEL = 0.65;
+  }
+  else
+  {
+    Serial.println("SSID not found");
+    return false;
+  }
+  Serial.println("Adaptive values loaded for" + loadedSSID);
+  //saveAdaptiveSettings(ADAPT);
+  return true;
 }
 
 bool setAdaptiveSettings(String &inputCommand, AdaptiveValues &settings)
@@ -253,13 +313,13 @@ bool setAdaptiveSettings(String &inputCommand, AdaptiveValues &settings)
   }
   else if (inputCommand.startsWith("set normalConstMin: "))
   {
-    settings.NORMAL_CONST_MIN = inputCommand.substring(18).toInt();
+    settings.NORMAL_CONST_MIN = inputCommand.substring(19).toInt();
     Serial.print("New NORMAL_CONST_MIN set to: ");
     Serial.println(settings.NORMAL_CONST_MIN);
   }
   else if (inputCommand.startsWith("set normalConstMax: "))
   {
-    settings.NORMAL_CONST_MAX = inputCommand.substring(18).toInt();
+    settings.NORMAL_CONST_MAX = inputCommand.substring(19).toInt();
     Serial.print("New NORMAL_CONST_MAX set to: ");
     Serial.println(settings.NORMAL_CONST_MAX);
   }
@@ -307,7 +367,7 @@ bool setAdaptiveSettings(String &inputCommand, AdaptiveValues &settings)
   // Save the updated settings
   if (returnValue)
   {
-    saveAdaptiveSettings(data, settings);
+    saveAdaptiveSettings(settings);
     inputCommand = ""; // Clear the command
   }
   return returnValue; // Successfully set a setting
