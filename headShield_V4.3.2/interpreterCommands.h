@@ -98,7 +98,7 @@ namespace interpretCommand
         }
         void memoryWear()
         {
-            Serial.println(filterTracker.get_memoryWear());
+            
         }
         void sensorValues()
         {

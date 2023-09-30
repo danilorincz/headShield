@@ -19,7 +19,6 @@ private:
     const int maxKeys = 20;
 
 public:
-    float memoryHealth;
     OnTimeTracker(unsigned long savePeriodTime) : accumulatedOnTime(0),
                                                   lastUpdateTime(0),
                                                   memIdx(0),
@@ -33,9 +32,10 @@ public:
     void begin()
     {
         data.begin("app", false);
-        memIdx = data.getUInt("mIdx", 0);                // memoryLocationIndex
-        String locKey = String("aOnT") + String(memIdx); // accumulatedOnTime
+        memIdx = data.getUInt("mIdx", 0);
+        String locKey = String("aOnT") + String(memIdx);
         accumulatedOnTime = data.getULong(locKey.c_str(), 0);
+        data.end();
     }
 
     unsigned long get_timeOn()
@@ -48,18 +48,15 @@ public:
         String locKey = String("aOnT") + String(memIdx);
         return data.getULong(locKey.c_str(), 0);
     }
-    void setSaveInterval(unsigned long newInterval)
-    {
-        savePeriodTime = newInterval;
-    }
+
     void update(bool deviceIsOn)
     {
         if (deviceIsOn)
         {
             accumulatedOnTime += (millis() - lastUpdateTime);
             isUpdated = true;
+            lastUpdateTime = millis();
         }
-        lastUpdateTime = millis();
     }
 
     bool save(bool overwrite = false)
@@ -67,8 +64,10 @@ public:
 
         unsigned long currentTime = millis();
 
-        if (((currentTime - lastSaveTimestamp >= savePeriodTime) || overwrite || !sessionFirstSave) && !isUpdated)
+        if (((currentTime - lastSaveTimestamp >= savePeriodTime) || overwrite || !sessionFirstSave) && isUpdated)
         {
+            data.begin("app", false);
+            Serial.println("FILTER TRACKER SAVING");
             if (memIdx >= maxKeys)
             {
                 memIdx = 0;
@@ -84,6 +83,7 @@ public:
             Serial.print("New time has been saved to flash: ");
             Serial.println(accumulatedOnTime + latestOnTime);
             sessionFirstSave = true;
+            data.end();
             return true;
         }
         else
@@ -94,30 +94,28 @@ public:
 
     bool clearLatestData()
     {
-        if (memIdx > 0)
+        data.begin("app", false);
+        // Remove all keys from NVS
+        for (int i = 1; i <= memIdx; ++i)
         {
-            String locKey = String("aOnT") + String(memIdx);
+            String locKey = String("aOnT") + String(i);
             data.remove(locKey.c_str());
-            memIdx--;
-            data.putUInt("mIdx", memIdx);
-            accumulatedOnTime = 0;
-            Serial.println("Filter memory cleared!");
-            return true;
         }
-        else
-            return false;
-    }
-    float get_memoryWear()
-    {
-        const unsigned long maxWriteEraseCycles = 100000; // Typical for ESP32
-        unsigned long totalWrites = memIdx;               // Assuming each increment of memIdx corresponds to a write
 
-        float wearPercentage = ((float)totalWrites / maxWriteEraseCycles) * 100;
-        return wearPercentage;
-    }
-    float get_memoryHealth()
-    {
-        memoryHealth = 100.00 - get_memoryWear();
-        return memoryHealth;
+        // Reset memIdx in NVS and in-memory
+        data.putUInt("mIdx", 0);
+        memIdx = 0;
+
+        // Reset accumulatedOnTime and lastUpdateTime
+        accumulatedOnTime = 0;
+        lastUpdateTime = 0;
+
+        // Reset sessionFirstSave flag
+        sessionFirstSave = false;
+
+        // Debug message
+        Serial.println("All data cleared!");
+        data.end();
+        return true;
     }
 };

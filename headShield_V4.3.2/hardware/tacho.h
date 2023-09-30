@@ -116,7 +116,9 @@ public:
         if (doMeasure())
             smooth.add(dutyCycle);
         else
+        {
             Serial.println("Measurement failed");
+        }
 
         finalValue = smooth.average();
         return finalValue;

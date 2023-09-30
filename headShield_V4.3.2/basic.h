@@ -2,16 +2,16 @@
 #include <Preferences.h>
 #include "stat_data_struct.h"
 
-String restoreWifiCredentials(Preferences &fromHere)
+String restoreWifiCredentials()
 {
-  fromHere.begin("data", false);
-  String SSID = fromHere.getString("SSID", default_ssid);
-  fromHere.end();
+  data.begin("data", false);
+  String SSID = data.getString("SSID", default_ssid);
+  data.end();
   return SSID;
 }
 bool setSSID(String &inputCommand)
 {
-  if (inputCommand.startsWith("setSSID:"))
+  if (inputCommand.startsWith("setSSID: "))
   {
     String newSSID = inputCommand.substring(8);
     data.begin("data", false);
@@ -240,12 +240,12 @@ bool setAdaptiveFromSSID()
   else if (loadedSSID == "HS_2")
   {
     ADAPT.ABSOLUTE_MIN = 3400;
-    ADAPT.NOFILTER_CONST_MAX = 0;
-    ADAPT.NORMAL_INITIAL_MIN = 0;
-    ADAPT.NORMAL_CONST_MIN = 0;
-    ADAPT.NORMAL_CONST_MAX = 0;
-    ADAPT.NORMAL_INITIAL_MAX = 0;
-    ADAPT.NOAIR_CONST_MIN = 0;
+    ADAPT.NOFILTER_CONST_MAX = 3595;
+    ADAPT.NORMAL_INITIAL_MIN = 3600;
+    ADAPT.NORMAL_CONST_MIN = 3610;
+    ADAPT.NORMAL_CONST_MAX = 3655;
+    ADAPT.NORMAL_INITIAL_MAX = 3660;
+    ADAPT.NOAIR_CONST_MIN = 3665;
     ADAPT.ABSOLUTE_MAX = 3700;
     ADAPT.LOWER_DIF = 25;
     ADAPT.UPPER_DIF = 15;

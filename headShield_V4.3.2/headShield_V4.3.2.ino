@@ -147,14 +147,21 @@ void setup()
   battery.begin();
   tacho.begin();
   filterTracker.begin();
-  //* RETRIEVE DATA
-  String restoredSSID = restoreWifiCredentials(data);
+
+  Serial.print("Filter tracker time: ");
+  Serial.print(filterTracker.get_timeOn() / 1000);
+  Serial.println(" secundum");
+
+  //* RETRIEVE DATAP
+  String restoredSSID = restoreWifiCredentials();
+  Serial.println("Restored SSID: " + restoredSSID);
+
   const char *ssidChar = restoredSSID.c_str();
   restoreBatteryCorrection();
-  
+
   setAdaptiveFromSSID();
   setInitialLimits();
-  
+
   //* WIFI
   WiFi.mode(WIFI_AP);
   WiFi.softAPConfig(local_ip, local_ip, subnet);
@@ -422,7 +429,7 @@ void parseAndAction_headSensor()
 
       static unsigned long headSensorSaveStart = 0;
 
-      if (millis() - headSensorSaveStart > 120000)
+      if (millis() - headSensorSaveStart > 5000)
       {
         if (filterTracker.save(true))
         {
@@ -469,7 +476,7 @@ void updateFilterTracker()
 {
   filterTracker.update(fan.state);
 
-  static unsigned long previousOnTime = 0;
+  static unsigned long previousOnTime = filterTracker.get_timeOn();
   if (filterTracker.get_timeOn() - previousOnTime > autoUpdateFilterTime)
   {
     filterTracker.save();
@@ -631,4 +638,9 @@ void loop()
   longTest.refresh(command);
   logAcceleration.refresh(command);
   printAdaptive.refresh(command);
+
+  for (int i = 0; i < 64; i++)
+  {
+    int a = Serial.read();
+  }
 }
