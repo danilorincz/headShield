@@ -26,7 +26,7 @@ void handle_getData(AsyncWebServerRequest *request)
 
 void handle_restart(AsyncWebServerRequest *request)
 {
-    filterTracker.clearLatestData();
+    filterTracker.clearAllData();
     Serial.println("RESET FILTER");
     request->send_P(200, "text/plain", "OK");
 }

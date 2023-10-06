@@ -9,10 +9,9 @@
     // írni a Timinek hogy csináljon még kettő kámzsát
 // PROGRAMOZÁS
     // minden sisakot tesztelni hogy ugyan azok maradtak-e a határértékek
-    // ellenőrizni a filter trackert mert szerintem nem működik
-    // elgondolkodni egy újabb adaptív féle védőhálón
-    // ki kell venni a ventillátor kikapcsolásának lehetőségét
-    // figyelmeztető rendszert élesíteni
+    //* ellenőrizni a filter trackert mert szerintem nem működik
+    //* ki kell venni a ventillátor kikapcsolásának lehetőségét
+    //* figyelmeztető rendszert élesíteni
 // DOKUMENTÁCIÓ
     //* új rajzot készíteni a fém részről, és a COVER összeállítási rajzát frirssíteni
     //* a matricáról műszaki rajz

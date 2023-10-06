@@ -48,7 +48,7 @@ Preferences data;
 bool accelPrintEnable = false;
 unsigned long durationUpdate;
 //? WIFI
-const char *default_ssid = "HeadShield";
+const char *default_ssid = "HS_2";
 const char *password = "PAPR_user_2023";
 IPAddress local_ip(192, 168, 1, 1);
 IPAddress gateway(192, 168, 1, 1);
@@ -147,7 +147,7 @@ void setup()
   battery.begin();
   tacho.begin();
   filterTracker.begin();
-
+  filterTracker.loadData();
   Serial.print("Filter tracker time: ");
   Serial.print(filterTracker.get_timeOn() / 1000);
   Serial.println(" secundum");
@@ -185,6 +185,17 @@ void setup()
 
   //* start up
   piezo.playStartup();
+  ADAPT.ABSOLUTE_MIN = 3400;
+  ADAPT.NOFILTER_CONST_MAX = 3530;
+  ADAPT.NORMAL_INITIAL_MIN = 3535;
+  ADAPT.NORMAL_CONST_MIN = 3545;
+  ADAPT.NORMAL_CONST_MAX = 3585;
+  ADAPT.NORMAL_INITIAL_MAX = 3695;
+  ADAPT.NOAIR_CONST_MIN = 3605;
+  ADAPT.ABSOLUTE_MAX = 3700;
+  ADAPT.LOWER_DIF = 25;
+  ADAPT.UPPER_DIF = 15;
+  ADAPT.MAX_ACCEL = 0.65;
 }
 void setInitialLimits()
 {
@@ -223,13 +234,10 @@ bool multiTouch()
 }
 void touchInputHandler()
 {
-  if (touchLeft.longTap() && !touchRight.getDigital()) //? FAN TOGGLE
+  if (touchLeft.longTap() && !touchRight.getDigital()) //? FAN ON
   {
-    fan.toggle();
-    if (fan.active())
-      piezo.playFanOn();
-    else
-      piezo.playFanOff();
+    fan.on();
+    piezo.playFanOn();
   }
 
   if (touchRight.singleTap() && !touchLeft.getDigital()) //? LED CONTROL
@@ -360,7 +368,7 @@ void parseAndAction_tacho()
       if (makeWarningTimer.timeElapsedMillis())
       {
         Serial.println("Warning signal");
-        //airflowSystemWarning();
+        airflowSystemWarning();
       }
     }
     else
@@ -429,7 +437,7 @@ void parseAndAction_headSensor()
 
       static unsigned long headSensorSaveStart = 0;
 
-      if (millis() - headSensorSaveStart > 5000)
+      if (millis() - headSensorSaveStart > 2 * 60 * 1000)
       {
         if (filterTracker.save(true))
         {
@@ -474,7 +482,10 @@ void parseAndAction_visor()
 
 void updateFilterTracker()
 {
-  filterTracker.update(fan.state);
+  if (fanErrorNumber == cond::normal)
+  {
+    filterTracker.update(fan.state);
+  }
 
   static unsigned long previousOnTime = filterTracker.get_timeOn();
   if (filterTracker.get_timeOn() - previousOnTime > autoUpdateFilterTime)
