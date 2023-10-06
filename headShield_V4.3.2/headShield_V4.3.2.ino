@@ -1,7 +1,8 @@
 //? SETTINGS
 bool serialEnabled = false;
 bool soundEnabled = true;
-
+bool startAnalyserCommand = false;
+int analyseCounter = 0;
 //? DOWNLOADED LIBRARIEs
 #include <Arduino.h>
 #include <WiFi.h>
@@ -158,7 +159,7 @@ void setup()
   const char *ssidChar = restoredSSID.c_str();
 
   //* RETRIEVE SPECIFIC DATA
-  recoverDeviceSpecificData();
+  recoverDeviceSpecificData(restoredSSID);
 
   //* LOAD SPECIFIC DATA
   setInitialLimits();
@@ -349,15 +350,15 @@ void parseAndAction_tacho()
 
   static Timer makeWarningTimer(10000);
 
-  if (tacho.warning)
+  if (tacho.warning && !startAnalyserCommand)
   {
     MajorityResult newResult = getMajority(fanErrorNumber);
     if (newResult.isMajority && newResult.majorityValue != cond::normal)
     {
-      Serial.println("Last five values were not normal");
+      serialPrintIf("Last five values were not normal");
       if (makeWarningTimer.timeElapsedMillis())
       {
-        Serial.println("Warning signal");
+        serialPrintIf("Warning signal");
         airflowSystemWarning();
       }
     }
@@ -499,9 +500,10 @@ void adjustThresholds(int tachoValue, FanCondition &newThresholds)
   if (fanErrorNumber != cond::normal)
   {
     static Timer logOutOfRangeTimer(1000);
-    //setInitialLimits();
     if (logOutOfRangeTimer.timeElapsedMillis())
-      Serial.println("OUT OF RANGE");
+    {
+      serialPrintIf("OUT OF RANGE");
+    }
     return;
   }
 
@@ -534,43 +536,40 @@ void adjustThresholds(int tachoValue, FanCondition &newThresholds)
 
       if (newMax >= ADAPT.NOAIR_CONST_MIN)
       {
-        Serial.println("UPPER LIMIT REACHED");
+        serialPrintIf("UPPER LIMIT REACHED");
         newMax = ADAPT.NOAIR_CONST_MIN;
         newMin = ADAPT.NOAIR_CONST_MIN - ADAPT.UPPER_DIF - ADAPT.LOWER_DIF;
       }
       if (newMin <= ADAPT.NOFILTER_CONST_MAX)
       {
-        Serial.println("LOWER LIMIT REACHED");
+        serialPrintIf("LOWER LIMIT REACHED");
         newMin = ADAPT.NOFILTER_CONST_MAX;
         newMax = ADAPT.NOAIR_CONST_MIN + ADAPT.UPPER_DIF + ADAPT.LOWER_DIF;
       }
       newThresholds.setMax(newMax);
       newThresholds.setMin(newMin);
-      Serial.println("EN");
-      Serial.println("Tacho: " + String(tachoValue));
+
+      Serial.print("EN");
+      Serial.print("\t");
+      Serial.print(battery.percent);
+      Serial.print("\t");
+      Serial.println(tacho.finalValue);
     }
   }
   else
   {
+
     static Timer logDisableAdjustTimer(1000);
     if (logDisableAdjustTimer.timeElapsedMillis())
     {
-      Serial.println("DIS");
-      Serial.println("Tacho: " + String(tachoValue));
+      Serial.print("DIS");
+      Serial.print("\t");
+      Serial.print(battery.percent);
+      Serial.print("\t");
+      Serial.println(tacho.finalValue);
     }
+
     adjustAverage.clear();
-  }
-  if (serialEnabled)
-  {
-    static Timer logThis(2000);
-    if (logThis.timeElapsedMillis())
-    {
-      Serial.print("ACC: " + String(accelerationValue));
-      Serial.print(",");
-      Serial.print("MAX: " + String(accelerationMax));
-      Serial.print(",");
-      Serial.println("MIN: " + String(accelerationMin));
-    }
   }
 }
 
@@ -613,24 +612,19 @@ void loop()
 
   if (Serial.available())
   {
-    Serial.println("COMMAND: " + command);
     command = interpreter::getCommand();
+    Serial.println("COMMAND: " + command);
     clearSerialBuffer();
   }
 
   setSSID(command);
-
   toggleSerial.refresh(command);
   printTachoValue.refresh(command);
   printPeriferial.refresh(command);
-
   printLimits.refresh(command);
-
   printSensorValues.refresh(command);
   clearFlash.refresh(command);
-
   printFilterTime.refresh(command);
   toggleFan.refresh(command);
-
   printAdaptive.refresh(command);
 }

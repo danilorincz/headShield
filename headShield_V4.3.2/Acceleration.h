@@ -50,7 +50,7 @@ public:
         {
             static Timer logErrorTimer(1000);
             if (logErrorTimer.timeElapsedMillis())
-                Serial.println("Error: Not enough values received in the last " + String(X) + " seconds.");
+                Serial.println("E1");
             return -10;
         }
 

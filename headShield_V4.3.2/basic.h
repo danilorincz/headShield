@@ -33,8 +33,6 @@ bool setSSID(String &inputCommand)
   return false;
 }
 
-
-
 String getSSID()
 {
   data.begin("data", false);
@@ -42,8 +40,6 @@ String getSSID()
   data.end();
   return mySSID;
 }
-
-
 
 void putData(StatData putThis, Preferences &here, String mapName)
 {
@@ -105,20 +101,18 @@ String millisToTimeString(unsigned long millis)
     secondsStr = "0" + secondsStr;
   }
 
-  // Combine into final time string
   String timeString = hoursStr + ":" + minutesStr + ":" + secondsStr;
 
   return timeString;
 }
 
-bool recoverDeviceSpecificData()
+bool recoverDeviceSpecificData(String loadedSSID)
 {
-  data.begin("data", false);
-  String loadedSSID = data.getString("SSID", default_ssid);
-  data.end();
 
+  bool OK = false;
   if (loadedSSID == "HS_1")
   {
+    Serial.println("LOADING FOR HS_1");
     battery.a = 1.23;
     battery.b = -1.35;
     ADAPT.ABSOLUTE_MIN = 3300;
@@ -134,9 +128,11 @@ bool recoverDeviceSpecificData()
     ADAPT.MAX_ACCEL = 0.65;
     normal.setMax(ADAPT.NORMAL_INITIAL_MAX);
     normal.setMin(ADAPT.NORMAL_INITIAL_MIN);
+    OK = true;
   }
-  else if (loadedSSID == "HS_2")
+  if (loadedSSID == " HS_2")
   {
+    Serial.println("LOADING FOR HS_2");
     battery.a = 0.92;
     battery.b = 0.56;
     ADAPT.ABSOLUTE_MIN = 3400;
@@ -152,9 +148,11 @@ bool recoverDeviceSpecificData()
     ADAPT.MAX_ACCEL = 0.65;
     normal.setMax(ADAPT.NORMAL_INITIAL_MAX);
     normal.setMin(ADAPT.NORMAL_INITIAL_MIN);
+    OK = true;
   }
-  else if (loadedSSID == "HS_3")
+  if (loadedSSID == "HS_3")
   {
+    Serial.println("LOADING FOR HS_3");
     battery.a = 1.02;
     battery.b = -0.11;
     ADAPT.ABSOLUTE_MIN = 3400;
@@ -170,9 +168,11 @@ bool recoverDeviceSpecificData()
     ADAPT.MAX_ACCEL = 0.65;
     normal.setMax(ADAPT.NORMAL_INITIAL_MAX);
     normal.setMin(ADAPT.NORMAL_INITIAL_MIN);
+    OK = true;
   }
-  else if (loadedSSID == "HS_4")
+  if (loadedSSID == "HS_4")
   {
+    Serial.println("LOADING FOR HS_4");
     battery.a = 0.94;
     battery.b = 0.48;
     ADAPT.ABSOLUTE_MIN = 3400;
@@ -188,13 +188,14 @@ bool recoverDeviceSpecificData()
     ADAPT.MAX_ACCEL = 0.65;
     normal.setMax(ADAPT.NORMAL_INITIAL_MAX);
     normal.setMin(ADAPT.NORMAL_INITIAL_MIN);
+    OK = true;
   }
+
+  if (OK)
+    return true;
   else
   {
-    Serial.println("SSID not found");
+    Serial.println("Problem with the SSID specific data!");
     return false;
   }
-  Serial.println("Adaptive values loaded for" + loadedSSID);
-
-  return true;
 }

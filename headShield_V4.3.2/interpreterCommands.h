@@ -8,7 +8,6 @@ namespace interpretCommand
         {
             // Load settings from flash
 
-
             // Print settings to Serial
             Serial.println("Current Settings:");
             Serial.print("ABSOLUTE_MIN: ");
