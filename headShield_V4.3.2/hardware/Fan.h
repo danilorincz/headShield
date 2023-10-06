@@ -53,17 +53,6 @@ public:
     {
         return limits;
     }
-    bool inRange(int value, int offsetMin, int offsetMax)
-    {
-
-        if (limits.min - offsetMin <= value && value <= limits.max + offsetMax)
-            return true;
-        return false;
-    }
-    int getRangeSize()
-    {
-        return limits.max - limits.min;
-    }
 };
 
 namespace cond

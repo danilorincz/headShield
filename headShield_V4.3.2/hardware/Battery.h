@@ -40,11 +40,6 @@ public:
         rawValue = analogRead(pin);
         return rawValue;
     }
-    void setCorrection(float a_new, float b_new)
-    {
-        a = a_new;
-        b = b_new;
-    }
 
     int readAverage()
     {

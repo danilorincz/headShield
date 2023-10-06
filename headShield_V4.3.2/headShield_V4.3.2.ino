@@ -45,7 +45,7 @@ bool soundEnabled = true;
 #include "Acceleration.h"
 //? DATA STORAGE
 Preferences data;
-bool accelPrintEnable = false;
+
 unsigned long durationUpdate;
 //? WIFI
 const char *default_ssid = "HS_2";
@@ -152,14 +152,15 @@ void setup()
   Serial.print(filterTracker.get_timeOn() / 1000);
   Serial.println(" secundum");
 
-  //* RETRIEVE DATAP
+  //* RETRIEVE SSID
   String restoredSSID = restoreWifiCredentials();
   Serial.println("Restored SSID: " + restoredSSID);
-
   const char *ssidChar = restoredSSID.c_str();
-  restoreBatteryCorrection();
 
-  setAdaptiveFromSSID();
+  //* RETRIEVE SPECIFIC DATA
+  recoverDeviceSpecificData();
+
+  //* LOAD SPECIFIC DATA
   setInitialLimits();
 
   //* WIFI
@@ -185,17 +186,6 @@ void setup()
 
   //* start up
   piezo.playStartup();
-  ADAPT.ABSOLUTE_MIN = 3400;
-  ADAPT.NOFILTER_CONST_MAX = 3530;
-  ADAPT.NORMAL_INITIAL_MIN = 3535;
-  ADAPT.NORMAL_CONST_MIN = 3545;
-  ADAPT.NORMAL_CONST_MAX = 3585;
-  ADAPT.NORMAL_INITIAL_MAX = 3695;
-  ADAPT.NOAIR_CONST_MIN = 3605;
-  ADAPT.ABSOLUTE_MAX = 3700;
-  ADAPT.LOWER_DIF = 25;
-  ADAPT.UPPER_DIF = 15;
-  ADAPT.MAX_ACCEL = 0.65;
 }
 void setInitialLimits()
 {
@@ -417,7 +407,6 @@ void parseAndAction_headSensor()
     if (!onDone)
     {
       piezo.playHelmetPutOn();
-      serialPrintIf("HEAD SENSOR ON");
       onDone = true;
       offDone = false;
 
@@ -429,7 +418,6 @@ void parseAndAction_headSensor()
     if (!offDone)
     {
       piezo.playHelmetTakenOff();
-      serialPrintIf("HEAD SENSOR OFF");
       offDone = true;
       onDone = false;
       fan.off();
@@ -459,7 +447,6 @@ void parseAndAction_visor()
     if (!onDone)
     {
       piezo.playVisorFoldedDown();
-      serialPrintIf("VISOR ON");
       onDone = true;
       offDone = false;
 
@@ -470,7 +457,6 @@ void parseAndAction_visor()
     if (!offDone)
     {
       piezo.playVisorFoldedUp();
-      serialPrintIf("VISOR OFF");
       offDone = true;
       onDone = false;
 
@@ -574,13 +560,17 @@ void adjustThresholds(int tachoValue, FanCondition &newThresholds)
     }
     adjustAverage.clear();
   }
-  if (accelPrintEnable)
+  if (serialEnabled)
   {
-    Serial.print("Acceleraion: " + String(accelerationValue));
-    Serial.print(",");
-    Serial.print("Max: " + String(accelerationMax));
-    Serial.print(",");
-    Serial.println("Min: " + String(accelerationMin));
+    static Timer logThis(2000);
+    if (logThis.timeElapsedMillis())
+    {
+      Serial.print("ACC: " + String(accelerationValue));
+      Serial.print(",");
+      Serial.print("MAX: " + String(accelerationMax));
+      Serial.print(",");
+      Serial.println("MIN: " + String(accelerationMin));
+    }
   }
 }
 
@@ -625,12 +615,10 @@ void loop()
   {
     Serial.println("COMMAND: " + command);
     command = interpreter::getCommand();
+    clearSerialBuffer();
   }
 
   setSSID(command);
-  setNormal(command);
-  setBatteryParameter(command);
-  setAdaptiveSettings(command, ADAPT);
 
   toggleSerial.refresh(command);
   printTachoValue.refresh(command);
@@ -639,19 +627,10 @@ void loop()
   printLimits.refresh(command);
 
   printSensorValues.refresh(command);
-  analyse_normal.refresh(command);
-  clearLimits.refresh(command);
+  clearFlash.refresh(command);
 
   printFilterTime.refresh(command);
   toggleFan.refresh(command);
-  printMemoryWear.refresh(command);
-  analyseBattery.refresh(command);
-  longTest.refresh(command);
-  logAcceleration.refresh(command);
-  printAdaptive.refresh(command);
 
-  for (int i = 0; i < 64; i++)
-  {
-    int a = Serial.read();
-  }
+  printAdaptive.refresh(command);
 }
