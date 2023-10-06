@@ -1,14 +1,8 @@
-//? SETTINGS
-bool serialEnabled = false;
-bool soundEnabled = true;
-bool startAnalyserCommand = false;
-int analyseCounter = 0;
-//? DOWNLOADED LIBRARIEs
+//? DOWNLOADED LIBRARIE
 #include <Arduino.h>
 #include <WiFi.h>
 #include <ESPAsyncWebServer.h>
 #include <AsyncElegantOTA.h>
-
 #include <analogWrite.h>
 #include <pitches.h>
 #include <Tone32.h>
@@ -19,7 +13,7 @@ int analyseCounter = 0;
 #include <Preferences.h>
 #include <nvs_flash.h>
 
-//? CUSTOM LIBRARIEs
+//? CUSTOM LIBRARIE
 #include "hardware\Audio.h"
 #include "hardware\Device.h"
 #include "hardware\Fan.h"
@@ -30,7 +24,6 @@ int analyseCounter = 0;
 #include "hardware\touchInput.h"
 #include "hardware\infraredSensor.h"
 #include "hardware\tacho.h"
-
 #include "Timer.h"
 #include "movingAverage.h"
 #include "Interpreter.h"
@@ -39,22 +32,26 @@ int analyseCounter = 0;
 #include "sensor_data_struct.h"
 #include <algorithm>
 #include "Webpage.h"
-
 #include "onTimeTracker.h"
-
 #include "Majority.h"
 #include "Acceleration.h"
+
+//? SETTINGS
+bool serialEnabled = false;
+bool soundEnabled = true;
+bool startAnalyserCommand = false;
+int analyseCounter = 0;
+String deviceID = "NONE";
+
 //? DATA STORAGE
 Preferences data;
 
-unsigned long durationUpdate;
 //? WIFI
-const char *default_ssid = "HS_2";
-const char *password = "PAPR_user_2023";
+const char *preventSSID = "PreVent";
+const char *preventPassword = "PAPR_user_2023";
 IPAddress local_ip(192, 168, 1, 1);
 IPAddress gateway(192, 168, 1, 1);
 IPAddress subnet(255, 255, 255, 0);
-
 AsyncWebServer server(80);
 
 //? SENSOR
@@ -135,6 +132,7 @@ cond::conditionNumber fanErrorNumber;
 #include "webInterface.h"
 #include "interpreterCommands.h"
 #include "sensorConnection.h"
+#include "specific_data.h"
 
 void setup()
 {
@@ -149,17 +147,13 @@ void setup()
   tacho.begin();
   filterTracker.begin();
   filterTracker.loadData();
-  Serial.print("Filter tracker time: ");
-  Serial.print(filterTracker.get_timeOn() / 1000);
-  Serial.println(" secundum");
 
-  //* RETRIEVE SSID
-  String restoredSSID = restoreWifiCredentials();
-  Serial.println("Restored SSID: " + restoredSSID);
-  const char *ssidChar = restoredSSID.c_str();
+  //* RETRIEVE ID
+  deviceID = restoreID();
+  Serial.println("Restored ID: " + deviceID);
 
   //* RETRIEVE SPECIFIC DATA
-  recoverDeviceSpecificData(restoredSSID);
+  recoverDeviceSpecificData(deviceID);
 
   //* LOAD SPECIFIC DATA
   setInitialLimits();
@@ -167,7 +161,7 @@ void setup()
   //* WIFI
   WiFi.mode(WIFI_AP);
   WiFi.softAPConfig(local_ip, local_ip, subnet);
-  WiFi.softAP(ssidChar, password);
+  WiFi.softAP(preventSSID, preventPassword);
   serverOn();
   server.begin();
   AsyncElegantOTA.begin(&server);
@@ -617,7 +611,8 @@ void loop()
     clearSerialBuffer();
   }
 
-  setSSID(command);
+  setID(command);
+
   toggleSerial.refresh(command);
   printTachoValue.refresh(command);
   printPeriferial.refresh(command);
